@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-import { History, LayoutGrid, ShoppingBag, UserRound } from "lucide-react";
+import { History, LayoutGrid, Refrigerator, ShoppingBag, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const nav = [
   { to: "/", label: "Неделя", icon: LayoutGrid, end: true },
   { to: "/cart", label: "Корзина", icon: ShoppingBag },
+  { to: "/fridge", label: "Холод.", icon: Refrigerator },
   { to: "/history", label: "История", icon: History },
   { to: "/profile", label: "Профиль", icon: UserRound },
 ];
@@ -29,7 +30,7 @@ export function Shell() {
     <div className="mx-auto min-h-dvh max-w-lg pb-24">
       <Outlet />
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 backdrop-blur">
-        <div className="mx-auto grid max-w-lg grid-cols-4 px-2 py-2">
+        <div className="mx-auto grid max-w-lg grid-cols-5 px-1 py-2">
           {nav.map((item) => (
             <NavLink
               key={item.to}

@@ -18,6 +18,9 @@ export interface Profile {
   protein_target: number;
   fat_target: number;
   carbs_target: number;
+  fiber_target?: number;
+  iron_target?: number;
+  goal_weeks?: number | null;
   meals_per_day: number;
   snacks: boolean;
   preferences: string[];
@@ -61,4 +64,11 @@ export interface MealPlanRow {
   variety_score: number;
   result_json: unknown;
   created_at: string;
+}
+
+export interface FridgeItem {
+  id?: string;
+  household_id: string;
+  product_id: string;
+  grams: number;
 }

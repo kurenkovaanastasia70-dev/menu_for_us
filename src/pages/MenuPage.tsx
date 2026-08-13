@@ -20,7 +20,7 @@ const mealLabels: Record<string, string> = {
 
 export function MenuPage() {
   const { planId } = useParams();
-  const { latestPlan, household, members, cashback, refresh } = useApp();
+  const { latestPlan, household, members, cashback, fridge, refresh } = useApp();
   const navigate = useNavigate();
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [activeMeal, setActiveMeal] = useState<PlannedMeal | null>(null);
@@ -46,8 +46,9 @@ export function MenuPage() {
       cashback,
       days: latestPlan.days,
       budget: Number(latestPlan.budget),
+      fridge,
     });
-  }, [household, members, cashback, latestPlan]);
+  }, [household, members, cashback, latestPlan, fridge]);
 
   const alternatives = useMemo(() => {
     if (!activeMeal || !result || !input) return [];
@@ -99,7 +100,11 @@ export function MenuPage() {
           <span>{formatRub(result.effectiveCost)}</span>
         </div>
         <p className="mt-2 text-xs text-muted">
-          Разнообразие {result.varietyScore} · остатки {result.wasteScore}
+          Клетчатка {Math.round(result.nutritionSummary.fiberPerDay ?? 0)} / {Math.round(result.nutritionSummary.fiberTarget ?? 0)} г ·
+          железо {Math.round((result.nutritionSummary.ironPerDay ?? 0) * 10) / 10} / {Math.round(result.nutritionSummary.ironTarget ?? 0)} мг
+        </p>
+        <p className="mt-1 text-xs text-muted">
+          Разнообразие {result.varietyScore} · остатки {result.wasteScore} · порции на пару
         </p>
         {result.warnings.map((warning) => (
           <p key={warning} className="mt-2 text-sm text-clay">

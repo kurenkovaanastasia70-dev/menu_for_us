@@ -1,8 +1,11 @@
 import { Screen } from "@/components/layout/Shell";
+import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/field";
 import { useApp } from "@/context/AppContext";
+import { ageFromBirthDate, calculateNutritionTargets } from "@/lib/nutrition/calculator";
+import { calculateWeightPlan } from "@/lib/nutrition/weight-goal";
 import { STORES } from "@/lib/optimizer";
 import { generateWeek } from "@/lib/planning/generate-week";
 import { cashbackInput, constraintsFromProfiles, peopleFromProfiles } from "@/lib/planning/from-profiles";
@@ -11,7 +14,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function PlanPage() {
-  const { household, members, cashback, profile, refresh } = useApp();
+  const { household, members, cashback, profile, fridge, refresh } = useApp();
   const navigate = useNavigate();
   const [days, setDays] = useState(household?.default_days ?? 7);
   const [budget, setBudget] = useState(household?.default_budget ?? 6000);
@@ -24,6 +27,7 @@ export function PlanPage() {
   const [error, setError] = useState("");
 
   const selectedStores = useMemo(() => new Set(stores), [stores]);
+  const names = members.map((member) => member.name).join(" и ");
 
   async function run() {
     if (!household || members.length === 0) {
@@ -39,6 +43,7 @@ export function PlanPage() {
         days: Number(days),
         budget: Number(budget),
         cashback: cashbackInput(cashback),
+        fridge: fridge.map((item) => ({ productId: item.product_id, grams: item.grams })),
         useLlm: true,
         constraints: {
           ...constraints,
@@ -70,11 +75,56 @@ export function PlanPage() {
   }
 
   return (
-    <Screen title="Планирование">
+    <Screen title="Меню на пару">
+      <Card className="mb-4">
+        <p className="text-sm">
+          Нажмите «Рассчитать» — блюда и граммовки будут на {members.length < 2 ? "одного человека" : `двоих: ${names}`}.
+          Второй человек подключается кодом в Профиле.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Цены берутся из каталога приложения (типичные ценники на 1 августа 2026, Пятёрочка / Магнит / Перекрёсток /
+          Дикси) плюс ваш cashback. Это не парсинг сайта магазина.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Срок меню ({days} дн.) — это длина корзины. Срок цели по весу считается отдельно в профиле.
+        </p>
+      </Card>
+
+      <div className="mb-4 space-y-3">
+        {members.map((member) => {
+          const nutrition = calculateNutritionTargets({
+            gender: member.gender,
+            ageYears: ageFromBirthDate(member.birth_date),
+            heightCm: Number(member.height_cm),
+            weightKg: Number(member.weight_kg),
+            activityLevel: member.activity_level,
+            goal: member.goal,
+            targetWeightKg: Number(member.target_weight_kg ?? member.weight_kg),
+            goalWeeks: member.goal_weeks ?? undefined,
+          });
+          return (
+            <div key={member.id}>
+              <p className="mb-2 text-sm font-semibold">{member.name}</p>
+              <WeightGoalCard
+                plan={calculateWeightPlan({
+                  currentKg: Number(member.weight_kg),
+                  targetKg: Number(member.target_weight_kg ?? member.weight_kg),
+                  tdee: nutrition.tdee,
+                  calorieTarget: member.calorie_target,
+                  goal: member.goal,
+                  goalWeeks: member.goal_weeks ?? undefined,
+                  menuDays: Number(days),
+                })}
+              />
+            </div>
+          );
+        })}
+      </div>
+
       <Card className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>Дней</Label>
+            <Label>Дней меню</Label>
             <Input type="number" min={1} max={14} value={days} onChange={(e) => setDays(Number(e.target.value))} />
           </div>
           <div>
@@ -82,7 +132,6 @@ export function PlanPage() {
             <Input type="number" min={500} value={budget} onChange={(e) => setBudget(Number(e.target.value))} />
           </div>
         </div>
-        <p className="text-sm text-muted">{members.length || 1} человека · до {cookTime} минут</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Приёмы пищи</Label>
@@ -124,10 +173,16 @@ export function PlanPage() {
             ))}
           </div>
         </div>
+        <p className="text-sm text-muted">
+          Холодильник: {fridge.length} позиций.{" "}
+          <button className="font-semibold text-sage" onClick={() => navigate("/fridge")}>
+            Отметить, что уже есть
+          </button>
+        </p>
       </Card>
       {error && <p className="mt-4 text-sm text-clay">{error}</p>}
       <Button className="mt-4 w-full" disabled={pending} onClick={run}>
-        {pending ? "Считаем…" : "Рассчитать"}
+        {pending ? "Считаем…" : "Рассчитать меню на пару"}
       </Button>
     </Screen>
   );

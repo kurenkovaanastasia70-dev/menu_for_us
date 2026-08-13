@@ -1,8 +1,11 @@
 import { EmptyHint, Screen } from "@/components/layout/Shell";
+import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatRub } from "@/lib/cn";
+import { ageFromBirthDate, calculateNutritionTargets } from "@/lib/nutrition/calculator";
+import { calculateWeightPlan } from "@/lib/nutrition/weight-goal";
 import type { OptimizationResult } from "@/lib/optimizer";
 import { useNavigate } from "react-router-dom";
 
@@ -15,41 +18,98 @@ const mealLabels: Record<string, string> = {
 };
 
 export function DashboardPage() {
-  const { latestPlan, members, household, error, offlineCache } = useApp();
+  const { latestPlan, members, household, error, offlineCache, fridge } = useApp();
   const navigate = useNavigate();
   const result = latestPlan?.result_json as OptimizationResult | undefined;
-  const calories = latestPlan?.calories_per_day ?? members.reduce((sum, p) => sum + p.calorie_target, 0) / Math.max(members.length, 1);
-  const protein = latestPlan?.protein_per_day ?? members.reduce((sum, p) => sum + Number(p.protein_target), 0) / Math.max(members.length, 1);
+  const calories = members.reduce((sum, p) => sum + p.calorie_target, 0);
+  const names = members.map((member) => member.name).join(" и ");
 
   return (
     <Screen title="Моя неделя">
-      {error && <p className="mb-4 rounded-2xl bg-white px-4 py-3 text-sm text-clay">{error}{offlineCache ? " (кэш)" : ""}</p>}
-      <Card className="bg-[linear-gradient(180deg,#fff, #f4eee4)]">
-        <p className="text-sm text-muted">
-          {members.length} {members.length === 1 ? "человек" : "человека"}
-          {latestPlan ? ` · ${latestPlan.days} дней` : ""}
+      {error && (
+        <p className="mb-4 rounded-2xl bg-white px-4 py-3 text-sm text-clay">
+          {error}
+          {offlineCache ? " (кэш)" : ""}
         </p>
-        <div className="mt-3 flex items-end justify-between gap-4">
+      )}
+      <Card>
+        <p className="text-sm font-semibold text-sage">Меню на пару</p>
+        <p className="mt-1 text-sm text-muted">
+          {members.length < 2
+            ? "Пока заполнен один профиль. Пригласите второго человека кодом в разделе Профиль — порции тогда будут на двоих."
+            : `Считаем сразу на двоих: ${names}. Калории, БЖУ, клетчатка и железо складываются.`}
+        </p>
+        <div className="mt-4 flex items-end justify-between gap-4">
           <div>
-            <div className="font-display text-4xl">{Math.round(calories)}</div>
+            <div className="font-display text-4xl">{Math.round(latestPlan?.calories_per_day ?? calories)}</div>
             <div className="text-sm text-muted">kcal / день на пару</div>
           </div>
           <div className="text-right">
-            <div className="font-display text-3xl">{formatRub(latestPlan?.effective_price ?? household?.default_budget ?? 0)}</div>
-            <div className="text-sm text-muted">{Math.round(protein)} g protein</div>
+            <div className="font-display text-3xl">
+              {formatRub(latestPlan?.effective_price ?? household?.default_budget ?? 0)}
+            </div>
+            <div className="text-sm text-muted">{latestPlan ? `${latestPlan.days} дней меню` : "бюджет"}</div>
           </div>
         </div>
+        <div className="mt-4 space-y-2 text-sm">
+          {members.map((member) => (
+            <div key={member.id} className="flex justify-between rounded-2xl bg-cream px-3 py-2">
+              <span>{member.name}</span>
+              <span>
+                {member.calorie_target} kcal · {member.fiber_target ?? 25} г клетч. · {member.iron_target ?? 8} мг Fe
+              </span>
+            </div>
+          ))}
+        </div>
         <div className="mt-5 grid gap-2">
-          <Button onClick={() => navigate(latestPlan ? `/menu/${latestPlan.id}` : "/plan")}>
+          <Button onClick={() => navigate("/plan")}>Составить меню на пару</Button>
+          <Button variant="secondary" onClick={() => navigate(latestPlan ? `/menu/${latestPlan.id}` : "/plan")}>
             Посмотреть меню
           </Button>
-          <Button variant="secondary" onClick={() => navigate(latestPlan ? `/cart/${latestPlan.id}` : "/cart")}>
-            Посмотреть корзину
-          </Button>
-          <Button variant="ghost" onClick={() => navigate("/plan")}>
-            Составить новую неделю
+          <Button variant="ghost" onClick={() => navigate(latestPlan ? `/cart/${latestPlan.id}` : "/cart")}>
+            Корзина
           </Button>
         </div>
+      </Card>
+
+      <div className="mt-4 space-y-3">
+        {members.map((member) => {
+          const nutrition = calculateNutritionTargets({
+            gender: member.gender,
+            ageYears: ageFromBirthDate(member.birth_date),
+            heightCm: Number(member.height_cm),
+            weightKg: Number(member.weight_kg),
+            activityLevel: member.activity_level,
+            goal: member.goal,
+            targetWeightKg: Number(member.target_weight_kg ?? member.weight_kg),
+            goalWeeks: member.goal_weeks ?? undefined,
+          });
+          const plan = calculateWeightPlan({
+            currentKg: Number(member.weight_kg),
+            targetKg: Number(member.target_weight_kg ?? member.weight_kg),
+            tdee: nutrition.tdee,
+            calorieTarget: member.calorie_target,
+            goal: member.goal,
+            goalWeeks: member.goal_weeks ?? undefined,
+            menuDays: latestPlan?.days ?? household?.default_days ?? 7,
+          });
+          return (
+            <div key={`goal-${member.id}`}>
+              <p className="mb-2 text-sm font-semibold">{member.name}</p>
+              <WeightGoalCard plan={plan} />
+            </div>
+          );
+        })}
+      </div>
+
+      <Card className="mt-4">
+        <p className="text-sm text-muted">
+          В холодильнике {fridge.length} продукт(ов). Они вычитаются из покупки. Цены — из каталога приложения
+          (типичные ценники Пятёрочки, Магнита, Перекрёстка и Дикси), не с сайта магазина в реальном времени.
+        </p>
+        <Button className="mt-3 w-full" variant="secondary" onClick={() => navigate("/fridge")}>
+          Что уже есть дома
+        </Button>
       </Card>
 
       {result ? (
@@ -73,7 +133,11 @@ export function DashboardPage() {
         </div>
       ) : (
         <div className="mt-6">
-          <EmptyHint text="Пока нет сохранённой недели." cta="Составить неделю" onClick={() => navigate("/plan")} />
+          <EmptyHint
+            text="Нет сохранённой недели. Нажмите «Составить меню на пару» — порции будут на всех, кто в профилях."
+            cta="Составить меню на пару"
+            onClick={() => navigate("/plan")}
+          />
         </div>
       )}
     </Screen>

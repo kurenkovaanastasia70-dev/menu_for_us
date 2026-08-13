@@ -1,6 +1,6 @@
 import type { OptimizationResult } from "@/lib/optimizer";
 import { supabase } from "./client";
-import type { CashbackRuleRow, Household, MealPlanRow, Profile } from "./types";
+import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile } from "./types";
 
 function requireClient() {
   if (!supabase) throw new Error("Supabase не настроен");
@@ -15,7 +15,12 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 
 export async function upsertProfile(profile: Omit<Profile, "id"> & { id?: string }): Promise<Profile> {
   const { data, error } = await requireClient().from("profiles").upsert(profile).select("*").single();
-  if (error) throw error;
+  if (error) {
+    const { fiber_target, iron_target, goal_weeks, ...rest } = profile;
+    const retry = await requireClient().from("profiles").upsert(rest).select("*").single();
+    if (retry.error) throw retry.error;
+    return retry.data as Profile;
+  }
   return data as Profile;
 }
 
@@ -245,4 +250,61 @@ export async function replaceCartItems(planId: string, householdId: string, resu
     );
     if (itemsError) throw itemsError;
   }
+}
+
+const FRIDGE_KEY = (id: string) => `menu-for-us-fridge-${id}`;
+
+function readLocalFridge(householdId: string): FridgeItem[] {
+  try {
+    const raw = localStorage.getItem(FRIDGE_KEY(householdId));
+    return raw ? (JSON.parse(raw) as FridgeItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalFridge(householdId: string, items: FridgeItem[]) {
+  localStorage.setItem(FRIDGE_KEY(householdId), JSON.stringify(items));
+}
+
+export async function fetchFridge(householdId: string): Promise<FridgeItem[]> {
+  const local = readLocalFridge(householdId);
+  try {
+    const { data, error } = await requireClient().from("fridge_items").select("*").eq("household_id", householdId);
+    if (error) return local;
+    const rows = (data ?? []) as FridgeItem[];
+    writeLocalFridge(householdId, rows);
+    return rows;
+  } catch {
+    return local;
+  }
+}
+
+export async function upsertFridgeItem(item: FridgeItem): Promise<FridgeItem[]> {
+  const current = await fetchFridge(item.household_id);
+  const next = [...current.filter((row) => row.product_id !== item.product_id), item];
+  writeLocalFridge(item.household_id, next);
+  try {
+    const { error } = await requireClient()
+      .from("fridge_items")
+      .upsert(
+        { household_id: item.household_id, product_id: item.product_id, grams: item.grams },
+        { onConflict: "household_id,product_id" },
+      );
+    if (error) return next;
+    return fetchFridge(item.household_id);
+  } catch {
+    return next;
+  }
+}
+
+export async function deleteFridgeItem(householdId: string, productId: string): Promise<FridgeItem[]> {
+  const next = (await fetchFridge(householdId)).filter((row) => row.product_id !== productId);
+  writeLocalFridge(householdId, next);
+  try {
+    await requireClient().from("fridge_items").delete().eq("household_id", householdId).eq("product_id", productId);
+  } catch {
+    // local copy is enough until SQL is applied
+  }
+  return next;
 }

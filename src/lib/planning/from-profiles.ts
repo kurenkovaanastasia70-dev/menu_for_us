@@ -1,16 +1,23 @@
 import type { OptimizationInput } from "@/lib/optimizer";
-import type { CashbackRuleRow, Household, Profile } from "@/lib/supabase/types";
+import type { CashbackRuleRow, FridgeItem, Household, Profile } from "@/lib/supabase/types";
 import { catalog } from "@/lib/catalog/repository";
+import { ageFromBirthDate } from "@/lib/nutrition/calculator";
+import { fiberTargetFor, ironTargetFor } from "@/lib/nutrition/weight-goal";
 
 export function peopleFromProfiles(profiles: Profile[]) {
-  return profiles.map((profile) => ({
-    id: profile.id,
-    name: profile.name,
-    calorieTarget: profile.calorie_target,
-    proteinTarget: Number(profile.protein_target),
-    fatTarget: Number(profile.fat_target),
-    carbsTarget: Number(profile.carbs_target),
-  }));
+  return profiles.map((profile) => {
+    const age = ageFromBirthDate(profile.birth_date);
+    return {
+      id: profile.id,
+      name: profile.name,
+      calorieTarget: profile.calorie_target,
+      proteinTarget: Number(profile.protein_target),
+      fatTarget: Number(profile.fat_target),
+      carbsTarget: Number(profile.carbs_target),
+      fiberTarget: Number(profile.fiber_target) || fiberTargetFor(profile.gender),
+      ironTarget: Number(profile.iron_target) || ironTargetFor(profile.gender, age),
+    };
+  });
 }
 
 export function constraintsFromProfiles(profiles: Profile[], household: Household): OptimizationInput["constraints"] {
@@ -41,6 +48,7 @@ export function makeOptimizationInput(args: {
   cashback: CashbackRuleRow[];
   days: number;
   budget: number;
+  fridge?: FridgeItem[];
 }): OptimizationInput {
   const people = peopleFromProfiles(args.profiles);
   return {
@@ -51,12 +59,15 @@ export function makeOptimizationInput(args: {
       protein: people.reduce((sum, person) => sum + person.proteinTarget, 0),
       fat: people.reduce((sum, person) => sum + person.fatTarget, 0),
       carbs: people.reduce((sum, person) => sum + person.carbsTarget, 0),
+      fiber: people.reduce((sum, person) => sum + person.fiberTarget, 0),
+      iron: people.reduce((sum, person) => sum + person.ironTarget, 0),
     },
     budget: args.budget,
     products: catalog.getProducts(),
     prices: catalog.getStoreProducts(),
     recipes: catalog.getRecipes(),
     cashback: cashbackInput(args.cashback),
+    fridge: (args.fridge ?? []).map((item) => ({ productId: item.product_id, grams: item.grams })),
     constraints: constraintsFromProfiles(args.profiles, args.household),
   };
 }

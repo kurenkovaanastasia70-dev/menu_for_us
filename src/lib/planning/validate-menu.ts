@@ -13,6 +13,12 @@ export function validateMenuNutrition(
   if (nutritionSummary.proteinPerDay < input.macroTargets.protein * 0.85) {
     warnings.push("Белка меньше целевого уровня.");
   }
+  if (nutritionSummary.fiberPerDay < input.macroTargets.fiber * 0.85) {
+    warnings.push("Клетчатки меньше нормы на человека.");
+  }
+  if (nutritionSummary.ironPerDay < input.macroTargets.iron * 0.85) {
+    warnings.push("Железа меньше нормы на человека.");
+  }
   if (result.effectiveCost > input.budget) {
     warnings.push("Итоговая стоимость превышает бюджет после пересчёта.");
   }

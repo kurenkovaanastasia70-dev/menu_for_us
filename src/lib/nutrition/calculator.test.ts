@@ -65,6 +65,8 @@ describe("nutrition calculator", () => {
     expect(result.bmr).toBeGreaterThan(1200);
     expect(result.calorieTarget).toBeLessThan(result.tdee);
     expect(result.proteinTarget).toBeGreaterThan(100);
+    expect(result.fiberTarget).toBe(25);
+    expect(result.ironTarget).toBe(18);
     expect(result.fatTarget).toBeGreaterThan(0);
     expect(result.carbsTarget).toBeGreaterThan(0);
   });

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Input, Label, Select } from "@/components/ui/field";
 import { useApp } from "@/context/AppContext";
 import { catalog } from "@/lib/catalog/repository";
@@ -10,6 +11,7 @@ import {
   type Gender,
   type Goal,
 } from "@/lib/nutrition/calculator";
+import { calculateWeightPlan, suggestedWeeks } from "@/lib/nutrition/weight-goal";
 import { createHousehold, joinHousehold, upsertProfile } from "@/lib/supabase/api";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +49,7 @@ export function OnboardingPage() {
     max_cooking_time: profile?.max_cooking_time ?? 40,
     cooking_sessions: profile?.cooking_sessions ?? 3,
     batch_meals: profile?.batch_meals ?? true,
+    goal_weeks: profile?.goal_weeks ?? suggestedWeeks(profile?.weight_kg ?? 62, profile?.target_weight_kg ?? 58),
   });
 
   const nutrition = useMemo(
@@ -59,6 +62,7 @@ export function OnboardingPage() {
         activityLevel: form.activity_level,
         goal: form.goal,
         targetWeightKg: Number(form.target_weight_kg),
+        goalWeeks: Number(form.goal_weeks) || undefined,
       }),
     [form],
   );
@@ -92,6 +96,9 @@ export function OnboardingPage() {
         protein_target: nutrition.proteinTarget,
         fat_target: nutrition.fatTarget,
         carbs_target: nutrition.carbsTarget,
+        fiber_target: nutrition.fiberTarget,
+        iron_target: nutrition.ironTarget,
+        goal_weeks: Number(form.goal_weeks) || null,
         meals_per_day: Number(form.meals_per_day),
         snacks: form.snacks,
         preferences: [],
@@ -195,16 +202,42 @@ export function OnboardingPage() {
                 <option value="gain">Набор</option>
               </Select>
             </div>
+            {form.goal !== "maintain" && (
+              <div>
+                <Label>За сколько недель хотите выйти на цель</Label>
+                <Input
+                  type="number"
+                  min={4}
+                  max={52}
+                  value={form.goal_weeks}
+                  onChange={(e) => set("goal_weeks", Number(e.target.value))}
+                />
+              </div>
+            )}
           </Card>
+          <WeightGoalCard
+            plan={calculateWeightPlan({
+              currentKg: Number(form.weight_kg),
+              targetKg: Number(form.target_weight_kg),
+              tdee: nutrition.tdee,
+              calorieTarget: nutrition.calorieTarget,
+              goal: form.goal,
+              goalWeeks: Number(form.goal_weeks) || undefined,
+              menuDays: 7,
+            })}
+          />
           <Card>
             <p className="text-sm text-muted">Ориентировочный расчёт, не медицинская рекомендация</p>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <Stat label="BMR" value={`${Math.round(nutrition.bmr)}`} />
               <Stat label="TDEE" value={`${Math.round(nutrition.tdee)}`} />
-              <Stat label="Цель" value={`${nutrition.calorieTarget}`} />
+              <Stat label="Ккал/день" value={`${nutrition.calorieTarget}`} />
             </div>
             <p className="mt-3 text-sm">
               {nutrition.proteinTarget} г белка · {nutrition.fatTarget} г жиров · {nutrition.carbsTarget} г углеводов
+            </p>
+            <p className="mt-1 text-sm">
+              Клетчатка {nutrition.fiberTarget} г · железо {nutrition.ironTarget} мг в день
             </p>
           </Card>
           <Card className="space-y-4">
@@ -254,7 +287,9 @@ export function OnboardingPage() {
       ) : (
         <div className="mt-6 space-y-4">
           <Card className="space-y-4">
-            <p className="text-muted">Создайте домашнюю пару или присоединитесь по коду.</p>
+            <p className="text-muted">
+              Меню всегда считается на всех в паре. Создайте пару и отправьте код второму человеку — или введите его код.
+            </p>
             <div>
               <Label>Название</Label>
               <Input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} />

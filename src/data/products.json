@@ -7,6 +7,8 @@
     "protein_per_100g": 23.6,
     "fat_per_100g": 1.9,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.4,
     "package_weight": 900,
     "unit": "g",
     "tags": [
@@ -22,6 +24,8 @@
     "protein_per_100g": 21,
     "fat_per_100g": 11,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1,
     "package_weight": 900,
     "unit": "g",
     "tags": [
@@ -37,6 +41,8 @@
     "protein_per_100g": 24,
     "fat_per_100g": 1.9,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.7,
     "package_weight": 600,
     "unit": "g",
     "tags": [
@@ -52,6 +58,8 @@
     "protein_per_100g": 20,
     "fat_per_100g": 8,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.1,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -67,6 +75,8 @@
     "protein_per_100g": 18,
     "fat_per_100g": 8,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.9,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -82,6 +92,8 @@
     "protein_per_100g": 22,
     "fat_per_100g": 11,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 2.6,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -97,6 +109,8 @@
     "protein_per_100g": 17,
     "fat_per_100g": 20,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 2.4,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -112,6 +126,8 @@
     "protein_per_100g": 21,
     "fat_per_100g": 6,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -127,6 +143,8 @@
     "protein_per_100g": 20,
     "fat_per_100g": 13,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.8,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -141,6 +159,8 @@
     "protein_per_100g": 16,
     "fat_per_100g": 0.9,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.3,
     "package_weight": 700,
     "unit": "g",
     "tags": [
@@ -155,6 +175,8 @@
     "protein_per_100g": 18,
     "fat_per_100g": 0.7,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.4,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -169,6 +191,8 @@
     "protein_per_100g": 21,
     "fat_per_100g": 1,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.4,
     "package_weight": 185,
     "unit": "g",
     "tags": [
@@ -183,6 +207,8 @@
     "protein_per_100g": 20,
     "fat_per_100g": 1.1,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.8,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -197,6 +223,8 @@
     "protein_per_100g": 13,
     "fat_per_100g": 11,
     "carbs_per_100g": 1,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.8,
     "package_weight": 600,
     "unit": "g",
     "tags": [
@@ -211,6 +239,8 @@
     "protein_per_100g": 8,
     "fat_per_100g": 4.8,
     "carbs_per_100g": 1.9,
+    "fiber_per_100g": 0.3,
+    "iron_per_100g": 2.7,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -226,6 +256,8 @@
     "protein_per_100g": 9,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 20,
+    "fiber_per_100g": 7.9,
+    "iron_per_100g": 3.3,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -241,6 +273,8 @@
     "protein_per_100g": 8.9,
     "fat_per_100g": 2.6,
     "carbs_per_100g": 27,
+    "fiber_per_100g": 7.6,
+    "iron_per_100g": 2.9,
     "package_weight": 450,
     "unit": "g",
     "tags": [
@@ -256,6 +290,8 @@
     "protein_per_100g": 8.7,
     "fat_per_100g": 0.5,
     "carbs_per_100g": 22,
+    "fiber_per_100g": 6.4,
+    "iron_per_100g": 2.1,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -271,6 +307,8 @@
     "protein_per_100g": 17,
     "fat_per_100g": 5,
     "carbs_per_100g": 1.8,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.4,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -285,6 +323,8 @@
     "protein_per_100g": 8,
     "fat_per_100g": 2,
     "carbs_per_100g": 3.5,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 250,
     "unit": "g",
     "tags": [
@@ -299,6 +339,8 @@
     "protein_per_100g": 4,
     "fat_per_100g": 2.5,
     "carbs_per_100g": 6,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -313,6 +355,8 @@
     "protein_per_100g": 2.9,
     "fat_per_100g": 2.5,
     "carbs_per_100g": 4.8,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 900,
     "unit": "ml",
     "tags": [
@@ -327,6 +371,8 @@
     "protein_per_100g": 3,
     "fat_per_100g": 2.5,
     "carbs_per_100g": 4,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 900,
     "unit": "ml",
     "tags": [
@@ -341,6 +387,8 @@
     "protein_per_100g": 3,
     "fat_per_100g": 4,
     "carbs_per_100g": 4.2,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 450,
     "unit": "ml",
     "tags": [
@@ -355,6 +403,8 @@
     "protein_per_100g": 23,
     "fat_per_100g": 28,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -369,6 +419,8 @@
     "protein_per_100g": 18,
     "fat_per_100g": 22,
     "carbs_per_100g": 2,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -383,6 +435,8 @@
     "protein_per_100g": 14,
     "fat_per_100g": 21,
     "carbs_per_100g": 4,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -397,6 +451,8 @@
     "protein_per_100g": 2.6,
     "fat_per_100g": 15,
     "carbs_per_100g": 3,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -411,6 +467,8 @@
     "protein_per_100g": 2.7,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 28,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 900,
     "unit": "g",
     "tags": [
@@ -425,6 +483,8 @@
     "protein_per_100g": 4.5,
     "fat_per_100g": 1.6,
     "carbs_per_100g": 25,
+    "fiber_per_100g": 3.7,
+    "iron_per_100g": 1.3,
     "package_weight": 900,
     "unit": "g",
     "tags": [
@@ -439,6 +499,8 @@
     "protein_per_100g": 13,
     "fat_per_100g": 6.2,
     "carbs_per_100g": 65,
+    "fiber_per_100g": 10.1,
+    "iron_per_100g": 4.3,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -453,6 +515,8 @@
     "protein_per_100g": 11,
     "fat_per_100g": 1.3,
     "carbs_per_100g": 71,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 450,
     "unit": "g",
     "tags": [
@@ -467,6 +531,8 @@
     "protein_per_100g": 13,
     "fat_per_100g": 2,
     "carbs_per_100g": 70,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -481,6 +547,8 @@
     "protein_per_100g": 2,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 17,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 2000,
     "unit": "g",
     "tags": [
@@ -495,6 +563,8 @@
     "protein_per_100g": 9,
     "fat_per_100g": 3.3,
     "carbs_per_100g": 43,
+    "fiber_per_100g": 6,
+    "iron_per_100g": 2.5,
     "package_weight": 350,
     "unit": "g",
     "tags": [
@@ -509,6 +579,8 @@
     "protein_per_100g": 4.4,
     "fat_per_100g": 1.9,
     "carbs_per_100g": 21,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.5,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -523,6 +595,8 @@
     "protein_per_100g": 3.1,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 19,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 450,
     "unit": "g",
     "tags": [
@@ -537,6 +611,8 @@
     "protein_per_100g": 3.8,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 23,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 450,
     "unit": "g",
     "tags": [
@@ -551,6 +627,8 @@
     "protein_per_100g": 3.5,
     "fat_per_100g": 1,
     "carbs_per_100g": 23,
+    "fiber_per_100g": 1.3,
+    "iron_per_100g": 0.8,
     "package_weight": 800,
     "unit": "g",
     "tags": [
@@ -565,6 +643,8 @@
     "protein_per_100g": 2.3,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 28,
+    "fiber_per_100g": 3.8,
+    "iron_per_100g": 1.3,
     "package_weight": 800,
     "unit": "g",
     "tags": [
@@ -579,6 +659,8 @@
     "protein_per_100g": 4.5,
     "fat_per_100g": 0.5,
     "carbs_per_100g": 28,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -593,6 +675,8 @@
     "protein_per_100g": 0.9,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 3.9,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -607,6 +691,8 @@
     "protein_per_100g": 0.8,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 3.6,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -621,6 +707,8 @@
     "protein_per_100g": 1.1,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 9,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -635,6 +723,8 @@
     "protein_per_100g": 6.4,
     "fat_per_100g": 0.5,
     "carbs_per_100g": 33,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 150,
     "unit": "g",
     "tags": [
@@ -649,6 +739,8 @@
     "protein_per_100g": 0.9,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 10,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -663,6 +755,8 @@
     "protein_per_100g": 1.3,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 6,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 1500,
     "unit": "g",
     "tags": [
@@ -677,6 +771,8 @@
     "protein_per_100g": 2.8,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 7,
+    "fiber_per_100g": 2.6,
+    "iron_per_100g": 0.7,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -691,6 +787,8 @@
     "protein_per_100g": 2.9,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 3.6,
+    "fiber_per_100g": 2.2,
+    "iron_per_100g": 2.7,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -705,6 +803,8 @@
     "protein_per_100g": 1,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 6,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -719,6 +819,8 @@
     "protein_per_100g": 1.2,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 3.4,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 800,
     "unit": "g",
     "tags": [
@@ -733,6 +835,8 @@
     "protein_per_100g": 1.1,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 6,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 600,
     "unit": "g",
     "tags": [
@@ -747,6 +851,8 @@
     "protein_per_100g": 1.6,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 10,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 0.8,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -761,6 +867,8 @@
     "protein_per_100g": 0.9,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 3,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -776,6 +884,8 @@
     "protein_per_100g": 4.3,
     "fat_per_100g": 1,
     "carbs_per_100g": 1,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -790,6 +900,8 @@
     "protein_per_100g": 0.9,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 3.9,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 250,
     "unit": "g",
     "tags": [
@@ -804,6 +916,8 @@
     "protein_per_100g": 1.8,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 7,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -818,6 +932,8 @@
     "protein_per_100g": 1.9,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 5,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -832,6 +948,8 @@
     "protein_per_100g": 1,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 7,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 0.8,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -846,6 +964,8 @@
     "protein_per_100g": 3.3,
     "fat_per_100g": 1.4,
     "carbs_per_100g": 19,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 340,
     "unit": "g",
     "tags": [
@@ -860,6 +980,8 @@
     "protein_per_100g": 5.4,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 14,
+    "fiber_per_100g": 5.1,
+    "iron_per_100g": 1.5,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -874,6 +996,8 @@
     "protein_per_100g": 0.7,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 3,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -888,6 +1012,8 @@
     "protein_per_100g": 3.5,
     "fat_per_100g": 0.5,
     "carbs_per_100g": 7,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 50,
     "unit": "g",
     "tags": [
@@ -902,6 +1028,8 @@
     "protein_per_100g": 3,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 6,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 50,
     "unit": "g",
     "tags": [
@@ -916,6 +1044,8 @@
     "protein_per_100g": 1.8,
     "fat_per_100g": 0.8,
     "carbs_per_100g": 18,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 100,
     "unit": "g",
     "tags": [
@@ -930,6 +1060,8 @@
     "protein_per_100g": 1.1,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 23,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -944,6 +1076,8 @@
     "protein_per_100g": 0.3,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 14,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -958,6 +1092,8 @@
     "protein_per_100g": 0.9,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 12,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -972,6 +1108,8 @@
     "protein_per_100g": 1.1,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 9,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -986,6 +1124,8 @@
     "protein_per_100g": 0.7,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 9,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -1000,6 +1140,8 @@
     "protein_per_100g": 1.1,
     "fat_per_100g": 0.5,
     "carbs_per_100g": 15,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -1014,6 +1156,8 @@
     "protein_per_100g": 0.4,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 15,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.3,
     "package_weight": 800,
     "unit": "g",
     "tags": [
@@ -1028,6 +1172,8 @@
     "protein_per_100g": 0,
     "fat_per_100g": 100,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0.4,
+    "iron_per_100g": 0.3,
     "package_weight": 500,
     "unit": "ml",
     "tags": [
@@ -1042,6 +1188,8 @@
     "protein_per_100g": 0,
     "fat_per_100g": 100,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0.4,
+    "iron_per_100g": 0.3,
     "package_weight": 900,
     "unit": "ml",
     "tags": [
@@ -1056,6 +1204,8 @@
     "protein_per_100g": 0.5,
     "fat_per_100g": 82.5,
     "carbs_per_100g": 0.8,
+    "fiber_per_100g": 0.4,
+    "iron_per_100g": 0.3,
     "package_weight": 180,
     "unit": "g",
     "tags": [
@@ -1071,6 +1221,8 @@
     "protein_per_100g": 2,
     "fat_per_100g": 15,
     "carbs_per_100g": 9,
+    "fiber_per_100g": 6.7,
+    "iron_per_100g": 0.6,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -1086,6 +1238,8 @@
     "protein_per_100g": 15,
     "fat_per_100g": 65,
     "carbs_per_100g": 14,
+    "fiber_per_100g": 6.7,
+    "iron_per_100g": 2.9,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -1100,6 +1254,8 @@
     "protein_per_100g": 18,
     "fat_per_100g": 42,
     "carbs_per_100g": 29,
+    "fiber_per_100g": 27,
+    "iron_per_100g": 5.7,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -1114,6 +1270,8 @@
     "protein_per_100g": 25,
     "fat_per_100g": 50,
     "carbs_per_100g": 20,
+    "fiber_per_100g": 0.4,
+    "iron_per_100g": 0.3,
     "package_weight": 250,
     "unit": "g",
     "tags": [
@@ -1128,6 +1286,8 @@
     "protein_per_100g": 10,
     "fat_per_100g": 1,
     "carbs_per_100g": 76,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -1142,6 +1302,8 @@
     "protein_per_100g": 0,
     "fat_per_100g": 0,
     "carbs_per_100g": 100,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 1000,
     "unit": "g",
     "tags": [
@@ -1156,6 +1318,8 @@
     "protein_per_100g": 0,
     "fat_per_100g": 0,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -1170,6 +1334,8 @@
     "protein_per_100g": 0.3,
     "fat_per_100g": 0,
     "carbs_per_100g": 82,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 250,
     "unit": "g",
     "tags": [
@@ -1184,6 +1350,8 @@
     "protein_per_100g": 6,
     "fat_per_100g": 0,
     "carbs_per_100g": 7,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 250,
     "unit": "ml",
     "tags": [
@@ -1198,6 +1366,8 @@
     "protein_per_100g": 4.3,
     "fat_per_100g": 0.5,
     "carbs_per_100g": 19,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 140,
     "unit": "g",
     "tags": [
@@ -1212,6 +1382,8 @@
     "protein_per_100g": 1.2,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 5,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -1226,6 +1398,8 @@
     "protein_per_100g": 5,
     "fat_per_100g": 0,
     "carbs_per_100g": 17,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 250,
     "unit": "ml",
     "tags": [
@@ -1240,6 +1414,8 @@
     "protein_per_100g": 6,
     "fat_per_100g": 10,
     "carbs_per_100g": 11,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 170,
     "unit": "g",
     "tags": [
@@ -1254,6 +1430,8 @@
     "protein_per_100g": 0,
     "fat_per_100g": 0,
     "carbs_per_100g": 0.9,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 500,
     "unit": "ml",
     "tags": [
@@ -1268,6 +1446,8 @@
     "protein_per_100g": 10,
     "fat_per_100g": 7,
     "carbs_per_100g": 50,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 50,
     "unit": "g",
     "tags": [
@@ -1282,6 +1462,8 @@
     "protein_per_100g": 0.8,
     "fat_per_100g": 67,
     "carbs_per_100g": 2.6,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -1296,6 +1478,8 @@
     "protein_per_100g": 1.8,
     "fat_per_100g": 0.3,
     "carbs_per_100g": 23,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 350,
     "unit": "g",
     "tags": [
@@ -1310,6 +1494,8 @@
     "protein_per_100g": 0.4,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 62,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 350,
     "unit": "g",
     "tags": [
@@ -1324,6 +1510,8 @@
     "protein_per_100g": 6,
     "fat_per_100g": 35,
     "carbs_per_100g": 52,
+    "fiber_per_100g": 10.9,
+    "iron_per_100g": 11.9,
     "package_weight": 90,
     "unit": "g",
     "tags": [
@@ -1338,6 +1526,8 @@
     "protein_per_100g": 10,
     "fat_per_100g": 2.5,
     "carbs_per_100g": 64,
+    "fiber_per_100g": 2,
+    "iron_per_100g": 1.2,
     "package_weight": 100,
     "unit": "g",
     "tags": [
@@ -1352,6 +1542,8 @@
     "protein_per_100g": 8,
     "fat_per_100g": 10,
     "carbs_per_100g": 14,
+    "fiber_per_100g": 6,
+    "iron_per_100g": 2.4,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -1367,6 +1559,8 @@
     "protein_per_100g": 9,
     "fat_per_100g": 1.2,
     "carbs_per_100g": 56,
+    "fiber_per_100g": 2.8,
+    "iron_per_100g": 1.2,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -1381,6 +1575,8 @@
     "protein_per_100g": 2,
     "fat_per_100g": 21,
     "carbs_per_100g": 3,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 400,
     "unit": "ml",
     "tags": [
@@ -1395,6 +1591,8 @@
     "protein_per_100g": 3,
     "fat_per_100g": 7,
     "carbs_per_100g": 12,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 100,
     "unit": "g",
     "tags": [
@@ -1409,6 +1607,8 @@
     "protein_per_100g": 2.2,
     "fat_per_100g": 0.4,
     "carbs_per_100g": 11,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 340,
     "unit": "g",
     "tags": [
@@ -1423,6 +1623,8 @@
     "protein_per_100g": 1,
     "fat_per_100g": 15,
     "carbs_per_100g": 4,
+    "fiber_per_100g": 0.4,
+    "iron_per_100g": 0.3,
     "package_weight": 300,
     "unit": "g",
     "tags": [
@@ -1437,6 +1639,8 @@
     "protein_per_100g": 2.4,
     "fat_per_100g": 0.9,
     "carbs_per_100g": 4.9,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 100,
     "unit": "g",
     "tags": [
@@ -1451,6 +1655,8 @@
     "protein_per_100g": 0.3,
     "fat_per_100g": 0,
     "carbs_per_100g": 13,
+    "fiber_per_100g": 0.5,
+    "iron_per_100g": 1,
     "package_weight": 250,
     "unit": "ml",
     "tags": [
@@ -1465,6 +1671,8 @@
     "protein_per_100g": 18,
     "fat_per_100g": 50,
     "carbs_per_100g": 23,
+    "fiber_per_100g": 0.4,
+    "iron_per_100g": 0.3,
     "package_weight": 100,
     "unit": "g",
     "tags": [
@@ -1479,6 +1687,8 @@
     "protein_per_100g": 1.8,
     "fat_per_100g": 1.2,
     "carbs_per_100g": 3.5,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 500,
     "unit": "ml",
     "tags": [
@@ -1493,6 +1703,8 @@
     "protein_per_100g": 12,
     "fat_per_100g": 15,
     "carbs_per_100g": 12,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 0.1,
     "package_weight": 200,
     "unit": "g",
     "tags": [
@@ -1507,6 +1719,8 @@
     "protein_per_100g": 18,
     "fat_per_100g": 9,
     "carbs_per_100g": 0,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1,
     "package_weight": 400,
     "unit": "g",
     "tags": [
@@ -1521,6 +1735,8 @@
     "protein_per_100g": 20,
     "fat_per_100g": 6,
     "carbs_per_100g": 1,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 9,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -1536,6 +1752,8 @@
     "protein_per_100g": 1.2,
     "fat_per_100g": 0.2,
     "carbs_per_100g": 3.2,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 500,
     "unit": "g",
     "tags": [
@@ -1550,6 +1768,8 @@
     "protein_per_100g": 0.7,
     "fat_per_100g": 0.1,
     "carbs_per_100g": 3.4,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
     "package_weight": 300,
     "unit": "g",
     "tags": [

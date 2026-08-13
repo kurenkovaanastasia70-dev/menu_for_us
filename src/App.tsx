@@ -2,6 +2,7 @@ import { Shell } from "@/components/layout/Shell";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { CartPage } from "@/pages/CartPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { FridgePage } from "@/pages/FridgePage";
 import { HistoryDetailPage } from "@/pages/HistoryDetailPage";
 import { HistoryPage } from "@/pages/HistoryPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="/menu/:planId" element={<MenuPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/cart/:planId" element={<CartPage />} />
+            <Route path="/fridge" element={<FridgePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/history/:planId" element={<HistoryDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />

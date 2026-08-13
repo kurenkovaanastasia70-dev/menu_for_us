@@ -13,7 +13,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export function CartPage() {
   const { planId } = useParams();
-  const { latestPlan, household, members, cashback, refresh } = useApp();
+  const { latestPlan, household, members, cashback, fridge, refresh } = useApp();
   const navigate = useNavigate();
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [purchased, setPurchased] = useState<Record<string, boolean>>({});
@@ -57,8 +57,9 @@ export function CartPage() {
       cashback,
       days: latestPlan.days,
       budget: Number(latestPlan.budget),
+      fridge,
     });
-  }, [household, members, cashback, latestPlan]);
+  }, [household, members, cashback, latestPlan, fridge]);
 
   async function toggle(productId: string) {
     const next = !purchased[productId];
@@ -92,7 +93,11 @@ export function CartPage() {
   return (
     <Screen title="Корзина">
       <Card>
-        <div className="space-y-1 text-sm">
+        <p className="text-sm text-muted">
+          Цены из каталога приложения на 1 августа 2026: типичные ценники Пятёрочки, Магнита, Перекрёстка и Дикси плюс
+          ваш cashback. Это не онлайн-витрина магазина.
+        </p>
+        <div className="mt-3 space-y-1 text-sm">
           <Row label="Стоимость" value={formatRub(result.totalCost)} />
           <Row label="Cashback" value={formatRub(result.cashback)} />
           <Row label="Итого" value={formatRub(result.effectiveCost)} strong />
@@ -112,15 +117,24 @@ export function CartPage() {
               className="mt-1 h-5 w-5"
               checked={Boolean(purchased[line.productId])}
               onChange={() => toggle(line.productId)}
+              disabled={(line.toBuyGrams ?? line.quantityGrams) <= 0}
             />
             <div className="flex-1">
               <div className="font-semibold">{line.productName}</div>
               <div className="text-sm text-muted">
-                {formatGrams(line.quantityGrams)} · {line.packageCount} × {formatGrams(line.packageWeight)} · {line.storeName}
+                нужно {formatGrams(line.quantityGrams)}
+                {line.fromFridgeGrams
+                  ? ` · из холодильника ${formatGrams(line.fromFridgeGrams)}`
+                  : ""}
+                {(line.toBuyGrams ?? line.quantityGrams) > 0
+                  ? ` · купить ${line.packageCount} × ${formatGrams(line.packageWeight)} · ${line.storeName}`
+                  : " · покупать не нужно"}
               </div>
-              <div className="mt-1 text-sm">
-                {formatRub(line.price)} · cashback {line.cashbackPercent}% · итого {formatRub(line.effectivePrice)}
-              </div>
+              {(line.toBuyGrams ?? line.quantityGrams) > 0 && (
+                <div className="mt-1 text-sm">
+                  {formatRub(line.price)} · cashback {line.cashbackPercent}% · итого {formatRub(line.effectivePrice)}
+                </div>
+              )}
               <button className="mt-2 text-sm font-semibold text-sage" onClick={() => setSwapFrom(line.productId)}>
                 Заменить продукт
               </button>

@@ -9,6 +9,8 @@ const chicken: Product = {
   protein_per_100g: 23,
   fat_per_100g: 2,
   carbs_per_100g: 0,
+  fiber_per_100g: 0,
+  iron_per_100g: 0.4,
   package_weight: 900,
   unit: "g",
   tags: ["chicken"],
@@ -22,6 +24,8 @@ const rice: Product = {
   protein_per_100g: 2.7,
   fat_per_100g: 0.3,
   carbs_per_100g: 28,
+  fiber_per_100g: 0.4,
+  iron_per_100g: 0.2,
   package_weight: 900,
   unit: "g",
   tags: ["grain"],
@@ -35,6 +39,8 @@ const oats: Product = {
   protein_per_100g: 13,
   fat_per_100g: 6,
   carbs_per_100g: 65,
+  fiber_per_100g: 10,
+  iron_per_100g: 4.3,
   package_weight: 500,
   unit: "g",
   tags: ["grain"],
@@ -48,6 +54,8 @@ const milk: Product = {
   protein_per_100g: 3,
   fat_per_100g: 2.5,
   carbs_per_100g: 4.8,
+  fiber_per_100g: 0,
+  iron_per_100g: 0.1,
   package_weight: 900,
   unit: "ml",
   tags: ["dairy"],
@@ -61,6 +69,8 @@ const tomato: Product = {
   protein_per_100g: 0.9,
   fat_per_100g: 0.2,
   carbs_per_100g: 3.9,
+  fiber_per_100g: 1.2,
+  iron_per_100g: 0.3,
   package_weight: 500,
   unit: "g",
   tags: ["vegetable"],
@@ -105,6 +115,8 @@ function recipe(partial: Partial<Recipe> & Pick<Recipe, "id" | "name" | "meal_ty
     protein: 30,
     fat: 10,
     carbs: 40,
+    fiber: 5,
+    iron: 1.5,
     protein_source: "chicken",
     tags: ["vegetables"],
     ...partial,
@@ -166,16 +178,17 @@ const recipes: Recipe[] = [
 function input(overrides: Partial<OptimizationInput> = {}): OptimizationInput {
   return {
     people: [
-      { id: "a", name: "A", calorieTarget: 1800, proteinTarget: 120, fatTarget: 55, carbsTarget: 180 },
-      { id: "b", name: "B", calorieTarget: 2200, proteinTarget: 140, fatTarget: 70, carbsTarget: 220 },
+      { id: "a", name: "A", calorieTarget: 1800, proteinTarget: 120, fatTarget: 55, carbsTarget: 180, fiberTarget: 25, ironTarget: 18 },
+      { id: "b", name: "B", calorieTarget: 2200, proteinTarget: 140, fatTarget: 70, carbsTarget: 220, fiberTarget: 30, ironTarget: 8 },
     ],
     days: 3,
     calorieTargets: 4000,
-    macroTargets: { protein: 260, fat: 125, carbs: 400 },
+    macroTargets: { protein: 260, fat: 125, carbs: 400, fiber: 55, iron: 26 },
     budget: 6000,
     products,
     prices,
     recipes,
+    fridge: [],
     cashback: [
       { store_id: "pyaterochka", percent: 5 },
       { store_id: "magnit", percent: 3 },
@@ -217,7 +230,7 @@ describe("optimizer", () => {
     expect(chickenLine).toBeTruthy();
     expect(chickenLine!.packageWeight).toBe(900);
     expect(chickenLine!.packageCount).toBeGreaterThanOrEqual(1);
-    expect(chickenLine!.packageCount * chickenLine!.packageWeight).toBeGreaterThanOrEqual(chickenLine!.quantityGrams);
+    expect(chickenLine!.packageCount * chickenLine!.packageWeight).toBeGreaterThanOrEqual(chickenLine!.toBuyGrams);
   });
 
   it("reuses chicken across several meals", () => {
@@ -238,9 +251,18 @@ describe("optimizer", () => {
   it("uses cashback for effective price", () => {
     const result = engine.optimize(input());
     const line = result.cart.find((item) => item.storeId === "pyaterochka");
-    if (line) {
+    if (line && line.price > 0) {
       expect(line.effectivePrice).toBeLessThan(line.price);
       expect(line.cashbackPercent).toBe(5);
     }
+  });
+
+  it("does not buy products already in the fridge", () => {
+    const result = engine.optimize(input({ fridge: [{ productId: "chicken_breast", grams: 8000 }] }));
+    const chicken = result.cart.find((line) => line.productId === "chicken_breast");
+    expect(chicken?.toBuyGrams).toBe(0);
+    expect(chicken?.packageCount).toBe(0);
+    expect(chicken?.price).toBe(0);
+    expect(chicken?.fromFridgeGrams).toBeGreaterThan(0);
   });
 });

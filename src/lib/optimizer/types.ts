@@ -6,6 +6,8 @@ export interface Product {
   protein_per_100g: number;
   fat_per_100g: number;
   carbs_per_100g: number;
+  fiber_per_100g: number;
+  iron_per_100g: number;
   package_weight: number;
   unit: "g" | "ml" | "pcs";
   tags: string[];
@@ -60,6 +62,8 @@ export interface Recipe {
   protein: number;
   fat: number;
   carbs: number;
+  fiber: number;
+  iron: number;
   protein_source: string;
   tags: string[];
 }
@@ -76,6 +80,8 @@ export interface PersonTargets {
   proteinTarget: number;
   fatTarget: number;
   carbsTarget: number;
+  fiberTarget: number;
+  ironTarget: number;
 }
 
 export interface OptimizationConstraints {
@@ -91,6 +97,11 @@ export interface OptimizationConstraints {
   varietyPreference: "low" | "medium" | "high";
 }
 
+export interface FridgeStock {
+  productId: string;
+  grams: number;
+}
+
 export interface OptimizationInput {
   people: PersonTargets[];
   days: number;
@@ -99,12 +110,15 @@ export interface OptimizationInput {
     protein: number;
     fat: number;
     carbs: number;
+    fiber: number;
+    iron: number;
   };
   budget: number;
   products: Product[];
   prices: StoreProduct[];
   recipes: Recipe[];
   cashback: CashbackRule[];
+  fridge: FridgeStock[];
   constraints: OptimizationConstraints;
 }
 
@@ -120,6 +134,8 @@ export interface PlannedMeal {
   protein: number;
   fat: number;
   carbs: number;
+  fiber: number;
+  iron: number;
   instructions: string[];
 }
 
@@ -136,6 +152,8 @@ export interface CartLine {
   cashback: number;
   effectivePrice: number;
   leftoverGrams: number;
+  fromFridgeGrams: number;
+  toBuyGrams: number;
 }
 
 export interface NutritionSummary {
@@ -143,10 +161,14 @@ export interface NutritionSummary {
   proteinPerDay: number;
   fatPerDay: number;
   carbsPerDay: number;
+  fiberPerDay: number;
+  ironPerDay: number;
   calorieTarget: number;
   proteinTarget: number;
   fatTarget: number;
   carbsTarget: number;
+  fiberTarget: number;
+  ironTarget: number;
 }
 
 export interface OptimizationResult {

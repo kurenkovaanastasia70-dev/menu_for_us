@@ -18,13 +18,13 @@ const TABLES = [
   "meal_ingredients",
   "carts",
   "cart_items",
+  "fridge_items",
 ];
 
 describe("supabase RLS", () => {
-  const sql = readFileSync(
-    resolve(process.cwd(), "supabase/migrations/20260813120000_init.sql"),
-    "utf8",
-  );
+  const sql =
+    readFileSync(resolve(process.cwd(), "supabase/migrations/20260813120000_init.sql"), "utf8") +
+    readFileSync(resolve(process.cwd(), "supabase/migrations/20260813220000_fridge_and_micronutrients.sql"), "utf8");
 
   it("enables RLS on every table", () => {
     for (const table of TABLES) {

@@ -37,7 +37,9 @@ npm test
 
 Покрыто:
 
-- BMR / TDEE / калории / БЖУ
+- BMR / TDEE / калории / БЖУ / клетчатка / железо
+- цель по весу и срок
+- cashback, упаковки, холодильник
 - cashback, упаковки, effective price
 - оптимизатор (бюджет, граммовки, переиспользование)
 - наличие RLS-политик в миграции
@@ -84,7 +86,10 @@ npm run preview
 
 1. Создайте Free-проект на [supabase.com](https://supabase.com).
 2. Project Settings → API: скопируйте **Project URL** и **anon public** ключ.
-3. SQL Editor → вставьте содержимое `supabase/migrations/20260813120000_init.sql` → Run.
+3. SQL Editor → вставьте по очереди:
+   - `supabase/migrations/20260813120000_init.sql`
+   - `supabase/migrations/20260813220000_fridge_and_micronutrients.sql`
+   и нажмите Run.
 4. Authentication → Providers → Email: включите Email.
 5. Authentication → Sign Up / Providers: **отключите публичную регистрацию** (Disable sign-ups), потому что пользователей только двое.
 6. Authentication → Users → Add user: создайте два аккаунта (ваши email).

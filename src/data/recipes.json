@@ -36,7 +36,9 @@
     "calories": 433,
     "protein": 14.5,
     "fat": 9,
-    "carbs": 75.2
+    "carbs": 75.2,
+    "fiber": 8,
+    "iron": 3.1
   },
   {
     "id": "omelet_veg",
@@ -76,7 +78,9 @@
     "calories": 256.2,
     "protein": 17.5,
     "fat": 18.5,
-    "carbs": 5.8
+    "carbs": 5.8,
+    "fiber": 2.8,
+    "iron": 3.9
   },
   {
     "id": "cottage_berries",
@@ -110,7 +114,9 @@
     "calories": 278.3,
     "protein": 31.1,
     "fat": 9.3,
-    "carbs": 17.7
+    "carbs": 17.7,
+    "fiber": 1.7,
+    "iron": 1
   },
   {
     "id": "greek_yogurt_honey",
@@ -144,7 +150,9 @@
     "calories": 275.7,
     "protein": 18.3,
     "fat": 13.8,
-    "carbs": 21.4
+    "carbs": 21.4,
+    "fiber": 1.1,
+    "iron": 0.8
   },
   {
     "id": "syrniki",
@@ -183,7 +191,9 @@
     "calories": 477.4,
     "protein": 40.1,
     "fat": 22.8,
-    "carbs": 26.5
+    "carbs": 26.5,
+    "fiber": 0.2,
+    "iron": 1.9
   },
   {
     "id": "buckwheat_milk",
@@ -213,7 +223,9 @@
     "calories": 206.8,
     "protein": 9.5,
     "fat": 6.6,
-    "carbs": 28.1
+    "carbs": 28.1,
+    "fiber": 2.6,
+    "iron": 1.1
   },
   {
     "id": "toast_egg_avocado",
@@ -248,7 +260,9 @@
     "calories": 379.1,
     "protein": 15.5,
     "fat": 19.4,
-    "carbs": 37
+    "carbs": 37,
+    "fiber": 8.9,
+    "iron": 3.3
   },
   {
     "id": "omelet_cheese",
@@ -286,7 +300,9 @@
     "calories": 346.4,
     "protein": 23.4,
     "fat": 26.5,
-    "carbs": 2.7
+    "carbs": 2.7,
+    "fiber": 0,
+    "iron": 2.2
   },
   {
     "id": "millet_porridge",
@@ -320,7 +336,9 @@
     "calories": 235.1,
     "protein": 8.9,
     "fat": 10.3,
-    "carbs": 26.7
+    "carbs": 26.7,
+    "fiber": 0.9,
+    "iron": 0.8
   },
   {
     "id": "kefir_oats",
@@ -354,7 +372,9 @@
     "calories": 331.1,
     "protein": 12.7,
     "fat": 8.3,
-    "carbs": 51.7
+    "carbs": 51.7,
+    "fiber": 7,
+    "iron": 2.6
   },
   {
     "id": "chicken_teriyaki",
@@ -398,7 +418,9 @@
     "calories": 316.2,
     "protein": 43.4,
     "fat": 3.6,
-    "carbs": 29.2
+    "carbs": 29.2,
+    "fiber": 4.2,
+    "iron": 2.3
   },
   {
     "id": "chicken_bowl",
@@ -441,7 +463,9 @@
     "calories": 279.3,
     "protein": 38.6,
     "fat": 3.2,
-    "carbs": 25
+    "carbs": 25,
+    "fiber": 4.6,
+    "iron": 2.4
   },
   {
     "id": "pasta_chicken",
@@ -484,7 +508,9 @@
     "calories": 540.9,
     "protein": 44.5,
     "fat": 10,
-    "carbs": 67.8
+    "carbs": 67.8,
+    "fiber": 2.7,
+    "iron": 1.7
   },
   {
     "id": "buckwheat_chicken",
@@ -523,7 +549,9 @@
     "calories": 358.5,
     "protein": 39.4,
     "fat": 12.2,
-    "carbs": 23.6
+    "carbs": 23.6,
+    "fiber": 4,
+    "iron": 2
   },
   {
     "id": "turkey_veg",
@@ -566,7 +594,9 @@
     "calories": 301.5,
     "protein": 40.6,
     "fat": 11.7,
-    "carbs": 9.2
+    "carbs": 9.2,
+    "fiber": 4.4,
+    "iron": 2.6
   },
   {
     "id": "pollock_potato",
@@ -604,7 +634,9 @@
     "calories": 356.5,
     "protein": 33,
     "fat": 9.8,
-    "carbs": 34.4
+    "carbs": 34.4,
+    "fiber": 5.8,
+    "iron": 3
   },
   {
     "id": "salmon_rice",
@@ -643,7 +675,9 @@
     "calories": 415.2,
     "protein": 32.4,
     "fat": 18.8,
-    "carbs": 27
+    "carbs": 27,
+    "fiber": 4.5,
+    "iron": 2.6
   },
   {
     "id": "cod_buckwheat",
@@ -682,7 +716,9 @@
     "calories": 289.2,
     "protein": 33.9,
     "fat": 8.4,
-    "carbs": 18.9
+    "carbs": 18.9,
+    "fiber": 3,
+    "iron": 1.7
   },
   {
     "id": "chicken_cutlets",
@@ -724,7 +760,9 @@
     "calories": 397.5,
     "protein": 33.6,
     "fat": 23.7,
-    "carbs": 12.4
+    "carbs": 12.4,
+    "fiber": 2.2,
+    "iron": 2.6
   },
   {
     "id": "turkey_meatballs",
@@ -762,7 +800,9 @@
     "calories": 363.4,
     "protein": 33.2,
     "fat": 12.4,
-    "carbs": 27
+    "carbs": 27,
+    "fiber": 3,
+    "iron": 3
   },
   {
     "id": "borsch",
@@ -810,7 +850,9 @@
     "calories": 314.4,
     "protein": 22.4,
     "fat": 12.2,
-    "carbs": 31
+    "carbs": 31,
+    "fiber": 7.4,
+    "iron": 4.7
   },
   {
     "id": "shchi",
@@ -849,7 +891,9 @@
     "calories": 293,
     "protein": 24.5,
     "fat": 11.3,
-    "carbs": 24.8
+    "carbs": 24.8,
+    "fiber": 6.1,
+    "iron": 3.2
   },
   {
     "id": "chicken_soup",
@@ -887,7 +931,9 @@
     "calories": 220.5,
     "protein": 30.9,
     "fat": 2.6,
-    "carbs": 18.9
+    "carbs": 18.9,
+    "fiber": 3,
+    "iron": 1.6
   },
   {
     "id": "lentil_soup",
@@ -931,7 +977,9 @@
     "calories": 212.3,
     "protein": 8.7,
     "fat": 8.5,
-    "carbs": 27.5
+    "carbs": 27.5,
+    "fiber": 8.6,
+    "iron": 3.5
   },
   {
     "id": "pasta_light_carbonara",
@@ -969,7 +1017,9 @@
     "calories": 575.3,
     "protein": 26.4,
     "fat": 22.8,
-    "carbs": 63.6
+    "carbs": 63.6,
+    "fiber": 2.5,
+    "iron": 2.2
   },
   {
     "id": "bolognese",
@@ -1008,7 +1058,9 @@
     "calories": 672.7,
     "protein": 34,
     "fat": 26.1,
-    "carbs": 72.6
+    "carbs": 72.6,
+    "fiber": 4.1,
+    "iron": 5.5
   },
   {
     "id": "plov",
@@ -1050,7 +1102,9 @@
     "calories": 501.6,
     "protein": 32.7,
     "fat": 25.8,
-    "carbs": 33.9
+    "carbs": 33.9,
+    "fiber": 5.2,
+    "iron": 3.4
   },
   {
     "id": "turkey_stew",
@@ -1093,7 +1147,9 @@
     "calories": 242,
     "protein": 38.6,
     "fat": 3.3,
-    "carbs": 15.2
+    "carbs": 15.2,
+    "fiber": 4.4,
+    "iron": 2.6
   },
   {
     "id": "chickpea_stew",
@@ -1137,7 +1193,9 @@
     "calories": 258.4,
     "protein": 10,
     "fat": 10.7,
-    "carbs": 33.5
+    "carbs": 33.5,
+    "fiber": 10.2,
+    "iron": 4.5
   },
   {
     "id": "tofu_stirfry",
@@ -1181,7 +1239,9 @@
     "calories": 244.5,
     "protein": 17.3,
     "fat": 7.9,
-    "carbs": 30.3
+    "carbs": 30.3,
+    "fiber": 5.9,
+    "iron": 6
   },
   {
     "id": "greek_salad_chicken",
@@ -1229,7 +1289,9 @@
     "calories": 374.7,
     "protein": 37.8,
     "fat": 22.1,
-    "carbs": 8.4
+    "carbs": 8.4,
+    "fiber": 4,
+    "iron": 1.9
   },
   {
     "id": "caesar_chicken",
@@ -1272,7 +1334,9 @@
     "calories": 355.3,
     "protein": 40.2,
     "fat": 17,
-    "carbs": 11
+    "carbs": 11,
+    "fiber": 3.2,
+    "iron": 1.7
   },
   {
     "id": "tuna_salad",
@@ -1316,7 +1380,9 @@
     "calories": 252.5,
     "protein": 27.8,
     "fat": 13.6,
-    "carbs": 4.9
+    "carbs": 4.9,
+    "fiber": 3.1,
+    "iron": 3.4
   },
   {
     "id": "baked_chicken_potato",
@@ -1354,7 +1420,9 @@
     "calories": 565.2,
     "protein": 42.1,
     "fat": 28,
-    "carbs": 35.7
+    "carbs": 35.7,
+    "fiber": 5.8,
+    "iron": 4.3
   },
   {
     "id": "chicken_cream",
@@ -1392,7 +1460,9 @@
     "calories": 356.6,
     "protein": 44.1,
     "fat": 11.5,
-    "carbs": 19.1
+    "carbs": 19.1,
+    "fiber": 3.6,
+    "iron": 2.1
   },
   {
     "id": "beef_buckwheat",
@@ -1430,7 +1500,9 @@
     "calories": 442.1,
     "protein": 34.4,
     "fat": 24.6,
-    "carbs": 21.1
+    "carbs": 21.1,
+    "fiber": 3.6,
+    "iron": 4.9
   },
   {
     "id": "shrimp_rice",
@@ -1472,7 +1544,9 @@
     "calories": 299.3,
     "protein": 32.8,
     "fat": 7.9,
-    "carbs": 21.9
+    "carbs": 21.9,
+    "fiber": 2.2,
+    "iron": 3.7
   },
   {
     "id": "chicken_fricassee",
@@ -1514,7 +1588,9 @@
     "calories": 368.8,
     "protein": 41.2,
     "fat": 9.3,
-    "carbs": 30
+    "carbs": 30,
+    "fiber": 5.4,
+    "iron": 2.5
   },
   {
     "id": "bulgur_chicken",
@@ -1553,7 +1629,9 @@
     "calories": 242.9,
     "protein": 36.8,
     "fat": 3.2,
-    "carbs": 19.9
+    "carbs": 19.9,
+    "fiber": 5.3,
+    "iron": 2.5
   },
   {
     "id": "quinoa_bowl",
@@ -1596,7 +1674,9 @@
     "calories": 321.8,
     "protein": 35.8,
     "fat": 12.1,
-    "carbs": 19.2
+    "carbs": 19.2,
+    "fiber": 4.8,
+    "iron": 3.5
   },
   {
     "id": "baked_potato_cottage",
@@ -1634,7 +1714,9 @@
     "calories": 372.2,
     "protein": 26.1,
     "fat": 9.3,
-    "carbs": 45.6
+    "carbs": 45.6,
+    "fiber": 7.1,
+    "iron": 3.5
   },
   {
     "id": "stuffed_zucchini",
@@ -1673,7 +1755,9 @@
     "calories": 297.4,
     "protein": 30.1,
     "fat": 11.2,
-    "carbs": 19
+    "carbs": 19,
+    "fiber": 5.7,
+    "iron": 3.6
   },
   {
     "id": "stuffed_pepper",
@@ -1712,7 +1796,9 @@
     "calories": 302.9,
     "protein": 27.1,
     "fat": 11.2,
-    "carbs": 25.8
+    "carbs": 25.8,
+    "fiber": 5.5,
+    "iron": 3.3
   },
   {
     "id": "cottage_casserole",
@@ -1742,7 +1828,9 @@
     "calories": 296.3,
     "protein": 37.1,
     "fat": 14.5,
-    "carbs": 3.7
+    "carbs": 3.7,
+    "fiber": 0,
+    "iron": 1.6
   },
   {
     "id": "fish_cutlets",
@@ -1784,7 +1872,9 @@
     "calories": 310,
     "protein": 34.8,
     "fat": 13.6,
-    "carbs": 11.6
+    "carbs": 11.6,
+    "fiber": 2,
+    "iron": 1.8
   },
   {
     "id": "beans_veg",
@@ -1828,7 +1918,9 @@
     "calories": 235.9,
     "protein": 9.4,
     "fat": 8.8,
-    "carbs": 31.5
+    "carbs": 31.5,
+    "fiber": 9.9,
+    "iron": 3.3
   },
   {
     "id": "hummus_veg",
@@ -1867,7 +1959,9 @@
     "calories": 359.5,
     "protein": 13.5,
     "fat": 9,
-    "carbs": 56.6
+    "carbs": 56.6,
+    "fiber": 9.2,
+    "iron": 3.6
   },
   {
     "id": "shakshuka",
@@ -1910,7 +2004,9 @@
     "calories": 323.7,
     "protein": 18.2,
     "fat": 21.8,
-    "carbs": 15.5
+    "carbs": 15.5,
+    "fiber": 6.5,
+    "iron": 4.3
   },
   {
     "id": "pasta_tuna",
@@ -1948,7 +2044,9 @@
     "calories": 468.2,
     "protein": 29.8,
     "fat": 8.2,
-    "carbs": 67.9
+    "carbs": 67.9,
+    "fiber": 2.9,
+    "iron": 3.2
   },
   {
     "id": "chicken_skewers",
@@ -1991,7 +2089,9 @@
     "calories": 291.1,
     "protein": 41.9,
     "fat": 11.5,
-    "carbs": 7.5
+    "carbs": 7.5,
+    "fiber": 5.1,
+    "iron": 2.4
   },
   {
     "id": "udon_chicken",
@@ -2029,7 +2129,9 @@
     "calories": 347.3,
     "protein": 39.9,
     "fat": 3.5,
-    "carbs": 38.6
+    "carbs": 38.6,
+    "fiber": 5.1,
+    "iron": 2.7
   },
   {
     "id": "chickpea_curry",
@@ -2072,7 +2174,9 @@
     "calories": 403.4,
     "protein": 12.1,
     "fat": 20.1,
-    "carbs": 46.5
+    "carbs": 46.5,
+    "fiber": 9.4,
+    "iron": 5.2
   },
   {
     "id": "apple_cottage_snack",
@@ -2102,7 +2206,9 @@
     "calories": 186.8,
     "protein": 20.6,
     "fat": 6.2,
-    "carbs": 13.4
+    "carbs": 13.4,
+    "fiber": 1.9,
+    "iron": 0.7
   },
   {
     "id": "yogurt_berries_snack",
@@ -2132,7 +2238,9 @@
     "calories": 124.8,
     "protein": 12.4,
     "fat": 3.2,
-    "carbs": 10.6
+    "carbs": 10.6,
+    "fiber": 1.4,
+    "iron": 0.3
   },
   {
     "id": "rice_cakes_pb",
@@ -2166,7 +2274,9 @@
     "calories": 264,
     "protein": 8.7,
     "fat": 10.9,
-    "carbs": 37
+    "carbs": 37,
+    "fiber": 2.1,
+    "iron": 0.6
   },
   {
     "id": "omelet_dinner",
@@ -2205,7 +2315,9 @@
     "calories": 324.7,
     "protein": 25,
     "fat": 23.7,
-    "carbs": 3.9
+    "carbs": 3.9,
+    "fiber": 3.3,
+    "iron": 4.6
   },
   {
     "id": "liver_buckwheat",
@@ -2243,7 +2355,9 @@
     "calories": 348.8,
     "protein": 34.2,
     "fat": 13.2,
-    "carbs": 24.1
+    "carbs": 24.1,
+    "fiber": 3.8,
+    "iron": 14.8
   },
   {
     "id": "herring_potato",
@@ -2281,6 +2395,8 @@
     "calories": 398.9,
     "protein": 22.3,
     "fat": 17.2,
-    "carbs": 36.7
+    "carbs": 36.7,
+    "fiber": 6.4,
+    "iron": 3.7
   }
 ]

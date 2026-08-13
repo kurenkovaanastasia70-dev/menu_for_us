@@ -1,3 +1,5 @@
+import { calorieTargetForWeeks, fiberTargetFor, ironTargetFor } from "./weight-goal";
+
 export type Gender = "female" | "male";
 export type ActivityLevel =
   | "sedentary"
@@ -15,6 +17,7 @@ export interface NutritionPersonInput {
   activityLevel: ActivityLevel;
   goal: Goal;
   targetWeightKg?: number;
+  goalWeeks?: number;
 }
 
 export interface NutritionTargets {
@@ -24,6 +27,17 @@ export interface NutritionTargets {
   proteinTarget: number;
   fatTarget: number;
   carbsTarget: number;
+  fiberTarget: number;
+  ironTarget: number;
+}
+
+export interface NutrientTotals {
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fiber: number;
+  iron: number;
 }
 
 export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
@@ -34,7 +48,7 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   very_active: 1.9,
 };
 
-const CALORIE_FLOOR: Record<Gender, number> = {
+export const CALORIE_FLOOR: Record<Gender, number> = {
   female: 1200,
   male: 1500,
 };
@@ -89,9 +103,25 @@ export function calculateNutritionTargets(
 ): NutritionTargets {
   const bmr = calculateBmr(input);
   const tdee = calculateTdee(bmr, input.activityLevel);
-  const calorieTarget = calculateCalorieTarget(tdee, input.goal, input.gender);
+  let calorieTarget = calculateCalorieTarget(tdee, input.goal, input.gender);
+  if (input.goalWeeks && input.goalWeeks > 0 && input.targetWeightKg && input.goal !== "maintain") {
+    calorieTarget = calorieTargetForWeeks({
+      tdee,
+      currentKg: input.weightKg,
+      targetKg: input.targetWeightKg,
+      weeks: input.goalWeeks,
+      gender: input.gender,
+    });
+  }
   const macros = calculateMacros(calorieTarget, input.weightKg, input.goal);
-  return { bmr, tdee, calorieTarget, ...macros };
+  return {
+    bmr,
+    tdee,
+    calorieTarget,
+    ...macros,
+    fiberTarget: fiberTargetFor(input.gender),
+    ironTarget: ironTargetFor(input.gender, input.ageYears),
+  };
 }
 
 export function ageFromBirthDate(birthDate: string, now = new Date()): number {
@@ -110,27 +140,33 @@ export function macrosFromGrams(input: {
   proteinPer100g: number;
   fatPer100g: number;
   carbsPer100g: number;
-}): { calories: number; protein: number; fat: number; carbs: number } {
+  fiberPer100g?: number;
+  ironPer100g?: number;
+}): NutrientTotals {
   const factor = input.grams / 100;
   return {
     calories: round1(input.caloriesPer100g * factor),
     protein: round1(input.proteinPer100g * factor),
     fat: round1(input.fatPer100g * factor),
     carbs: round1(input.carbsPer100g * factor),
+    fiber: round1((input.fiberPer100g ?? 0) * factor),
+    iron: round1((input.ironPer100g ?? 0) * factor),
   };
 }
 
 export function sumNutrition(
-  items: Array<{ calories: number; protein: number; fat: number; carbs: number }>,
-): { calories: number; protein: number; fat: number; carbs: number } {
-  return items.reduce(
+  items: Array<{ calories: number; protein: number; fat: number; carbs: number; fiber?: number; iron?: number }>,
+): NutrientTotals {
+  return items.reduce<NutrientTotals>(
     (acc, item) => ({
       calories: round1(acc.calories + item.calories),
       protein: round1(acc.protein + item.protein),
       fat: round1(acc.fat + item.fat),
       carbs: round1(acc.carbs + item.carbs),
+      fiber: round1(acc.fiber + (item.fiber ?? 0)),
+      iron: round1(acc.iron + (item.iron ?? 0)),
     }),
-    { calories: 0, protein: 0, fat: 0, carbs: 0 },
+    { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, iron: 0 },
   );
 }
 

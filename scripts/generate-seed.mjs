@@ -138,8 +138,64 @@ rawProducts.push(
   ["radish", "Редис", "vegetable", 16, 0.7, 0.1, 3.4, 300, "g", ["vegetable"], 69, "Своя грядка"],
 );
 
+const CAT_MICRO = {
+  protein: [0, 1.1],
+  dairy: [0, 0.1],
+  grain: [2.8, 1.2],
+  vegetable: [2.4, 0.8],
+  fruit: [2.4, 0.3],
+  fat: [0.4, 0.3],
+  pantry: [0.5, 1.0],
+  snack: [2.0, 1.2],
+};
+
+const MICRO = {
+  chicken_breast: [0, 0.4],
+  chicken_thigh: [0, 1.0],
+  turkey_fillet: [0, 0.7],
+  ground_turkey: [0, 1.1],
+  ground_chicken: [0, 0.9],
+  beef: [0, 2.6],
+  ground_beef: [0, 2.4],
+  pork_tenderloin: [0, 1.0],
+  salmon: [0, 0.8],
+  pollock: [0, 0.3],
+  cod: [0, 0.4],
+  tuna_can: [0, 1.4],
+  shrimp: [0, 1.8],
+  eggs: [0, 1.8],
+  tofu: [0.3, 2.7],
+  lentils: [7.9, 3.3],
+  chickpeas: [7.6, 2.9],
+  beans: [6.4, 2.1],
+  cottage_cheese: [0, 0.4],
+  oats: [10.1, 4.3],
+  buckwheat: [3.7, 1.3],
+  spinach: [2.2, 2.7],
+  broccoli: [2.6, 0.7],
+  chicken_liver: [0, 9.0],
+  herring: [0, 1.0],
+  seeds: [27, 5.7],
+  nuts: [6.7, 2.9],
+  bread: [6.0, 2.5],
+  quinoa: [2.8, 1.5],
+  millet: [1.3, 0.8],
+  barley: [3.8, 1.3],
+  peas: [5.1, 1.5],
+  beet: [2.8, 0.8],
+  pumpkin: [0.5, 0.8],
+  avocado: [6.7, 0.6],
+  dark_chocolate: [10.9, 11.9],
+  hummus: [6.0, 2.4],
+};
+
+function micros(id, category) {
+  return MICRO[id] || CAT_MICRO[category] || [0, 0];
+}
+
 const products = rawProducts.map((row) => {
   const [id, name, category, cal, p, f, c, pack, unit, tags] = row;
+  const [fiber, iron] = micros(id, category);
   return {
     id,
     canonical_name: name,
@@ -148,6 +204,8 @@ const products = rawProducts.map((row) => {
     protein_per_100g: p,
     fat_per_100g: f,
     carbs_per_100g: c,
+    fiber_per_100g: fiber,
+    iron_per_100g: iron,
     package_weight: pack,
     unit,
     tags,
@@ -186,6 +244,8 @@ function nutrition(ingredients) {
   let protein = 0;
   let fat = 0;
   let carbs = 0;
+  let fiber = 0;
+  let iron = 0;
   for (const ing of ingredients) {
     const product = products.find((item) => item.id === ing.product_id);
     if (!product) throw new Error(`Unknown product ${ing.product_id}`);
@@ -194,12 +254,16 @@ function nutrition(ingredients) {
     protein += product.protein_per_100g * k;
     fat += product.fat_per_100g * k;
     carbs += product.carbs_per_100g * k;
+    fiber += product.fiber_per_100g * k;
+    iron += product.iron_per_100g * k;
   }
   return {
     calories: Math.round(calories * 10) / 10,
     protein: Math.round(protein * 10) / 10,
     fat: Math.round(fat * 10) / 10,
     carbs: Math.round(carbs * 10) / 10,
+    fiber: Math.round(fiber * 10) / 10,
+    iron: Math.round(iron * 10) / 10,
   };
 }
 

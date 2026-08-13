@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
 import {
   fetchCashback,
+  fetchFridge,
   fetchHousehold,
   fetchHouseholdProfiles,
   fetchMealPlans,
   fetchProfile,
 } from "@/lib/supabase/api";
-import type { CashbackRuleRow, Household, MealPlanRow, Profile } from "@/lib/supabase/types";
+import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile } from "@/lib/supabase/types";
 import type { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
@@ -18,6 +19,7 @@ interface AppState {
   household: Household | null;
   members: Profile[];
   cashback: CashbackRuleRow[];
+  fridge: FridgeItem[];
   plans: MealPlanRow[];
   latestPlan: MealPlanRow | null;
   error: string | null;
@@ -35,6 +37,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [household, setHousehold] = useState<Household | null>(null);
   const [members, setMembers] = useState<Profile[]>([]);
   const [cashback, setCashback] = useState<CashbackRuleRow[]>([]);
+  const [fridge, setFridge] = useState<FridgeItem[]>([]);
   const [plans, setPlans] = useState<MealPlanRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [offlineCache, setOfflineCache] = useState(false);
@@ -45,6 +48,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setHousehold(null);
       setMembers([]);
       setCashback([]);
+      setFridge([]);
       setPlans([]);
       return;
     }
@@ -52,24 +56,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextProfile = await fetchProfile(current.user.id);
       setProfile(nextProfile);
       if (nextProfile?.household_id) {
-        const [nextHousehold, nextMembers, nextCashback, nextPlans] = await Promise.all([
+        const [nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge] = await Promise.all([
           fetchHousehold(nextProfile.household_id),
           fetchHouseholdProfiles(nextProfile.household_id),
           fetchCashback(nextProfile.household_id),
           fetchMealPlans(nextProfile.household_id),
+          fetchFridge(nextProfile.household_id),
         ]);
         setHousehold(nextHousehold);
         setMembers(nextMembers);
         setCashback(nextCashback);
         setPlans(nextPlans);
+        setFridge(nextFridge);
         localStorage.setItem(
           CACHE_KEY,
-          JSON.stringify({ nextProfile, nextHousehold, nextMembers, nextCashback, nextPlans }),
+          JSON.stringify({ nextProfile, nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge }),
         );
       } else {
         setHousehold(null);
         setMembers(nextProfile ? [nextProfile] : []);
         setCashback([]);
+        setFridge([]);
         setPlans([]);
       }
       setOfflineCache(false);
@@ -83,12 +90,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           nextMembers: Profile[];
           nextCashback: CashbackRuleRow[];
           nextPlans: MealPlanRow[];
+          nextFridge?: FridgeItem[];
         };
         setProfile(parsed.nextProfile);
         setHousehold(parsed.nextHousehold);
         setMembers(parsed.nextMembers);
         setCashback(parsed.nextCashback);
         setPlans(parsed.nextPlans);
+        setFridge(parsed.nextFridge ?? []);
         setOfflineCache(true);
         setError("Нет связи с базой. Показаны сохранённые данные.");
       } else {
@@ -123,13 +132,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       household,
       members,
       cashback,
+      fridge,
       plans,
       latestPlan: plans[0] ?? null,
       error,
       offlineCache,
       refresh: () => loadAll(session),
     }),
-    [loading, session, profile, household, members, cashback, plans, error, offlineCache],
+    [loading, session, profile, household, members, cashback, fridge, plans, error, offlineCache],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

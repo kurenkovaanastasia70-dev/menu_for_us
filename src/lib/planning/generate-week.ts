@@ -10,6 +10,7 @@ export interface GenerateWeekParams {
   budget: number;
   constraints: OptimizationInput["constraints"];
   cashback: OptimizationInput["cashback"];
+  fridge?: OptimizationInput["fridge"];
   useLlm: boolean;
 }
 
@@ -23,12 +24,15 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
       protein: params.people.reduce((sum, person) => sum + person.proteinTarget, 0),
       fat: params.people.reduce((sum, person) => sum + person.fatTarget, 0),
       carbs: params.people.reduce((sum, person) => sum + person.carbsTarget, 0),
+      fiber: params.people.reduce((sum, person) => sum + person.fiberTarget, 0),
+      iron: params.people.reduce((sum, person) => sum + person.ironTarget, 0),
     },
     budget: params.budget,
     products: catalog.getProducts(),
     prices: catalog.getStoreProducts(),
     recipes: catalog.getRecipes(),
     cashback: params.cashback,
+    fridge: params.fridge ?? [],
     constraints: params.constraints,
   };
 

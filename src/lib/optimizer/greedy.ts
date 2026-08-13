@@ -84,6 +84,8 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
           protein: round(candidate.protein * servings),
           fat: round(candidate.fat * servings),
           carbs: round(candidate.carbs * servings),
+          fiber: round((candidate.fiber ?? 0) * servings),
+          iron: round((candidate.iron ?? 0) * servings),
           instructions: candidate.instructions,
         });
 
@@ -113,10 +115,10 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
     }
 
     const nutrition = summarizeNutrition(selected, input, days);
-    const leftoverValue = cart.reduce(
-      (sum, line) => sum + (line.leftoverGrams / line.packageWeight) * line.effectivePrice,
-      0,
-    );
+    const leftoverValue = cart.reduce((sum, line) => {
+      if (!line.packageCount || !line.packageWeight) return sum;
+      return sum + (line.leftoverGrams / line.packageWeight) * line.effectivePrice;
+    }, 0);
     const wasteScore = totalCost <= 0 ? 100 : Math.max(0, Math.round(100 - (leftoverValue / totalCost) * 100));
     const varietyScore = calculateVarietyScore(selected, input.recipes);
 
@@ -131,6 +133,12 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
     }
     if (nutrition.caloriesPerDay < input.calorieTargets * 0.85) {
       warnings.push("Калорийность получилась ниже цели. Добавьте перекус или увеличьте число приёмов пищи.");
+    }
+    if (nutrition.fiberPerDay < input.macroTargets.fiber * 0.85) {
+      warnings.push("Клетчатки меньше нормы. Добавьте овощи, бобовые или овсянку.");
+    }
+    if (nutrition.ironPerDay < input.macroTargets.iron * 0.85) {
+      warnings.push("Железа меньше нормы. Полезны печень, бобовые, гречка, шпинат.");
     }
 
     return {
@@ -215,6 +223,10 @@ function pickRecipe(args: {
     const repetitionPenalty = usedCount * OPTIMIZER_WEIGHTS.repetition;
     const proteinGap = Math.max(0, input.macroTargets.protein - currentProteinPerDay(selected, input.days));
     const proteinBonus = recipe.protein > 25 && proteinGap > 10 ? -50 : 0;
+    const fiberGap = Math.max(0, input.macroTargets.fiber - currentFiberPerDay(selected, input.days));
+    const fiberBonus = (recipe.fiber ?? 0) > 6 && fiberGap > 4 ? -40 : 0;
+    const ironGap = Math.max(0, input.macroTargets.iron - currentIronPerDay(selected, input.days));
+    const ironBonus = (recipe.iron ?? 0) > 2 && ironGap > 2 ? -45 : 0;
 
     const score =
       cost * OPTIMIZER_WEIGHTS.cost +
@@ -223,7 +235,9 @@ function pickRecipe(args: {
       repetitionPenalty +
       sessionBonus -
       reuseBonus +
-      proteinBonus;
+      proteinBonus +
+      fiberBonus +
+      ironBonus;
 
     if (score < bestScore) {
       bestScore = score;
@@ -253,6 +267,18 @@ function currentProteinPerDay(selected: PlannedMeal[], days: number): number {
   const coveredDays = new Set(selected.map((meal) => meal.dayIndex)).size || days;
   const protein = selected.reduce((sum, meal) => sum + meal.protein, 0);
   return protein / coveredDays;
+}
+
+function currentFiberPerDay(selected: PlannedMeal[], days: number): number {
+  if (selected.length === 0) return 0;
+  const coveredDays = new Set(selected.map((meal) => meal.dayIndex)).size || days;
+  return selected.reduce((sum, meal) => sum + (meal.fiber ?? 0), 0) / coveredDays;
+}
+
+function currentIronPerDay(selected: PlannedMeal[], days: number): number {
+  if (selected.length === 0) return 0;
+  const coveredDays = new Set(selected.map((meal) => meal.dayIndex)).size || days;
+  return selected.reduce((sum, meal) => sum + (meal.iron ?? 0), 0) / coveredDays;
 }
 
 function recipeCost(recipe: Recipe, input: OptimizationInput, peopleCount: number): number {
@@ -292,15 +318,18 @@ function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {
       gramsByProduct.set(ing.product_id, (gramsByProduct.get(ing.product_id) ?? 0) + ing.grams);
     }
   }
+  const fridge = new Map((input.fridge ?? []).map((item) => [item.productId, item.grams]));
 
   const lines: CartLine[] = [];
   for (const [productId, grams] of gramsByProduct) {
     const product = input.products.find((item) => item.id === productId);
     const offer = cheapestOffer(productId, input);
     if (!product || !offer) continue;
+    const fromFridgeGrams = Math.min(grams, fridge.get(productId) ?? 0);
+    const toBuyGrams = Math.max(0, grams - fromFridgeGrams);
     const store = STORES.find((item) => item.id === offer.store_id);
     const percent = cashbackFor(offer.store_id, input);
-    const count = packagesNeeded(grams, offer.package_weight);
+    const count = packagesNeeded(toBuyGrams, offer.package_weight);
     const bought = purchasedGrams(count, offer.package_weight);
     const price = count * offer.price;
     const cashback = cashbackAmount(price, percent);
@@ -316,7 +345,9 @@ function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {
       cashbackPercent: percent,
       cashback: roundMoney(cashback),
       effectivePrice: effectivePrice(price, percent),
-      leftoverGrams: leftoverGrams(grams, bought),
+      leftoverGrams: leftoverGrams(toBuyGrams, bought),
+      fromFridgeGrams,
+      toBuyGrams,
     });
   }
 
@@ -354,6 +385,8 @@ function limitStores(cart: CartLine[], input: OptimizationInput): CartLine[] {
       protein: 0,
       fat: 0,
       carbs: 0,
+      fiber: 0,
+      iron: 0,
       instructions: [],
     },
   ];
@@ -386,6 +419,8 @@ function tryCheaperMenu(
     meal.protein = round(cheaper.protein * servings);
     meal.fat = round(cheaper.fat * servings);
     meal.carbs = round(cheaper.carbs * servings);
+    meal.fiber = round((cheaper.fiber ?? 0) * servings);
+    meal.iron = round((cheaper.iron ?? 0) * servings);
     meal.cookingSession = sessions[meal.dayIndex] ?? 0;
   }
   const cart = buildCart(clone, input);
@@ -415,10 +450,14 @@ function summarizeNutrition(
     proteinPerDay: round(totals.protein / days),
     fatPerDay: round(totals.fat / days),
     carbsPerDay: round(totals.carbs / days),
+    fiberPerDay: round((totals.fiber ?? 0) / days),
+    ironPerDay: round((totals.iron ?? 0) / days),
     calorieTarget: input.calorieTargets,
     proteinTarget: input.macroTargets.protein,
     fatTarget: input.macroTargets.fat,
     carbsTarget: input.macroTargets.carbs,
+    fiberTarget: input.macroTargets.fiber,
+    ironTarget: input.macroTargets.iron,
   };
 }
 
@@ -464,13 +503,15 @@ export function nutritionFromCart(
   return sumNutrition(
     cart.map((line) => {
       const product = products.find((item) => item.id === line.productId);
-      if (!product) return { calories: 0, protein: 0, fat: 0, carbs: 0 };
+      if (!product) return { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, iron: 0 };
       return macrosFromGrams({
         grams: line.quantityGrams,
         caloriesPer100g: product.calories_per_100g,
         proteinPer100g: product.protein_per_100g,
         fatPer100g: product.fat_per_100g,
         carbsPer100g: product.carbs_per_100g,
+        fiberPer100g: product.fiber_per_100g,
+        ironPer100g: product.iron_per_100g,
       });
     }),
   );
@@ -485,10 +526,10 @@ export function materializeFromMenu(
   const totalCost = roundMoney(cart.reduce((sum, line) => sum + line.price, 0));
   const cashback = roundMoney(cart.reduce((sum, line) => sum + line.cashback, 0));
   const effectiveCost = roundMoney(cart.reduce((sum, line) => sum + line.effectivePrice, 0));
-  const leftoverValue = cart.reduce(
-    (sum, line) => sum + (line.leftoverGrams / line.packageWeight) * line.effectivePrice,
-    0,
-  );
+  const leftoverValue = cart.reduce((sum, line) => {
+    if (!line.packageCount || !line.packageWeight) return sum;
+    return sum + (line.leftoverGrams / line.packageWeight) * line.effectivePrice;
+  }, 0);
   const nutrition = summarizeNutrition(menu, input, days);
   return {
     menu,

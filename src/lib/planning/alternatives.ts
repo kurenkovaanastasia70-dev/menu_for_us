@@ -88,9 +88,11 @@ export function replaceProduct(
           protein: acc.protein + product.protein_per_100g * k,
           fat: acc.fat + product.fat_per_100g * k,
           carbs: acc.carbs + product.carbs_per_100g * k,
+          fiber: acc.fiber + product.fiber_per_100g * k,
+          iron: acc.iron + product.iron_per_100g * k,
         };
       },
-      { calories: 0, protein: 0, fat: 0, carbs: 0 },
+      { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, iron: 0 },
     );
     return {
       ...meal,
@@ -98,6 +100,8 @@ export function replaceProduct(
       protein: Math.round(nutrition.protein * 10) / 10,
       fat: Math.round(nutrition.fat * 10) / 10,
       carbs: Math.round(nutrition.carbs * 10) / 10,
+      fiber: Math.round(nutrition.fiber * 10) / 10,
+      iron: Math.round(nutrition.iron * 10) / 10,
     };
   });
   return materializeFromMenu(recalculated, input);
@@ -119,5 +123,7 @@ function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, peopleCount: number):
     protein: Math.round(recipe.protein * servings * 10) / 10,
     fat: Math.round(recipe.fat * servings * 10) / 10,
     carbs: Math.round(recipe.carbs * servings * 10) / 10,
+    fiber: Math.round((recipe.fiber ?? 0) * servings * 10) / 10,
+    iron: Math.round((recipe.iron ?? 0) * servings * 10) / 10,
   };
 }
