@@ -4,7 +4,6 @@ import { parseGuides } from "@/lib/llm/recipe-guide";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
 import { GreedyOptimizationEngine, materializeFromMenu, type OptimizationInput, type OptimizationResult } from "@/lib/optimizer";
 import { fillMissingSlots, fitMenuToBudget, mealsFromLlmMenu, scaleMenuToMacroTargets } from "./from-llm";
-import { buildTrainingPlans, type TrainingPerson } from "@/lib/training/plan";
 import { validateMenuNutrition } from "./validate-menu";
 
 export interface GenerateWeekParams {
@@ -15,7 +14,6 @@ export interface GenerateWeekParams {
   cashback: OptimizationInput["cashback"];
   fridge?: OptimizationInput["fridge"];
   useLlm: boolean;
-  trainingPeople?: TrainingPerson[];
 }
 
 export async function generateWeek(params: GenerateWeekParams): Promise<OptimizationResult> {
@@ -41,10 +39,8 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   };
 
   const fallback = engine.optimize(input);
-  const trainingPlans = buildTrainingPlans(params.trainingPeople ?? [], params.days);
-  const fallbackWithTraining: OptimizationResult = { ...fallback, trainingPlans };
 
-  if (!params.useLlm) return validateMenuNutrition(fallbackWithTraining, input);
+  if (!params.useLlm) return validateMenuNutrition(fallback, input);
 
   const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
     days: params.days,
@@ -65,10 +61,10 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   });
 
   if (!worker.ok || !worker.data.menu) {
-    fallbackWithTraining.warnings.push(
+    fallback.warnings.push(
       "Модель недоступна — меню из каталога. Ключ Gemini кладётся в Cloudflare Worker, в GitHub только VITE_API_URL.",
     );
-    return validateMenuNutrition(fallbackWithTraining, input);
+    return validateMenuNutrition(fallback, input);
   }
 
   const guides = parseGuides(worker.data.guides ? { guides: worker.data.guides } : worker.data);
@@ -77,7 +73,7 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   menu = scaleMenuToMacroTargets(menu, input);
   menu = fitMenuToBudget(menu, input);
 
-  const result = materializeFromMenu(menu, input, { trainingPlans });
+  const result = materializeFromMenu(menu, input);
   result.warnings = [
     ...result.warnings,
     "Рецепты и примерное КБЖУ предложила модель. Граммы, корзина и итоговое КБЖУ подогнаны кодом под цель и бюджет.",

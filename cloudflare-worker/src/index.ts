@@ -62,6 +62,9 @@ export default {
     if (url.pathname.endsWith("/api/generate-alternatives")) {
       return handleAlternatives(body, env);
     }
+    if (url.pathname.endsWith("/api/generate-training")) {
+      return handleTraining(body, env);
+    }
     return json({ ok: false, error: "Not found" }, 404);
   },
 };
@@ -131,6 +134,48 @@ async function handleRecipe(body: unknown, env: Env): Promise<Response> {
   const guides = Array.isArray(parsed.guides) ? parsed.guides : parsed.recipe_id ? [parsed] : [];
   if (guides.length === 0) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
   return json({ ok: true, source: "llm", guides });
+}
+
+async function handleTraining(body: unknown, env: Env): Promise<Response> {
+  const prompt = `Ты тренер. Составь НЕДЕЛЬНЫЙ план тренировок под цель каждого человека.
+Верни ТОЛЬКО JSON без markdown.
+
+Форма:
+{
+  "plans":[
+    {
+      "person_id":"id_из_входа",
+      "weeklySummary":"1–2 предложения",
+      "scienceNote":"короткая опора на ACSM/ISSN",
+      "sessions":[
+        {
+          "dayIndex":0,
+          "title":"Силовая всё тело",
+          "focus":"базовые движения",
+          "durationMin":45,
+          "intensity":"moderate",
+          "blocks":[{"name":"Присед","detail":"3×8–12"}]
+        }
+      ]
+    }
+  ]
+}
+
+Правила:
+- dayIndex: 0=пн … 6=вс. Только уникальные дни.
+- НЕ заполняй все 7 дней тренировками. Обязательно оставь дни отдыха.
+- lose (похудение): 3 силовые + максимум 1 зона 2. Всего 3–4 сессии.
+- gain (массонабор): 3–4 силовые, без ежедневного кардио.
+- maintain (поддержание): 2 силовые + опционально 1 зона 2. Всего 2–3 сессии.
+- intensity: easy | moderate | hard.
+- Учитывай цель, вес, активность из входа. Язык русский. Без медицины и добавок.
+
+Вход: ${JSON.stringify(body)}`;
+  const parsed = await completeJson(prompt, env);
+  if (!parsed || !Array.isArray(parsed.plans)) {
+    return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
+  }
+  return json({ ok: true, source: "llm", plans: parsed.plans });
 }
 
 async function handleAlternatives(body: unknown, env: Env): Promise<Response> {

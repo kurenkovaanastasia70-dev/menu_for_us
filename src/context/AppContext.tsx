@@ -6,8 +6,11 @@ import {
   fetchHouseholdProfiles,
   fetchMealPlans,
   fetchProfile,
+  fetchTrainingPlans,
+  fetchWeightLogs,
 } from "@/lib/supabase/api";
-import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile } from "@/lib/supabase/types";
+import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile, WeightLog } from "@/lib/supabase/types";
+import type { PersonTrainingPlan } from "@/lib/training/plan";
 import type { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
@@ -20,6 +23,8 @@ interface AppState {
   members: Profile[];
   cashback: CashbackRuleRow[];
   fridge: FridgeItem[];
+  weightLogs: WeightLog[];
+  trainingPlans: PersonTrainingPlan[];
   plans: MealPlanRow[];
   latestPlan: MealPlanRow | null;
   error: string | null;
@@ -38,6 +43,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Profile[]>([]);
   const [cashback, setCashback] = useState<CashbackRuleRow[]>([]);
   const [fridge, setFridge] = useState<FridgeItem[]>([]);
+  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
+  const [trainingPlans, setTrainingPlans] = useState<PersonTrainingPlan[]>([]);
   const [plans, setPlans] = useState<MealPlanRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [offlineCache, setOfflineCache] = useState(false);
@@ -49,34 +56,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMembers([]);
       setCashback([]);
       setFridge([]);
+      setWeightLogs([]);
+      setTrainingPlans([]);
       setPlans([]);
       return;
     }
     try {
       const nextProfile = await fetchProfile(current.user.id);
       setProfile(nextProfile);
+      const logs = await fetchWeightLogs(current.user.id);
+      setWeightLogs(logs);
       if (nextProfile?.household_id) {
-        const [nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge] = await Promise.all([
+        const [nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge, nextTraining] = await Promise.all([
           fetchHousehold(nextProfile.household_id),
           fetchHouseholdProfiles(nextProfile.household_id),
           fetchCashback(nextProfile.household_id),
           fetchMealPlans(nextProfile.household_id),
           fetchFridge(nextProfile.household_id),
+          fetchTrainingPlans(nextProfile.household_id),
         ]);
         setHousehold(nextHousehold);
         setMembers(nextMembers);
         setCashback(nextCashback);
         setPlans(nextPlans);
         setFridge(nextFridge);
+        setTrainingPlans(nextTraining);
         localStorage.setItem(
           CACHE_KEY,
-          JSON.stringify({ nextProfile, nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge }),
+          JSON.stringify({
+            nextProfile,
+            nextHousehold,
+            nextMembers,
+            nextCashback,
+            nextPlans,
+            nextFridge,
+            nextTraining,
+            nextWeightLogs: logs,
+          }),
         );
       } else {
         setHousehold(null);
         setMembers(nextProfile ? [nextProfile] : []);
         setCashback([]);
         setFridge([]);
+        setTrainingPlans([]);
         setPlans([]);
       }
       setOfflineCache(false);
@@ -91,6 +114,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           nextCashback: CashbackRuleRow[];
           nextPlans: MealPlanRow[];
           nextFridge?: FridgeItem[];
+          nextTraining?: PersonTrainingPlan[];
+          nextWeightLogs?: WeightLog[];
         };
         setProfile(parsed.nextProfile);
         setHousehold(parsed.nextHousehold);
@@ -98,6 +123,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCashback(parsed.nextCashback);
         setPlans(parsed.nextPlans);
         setFridge(parsed.nextFridge ?? []);
+        setTrainingPlans(parsed.nextTraining ?? []);
+        setWeightLogs(parsed.nextWeightLogs ?? []);
         setOfflineCache(true);
         setError("Нет связи с базой. Показаны сохранённые данные.");
       } else {
@@ -133,13 +160,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       members,
       cashback,
       fridge,
+      weightLogs,
+      trainingPlans,
       plans,
       latestPlan: plans[0] ?? null,
       error,
       offlineCache,
       refresh: () => loadAll(session),
     }),
-    [loading, session, profile, household, members, cashback, fridge, plans, error, offlineCache],
+    [loading, session, profile, household, members, cashback, fridge, weightLogs, trainingPlans, plans, error, offlineCache],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

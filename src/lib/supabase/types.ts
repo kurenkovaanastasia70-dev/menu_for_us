@@ -72,3 +72,10 @@ export interface FridgeItem {
   product_id: string;
   grams: number;
 }
+
+export interface WeightLog {
+  id?: string;
+  user_id: string;
+  logged_at: string;
+  weight_kg: number;
+}

@@ -1,26 +1,69 @@
 import { Screen } from "@/components/layout/Shell";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
+import { WeightTracker } from "@/components/WeightTracker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Label } from "@/components/ui/field";
+import { Input, Label, Select } from "@/components/ui/field";
 import { useApp } from "@/context/AppContext";
 import { STORES } from "@/lib/optimizer";
-import { ageFromBirthDate, calculateNutritionTargets } from "@/lib/nutrition/calculator";
-import { calculateWeightPlan } from "@/lib/nutrition/weight-goal";
-import { saveCashback, updateHousehold } from "@/lib/supabase/api";
+import {
+  ageFromBirthDate,
+  calculateNutritionTargets,
+  type Goal,
+} from "@/lib/nutrition/calculator";
+import { calculateWeightPlan, suggestedWeeks } from "@/lib/nutrition/weight-goal";
+import { saveCashback, updateHousehold, upsertProfile, upsertWeightLog } from "@/lib/supabase/api";
 import { supabase } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function ProfilePage() {
-  const { profile, household, members, cashback, refresh } = useApp();
+  const { profile, household, members, cashback, weightLogs, refresh, user } = useApp();
   const navigate = useNavigate();
   const [budget, setBudget] = useState(household?.default_budget ?? 6000);
   const [percents, setPercents] = useState<Record<string, number>>(
     Object.fromEntries(cashback.map((row) => [row.store_id, Number(row.percent)])),
   );
+  const [goal, setGoal] = useState<Goal>(profile?.goal ?? "lose");
+  const [weight, setWeight] = useState(Number(profile?.weight_kg ?? 62));
+  const [target, setTarget] = useState(Number(profile?.target_weight_kg ?? profile?.weight_kg ?? 58));
+  const [weeks, setWeeks] = useState(
+    profile?.goal_weeks ??
+      suggestedWeeks(Number(profile?.weight_kg ?? 62), Number(profile?.target_weight_kg ?? 58)),
+  );
+  const [pending, setPending] = useState(false);
+  const [weightPending, setWeightPending] = useState(false);
+  const [message, setMessage] = useState("");
 
-  async function save() {
+  const nutrition = useMemo(() => {
+    if (!profile) return null;
+    const targetKg = goal === "maintain" ? Number(weight) : Number(target);
+    return calculateNutritionTargets({
+      gender: profile.gender,
+      ageYears: ageFromBirthDate(profile.birth_date),
+      heightCm: Number(profile.height_cm),
+      weightKg: Number(weight),
+      activityLevel: profile.activity_level,
+      goal,
+      targetWeightKg: targetKg,
+      goalWeeks: goal === "maintain" ? undefined : Number(weeks) || undefined,
+    });
+  }, [profile, goal, weight, target, weeks]);
+
+  const weightPlan = useMemo(() => {
+    if (!profile || !nutrition) return null;
+    return calculateWeightPlan({
+      currentKg: Number(weight),
+      targetKg: goal === "maintain" ? Number(weight) : Number(target),
+      tdee: nutrition.tdee,
+      calorieTarget: nutrition.calorieTarget,
+      goal,
+      goalWeeks: goal === "maintain" ? undefined : Number(weeks) || undefined,
+      menuDays: household?.default_days ?? 7,
+    });
+  }, [profile, nutrition, goal, weight, target, weeks, household?.default_days]);
+
+  async function saveHousehold() {
     if (!household) return;
     await updateHousehold(household.id, { default_budget: Number(budget) });
     for (const store of STORES) {
@@ -29,19 +72,155 @@ export function ProfilePage() {
     await refresh();
   }
 
+  async function saveGoal() {
+    if (!profile || !nutrition) return;
+    setPending(true);
+    setMessage("");
+    try {
+      const targetKg = goal === "maintain" ? Number(weight) : Number(target);
+      await upsertProfile({
+        ...profile,
+        goal,
+        weight_kg: Number(weight),
+        target_weight_kg: targetKg,
+        goal_weeks: goal === "maintain" ? null : Number(weeks) || null,
+        calorie_target: nutrition.calorieTarget,
+        protein_target: nutrition.proteinTarget,
+        fat_target: nutrition.fatTarget,
+        carbs_target: nutrition.carbsTarget,
+        fiber_target: nutrition.fiberTarget,
+        iron_target: nutrition.ironTarget,
+      });
+      await refresh();
+      setMessage("Цель сохранена. Меню и тренировки будут считать от неё, пока не измените здесь.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Не удалось сохранить цель");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveWeightLog(loggedAt: string, weightKg: number) {
+    if (!user || !profile || !nutrition) return;
+    setWeightPending(true);
+    try {
+      const nextLogs = await upsertWeightLog({ user_id: user.id, logged_at: loggedAt, weight_kg: weightKg });
+      const latest = [...nextLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at)).at(-1);
+      if (latest && latest.logged_at === loggedAt) {
+        const latestKg = Number(latest.weight_kg);
+        setWeight(latestKg);
+        const targetKg = goal === "maintain" ? latestKg : Number(target);
+        const nextNutrition = calculateNutritionTargets({
+          gender: profile.gender,
+          ageYears: ageFromBirthDate(profile.birth_date),
+          heightCm: Number(profile.height_cm),
+          weightKg: latestKg,
+          activityLevel: profile.activity_level,
+          goal,
+          targetWeightKg: targetKg,
+          goalWeeks: goal === "maintain" ? undefined : Number(weeks) || undefined,
+        });
+        await upsertProfile({
+          ...profile,
+          goal,
+          weight_kg: latestKg,
+          target_weight_kg: targetKg,
+          goal_weeks: goal === "maintain" ? null : Number(weeks) || null,
+          calorie_target: nextNutrition.calorieTarget,
+          protein_target: nextNutrition.proteinTarget,
+          fat_target: nextNutrition.fatTarget,
+          carbs_target: nextNutrition.carbsTarget,
+          fiber_target: nextNutrition.fiberTarget,
+          iron_target: nextNutrition.ironTarget,
+        });
+      }
+      await refresh();
+    } finally {
+      setWeightPending(false);
+    }
+  }
+
   return (
     <Screen title="Профиль">
       <Card>
         <div className="font-display text-2xl">{profile?.name}</div>
         <p className="mt-2 text-sm text-muted">
-          {profile?.calorie_target} kcal · {profile?.protein_target} g белка · клетчатка {profile?.fiber_target ?? 25} г ·
-          железо {profile?.iron_target ?? 8} мг
+          {nutrition?.calorieTarget ?? profile?.calorie_target} kcal ·{" "}
+          {nutrition?.proteinTarget ?? profile?.protein_target} g белка · клетчатка{" "}
+          {nutrition?.fiberTarget ?? profile?.fiber_target ?? 25} г · железо{" "}
+          {nutrition?.ironTarget ?? profile?.iron_target ?? 8} мг
         </p>
         <p className="mt-3 text-xs text-muted">Расчёт ориентировочный и не является медицинской рекомендацией.</p>
         <Button className="mt-4 w-full" variant="secondary" onClick={() => navigate("/onboarding")}>
-          Изменить профиль
+          Изменить анкету
         </Button>
       </Card>
+
+      <Card className="mt-4 space-y-4">
+        <h2 className="font-display text-xl">Цель</h2>
+        <p className="text-sm text-muted">
+          Похудение, поддержание или набор задаются здесь, а не каждую неделю при расчёте меню.
+        </p>
+        <div>
+          <Label>Режим</Label>
+          <Select value={goal} onChange={(e) => setGoal(e.target.value as Goal)}>
+            <option value="lose">Похудение</option>
+            <option value="maintain">Поддержание</option>
+            <option value="gain">Массонабор</option>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Текущий вес, кг</Label>
+            <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(Number(e.target.value))} />
+          </div>
+          {goal !== "maintain" && (
+            <div>
+              <Label>Целевой вес, кг</Label>
+              <Input type="number" step="0.1" value={target} onChange={(e) => setTarget(Number(e.target.value))} />
+            </div>
+          )}
+        </div>
+        {goal !== "maintain" && (
+          <div>
+            <Label>За сколько недель выйти на цель</Label>
+            <Input type="number" min={4} max={52} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} />
+            <p className="mt-2 text-xs text-muted">
+              {goal === "gain"
+                ? "Массонабор: безопасный темп до ~0.4 кг/нед."
+                : "Похудение: 0.25–0.75 кг/нед. Калории пересчитаются под этот срок."}
+            </p>
+          </div>
+        )}
+        {goal === "maintain" && (
+          <p className="text-sm text-muted">
+            Поддержание: калории около расхода, без дефицита и профицита. Целевой вес = текущий.
+          </p>
+        )}
+        <Button className="w-full" disabled={pending} onClick={saveGoal}>
+          {pending ? "Сохраняем…" : "Сохранить цель"}
+        </Button>
+        {message && <p className="text-sm text-muted">{message}</p>}
+      </Card>
+
+      {weightPlan && (
+        <div className="mt-4">
+          <WeightGoalCard plan={weightPlan} />
+        </div>
+      )}
+
+      {user && (
+        <div className="mt-4">
+          <WeightTracker
+            logs={weightLogs}
+            currentKg={Number(weight)}
+            targetKg={goal === "maintain" ? Number(weight) : Number(target)}
+            goal={goal}
+            pending={weightPending}
+            onSave={saveWeightLog}
+          />
+        </div>
+      )}
 
       <Card className="mt-4">
         <h2 className="font-display text-xl">Куда вставить Gemini</h2>
@@ -67,31 +246,6 @@ export function ProfilePage() {
         </p>
       </Card>
 
-      {profile && (
-        <div className="mt-4">
-          <WeightGoalCard
-            plan={calculateWeightPlan({
-              currentKg: Number(profile.weight_kg),
-              targetKg: Number(profile.target_weight_kg ?? profile.weight_kg),
-              tdee: calculateNutritionTargets({
-                gender: profile.gender,
-                ageYears: ageFromBirthDate(profile.birth_date),
-                heightCm: Number(profile.height_cm),
-                weightKg: Number(profile.weight_kg),
-                activityLevel: profile.activity_level,
-                goal: profile.goal,
-                targetWeightKg: Number(profile.target_weight_kg ?? profile.weight_kg),
-                goalWeeks: profile.goal_weeks ?? undefined,
-              }).tdee,
-              calorieTarget: profile.calorie_target,
-              goal: profile.goal,
-              goalWeeks: profile.goal_weeks ?? undefined,
-              menuDays: household?.default_days ?? 7,
-            })}
-          />
-        </div>
-      )}
-
       <Card className="mt-4">
         <h2 className="font-display text-xl">Пара</h2>
         <p className="mt-2 text-sm">{household?.name}</p>
@@ -99,7 +253,8 @@ export function ProfilePage() {
         <ul className="mt-3 space-y-1 text-sm">
           {members.map((member) => (
             <li key={member.id}>
-              {member.name} · {member.calorie_target} kcal
+              {member.name} · {member.calorie_target} kcal ·{" "}
+              {member.goal === "maintain" ? "поддержание" : member.goal === "gain" ? "набор" : "похудение"}
             </li>
           ))}
         </ul>
@@ -124,7 +279,7 @@ export function ProfilePage() {
             />
           </div>
         ))}
-        <Button className="w-full" onClick={save}>
+        <Button className="w-full" onClick={saveHousehold}>
           Сохранить
         </Button>
       </Card>

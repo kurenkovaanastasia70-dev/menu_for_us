@@ -61,8 +61,8 @@ export function OnboardingPage() {
         weightKg: Number(form.weight_kg),
         activityLevel: form.activity_level,
         goal: form.goal,
-        targetWeightKg: Number(form.target_weight_kg),
-        goalWeeks: Number(form.goal_weeks) || undefined,
+        targetWeightKg: form.goal === "maintain" ? Number(form.weight_kg) : Number(form.target_weight_kg),
+        goalWeeks: form.goal === "maintain" ? undefined : Number(form.goal_weeks) || undefined,
       }),
     [form],
   );
@@ -91,14 +91,14 @@ export function OnboardingPage() {
         weight_kg: Number(form.weight_kg),
         activity_level: form.activity_level,
         goal: form.goal,
-        target_weight_kg: Number(form.target_weight_kg),
+        target_weight_kg: form.goal === "maintain" ? Number(form.weight_kg) : Number(form.target_weight_kg),
         calorie_target: nutrition.calorieTarget,
         protein_target: nutrition.proteinTarget,
         fat_target: nutrition.fatTarget,
         carbs_target: nutrition.carbsTarget,
         fiber_target: nutrition.fiberTarget,
         iron_target: nutrition.ironTarget,
-        goal_weeks: Number(form.goal_weeks) || null,
+        goal_weeks: form.goal === "maintain" ? null : Number(form.goal_weeks) || null,
         meals_per_day: Number(form.meals_per_day),
         snacks: form.snacks,
         preferences: [],
@@ -170,7 +170,7 @@ export function OnboardingPage() {
                 <Input type="date" value={form.birth_date} onChange={(e) => set("birth_date", e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Рост, см</Label>
                 <Input type="number" value={form.height_cm} onChange={(e) => set("height_cm", Number(e.target.value))} />
@@ -178,10 +178,6 @@ export function OnboardingPage() {
               <div>
                 <Label>Вес, кг</Label>
                 <Input type="number" value={form.weight_kg} onChange={(e) => set("weight_kg", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label>Цель, кг</Label>
-                <Input type="number" value={form.target_weight_kg} onChange={(e) => set("target_weight_kg", Number(e.target.value))} />
               </div>
             </div>
             <div>
@@ -202,29 +198,45 @@ export function OnboardingPage() {
                 <option value="gain">Массонабор (мышцы)</option>
               </Select>
             </div>
+            {form.goal === "maintain" && (
+              <p className="text-sm text-muted">
+                Поддержание: калории около расхода, без дефицита. Целевой вес = текущий. Менять цель потом можно в
+                Профиле, не каждую неделю.
+              </p>
+            )}
             {form.goal === "gain" && (
               <p className="text-sm text-muted">
-                Массонабор: профицит 250–450 ккал, белок 2.0 г/кг, 4 силовые в неделю, мало кардио. Срок цели задаёт
-                темп набора (до ~0.4 кг/нед).
+                Массонабор: профицит 250–450 ккал, белок 2.0 г/кг. Срок цели задаёт темп набора (до ~0.4 кг/нед).
+              </p>
+            )}
+            {form.goal === "lose" && (
+              <p className="text-sm text-muted">
+                Похудение: дефицит в безопасном темпе. Срок и вес потом редактируются в Профиле.
               </p>
             )}
             {form.goal !== "maintain" && (
-              <div>
-                <Label>За сколько недель хотите выйти на цель</Label>
-                <Input
-                  type="number"
-                  min={4}
-                  max={52}
-                  value={form.goal_weeks}
-                  onChange={(e) => set("goal_weeks", Number(e.target.value))}
-                />
-              </div>
+              <>
+                <div>
+                  <Label>Целевой вес, кг</Label>
+                  <Input type="number" value={form.target_weight_kg} onChange={(e) => set("target_weight_kg", Number(e.target.value))} />
+                </div>
+                <div>
+                  <Label>За сколько недель хотите выйти на цель</Label>
+                  <Input
+                    type="number"
+                    min={4}
+                    max={52}
+                    value={form.goal_weeks}
+                    onChange={(e) => set("goal_weeks", Number(e.target.value))}
+                  />
+                </div>
+              </>
             )}
           </Card>
           <WeightGoalCard
             plan={calculateWeightPlan({
               currentKg: Number(form.weight_kg),
-              targetKg: Number(form.target_weight_kg),
+              targetKg: form.goal === "maintain" ? Number(form.weight_kg) : Number(form.target_weight_kg),
               tdee: nutrition.tdee,
               calorieTarget: nutrition.calorieTarget,
               goal: form.goal,

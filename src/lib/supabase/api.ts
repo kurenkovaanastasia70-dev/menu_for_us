@@ -1,6 +1,7 @@
 import type { OptimizationResult } from "@/lib/optimizer";
+import type { PersonTrainingPlan } from "@/lib/training/plan";
 import { supabase } from "./client";
-import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile } from "./types";
+import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile, WeightLog } from "./types";
 
 function requireClient() {
   if (!supabase) throw new Error("Supabase не настроен");
@@ -307,4 +308,99 @@ export async function deleteFridgeItem(householdId: string, productId: string): 
     // local copy is enough until SQL is applied
   }
   return next;
+}
+
+const WEIGHT_KEY = (id: string) => `menu-for-us-weight-${id}`;
+const TRAINING_KEY = (id: string) => `menu-for-us-training-${id}`;
+
+function readLocalJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function fetchWeightLogs(userId: string): Promise<WeightLog[]> {
+  const local = readLocalJson<WeightLog[]>(WEIGHT_KEY(userId), []);
+  try {
+    const { data, error } = await requireClient()
+      .from("weight_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("logged_at", { ascending: true });
+    if (error) return local;
+    const rows = (data ?? []) as WeightLog[];
+    localStorage.setItem(WEIGHT_KEY(userId), JSON.stringify(rows));
+    return rows;
+  } catch {
+    return local;
+  }
+}
+
+export async function upsertWeightLog(log: {
+  user_id: string;
+  logged_at: string;
+  weight_kg: number;
+}): Promise<WeightLog[]> {
+  const current = await fetchWeightLogs(log.user_id);
+  const next = [
+    ...current.filter((row) => row.logged_at !== log.logged_at),
+    { ...log, weight_kg: Number(log.weight_kg) },
+  ].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+  localStorage.setItem(WEIGHT_KEY(log.user_id), JSON.stringify(next));
+  try {
+    const { error } = await requireClient()
+      .from("weight_logs")
+      .upsert(
+        { user_id: log.user_id, logged_at: log.logged_at, weight_kg: log.weight_kg },
+        { onConflict: "user_id,logged_at" },
+      );
+    if (error) return next;
+    return fetchWeightLogs(log.user_id);
+  } catch {
+    return next;
+  }
+}
+
+export async function fetchTrainingPlans(householdId: string): Promise<PersonTrainingPlan[]> {
+  const local = readLocalJson<PersonTrainingPlan[]>(TRAINING_KEY(householdId), []);
+  try {
+    const { data, error } = await requireClient()
+      .from("training_plans")
+      .select("plan_json")
+      .eq("household_id", householdId);
+    if (error) return local;
+    const rows = ((data ?? []) as Array<{ plan_json: PersonTrainingPlan }>).map((row) => row.plan_json).filter(Boolean);
+    if (rows.length === 0) return local;
+    localStorage.setItem(TRAINING_KEY(householdId), JSON.stringify(rows));
+    return rows;
+  } catch {
+    return local;
+  }
+}
+
+export async function saveTrainingPlans(
+  householdId: string,
+  plans: PersonTrainingPlan[],
+): Promise<PersonTrainingPlan[]> {
+  localStorage.setItem(TRAINING_KEY(householdId), JSON.stringify(plans));
+  try {
+    const client = requireClient();
+    await client.from("training_plans").delete().eq("household_id", householdId);
+    if (plans.length > 0) {
+      const { error } = await client.from("training_plans").insert(
+        plans.map((plan) => ({
+          household_id: householdId,
+          profile_id: plan.personId,
+          plan_json: plan,
+        })),
+      );
+      if (error) return plans;
+    }
+    return fetchTrainingPlans(householdId);
+  } catch {
+    return plans;
+  }
 }

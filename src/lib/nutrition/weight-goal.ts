@@ -46,7 +46,7 @@ export function calculateWeightPlan(input: {
 }): WeightPlan {
   const deltaKg = round1(input.targetKg - input.currentKg);
   const direction: Goal =
-    Math.abs(deltaKg) < 0.3 ? "maintain" : deltaKg < 0 ? "lose" : "gain";
+    input.goal === "maintain" || Math.abs(deltaKg) < 0.3 ? "maintain" : deltaKg < 0 ? "lose" : "gain";
   const dailyDeltaKcal = Math.round(input.calorieTarget - input.tdee);
   const weeklyKg = round1((dailyDeltaKcal * 7) / KCAL_PER_KG);
   const needed = Math.abs(deltaKg);
@@ -61,7 +61,7 @@ export function calculateWeightPlan(input: {
     (direction === "lose" && weeklyAbs <= MAX_WEEKLY_LOSS_KG && weeklyAbs >= MIN_WEEKLY_LOSS_KG) ||
     (direction === "gain" && weeklyAbs <= MAX_WEEKLY_GAIN_KG);
 
-  let summary = "Вес планируется поддерживать.";
+  let summary = "Режим поддержания: калории около расхода, вес держим в коридоре примерно ±0.5 кг.";
   if (direction === "lose") {
     summary = `Нужно снизить ${needed} кг. При текущем дефиците около ${weeklyAbs} кг в неделю это займёт примерно ${weeksToGoal ?? "—"} нед.`;
   } else if (direction === "gain") {
@@ -70,15 +70,18 @@ export function calculateWeightPlan(input: {
 
   return {
     currentKg: input.currentKg,
-    targetKg: input.targetKg,
-    deltaKg,
+    targetKg: direction === "maintain" ? input.currentKg : input.targetKg,
+    deltaKg: direction === "maintain" ? 0 : deltaKg,
     direction,
     dailyDeltaKcal,
     weeklyKg,
-    weeksToGoal,
-    goalWeeks: input.goalWeeks ?? weeksToGoal,
+    weeksToGoal: direction === "maintain" ? null : weeksToGoal,
+    goalWeeks: direction === "maintain" ? null : (input.goalWeeks ?? weeksToGoal),
     safe,
-    menuDaysNote: `Корзина и меню считаются на ${input.menuDays} дн. Срок цели по весу — отдельный горизонт, не длина меню.`,
+    menuDaysNote:
+      direction === "maintain"
+        ? "Калории считаются по поддержанию. Меню на неделю — отдельно от цели по весу."
+        : `Корзина и меню считаются на ${input.menuDays} дн. Срок цели по весу задаётся в профиле, не при каждом меню.`,
     summary,
   };
 }
@@ -106,4 +109,17 @@ export function suggestedWeeks(currentKg: number, targetKg: number): number {
   const needed = Math.abs(targetKg - currentKg);
   if (needed < 0.3) return 0;
   return Math.max(6, Math.ceil(needed / 0.5));
+}
+
+export function progressPercent(input: {
+  startKg: number;
+  currentKg: number;
+  targetKg: number;
+  goal: Goal;
+}): number | null {
+  if (input.goal === "maintain") return null;
+  const total = input.targetKg - input.startKg;
+  if (Math.abs(total) < 0.2) return null;
+  const done = input.currentKg - input.startKg;
+  return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
 }

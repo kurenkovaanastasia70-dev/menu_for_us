@@ -61,6 +61,20 @@ describe("nutrition calculator", () => {
     expect(calculateCalorieTarget(2400, "gain", "male")).toBeGreaterThanOrEqual(2650);
   });
 
+  it("keeps maintenance calories at TDEE even if weeks are set", () => {
+    const result = calculateNutritionTargets({
+      gender: "female",
+      ageYears: 30,
+      heightCm: 168,
+      weightKg: 62,
+      activityLevel: "light",
+      goal: "maintain",
+      targetWeightKg: 58,
+      goalWeeks: 8,
+    });
+    expect(result.calorieTarget).toBe(Math.round(result.tdee));
+  });
+
   it("returns a full nutrition profile", () => {
     const result = calculateNutritionTargets({
       gender: "female",

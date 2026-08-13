@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calorieTargetForWeeks, calculateWeightPlan, fiberTargetFor, ironTargetFor, suggestedWeeks } from "./weight-goal";
+import { calorieTargetForWeeks, calculateWeightPlan, fiberTargetFor, ironTargetFor, progressPercent, suggestedWeeks } from "./weight-goal";
 
 describe("weight goal", () => {
   it("estimates weeks to lose weight from a calorie deficit", () => {
@@ -29,8 +29,24 @@ describe("weight goal", () => {
     expect(calories).toBeGreaterThanOrEqual(1200);
   });
 
-  it("suggests at least 6 weeks for a multi-kilo goal", () => {
-    expect(suggestedWeeks(80, 74)).toBeGreaterThanOrEqual(6);
+  it("treats maintain as a stable corridor, not a weekly diet reset", () => {
+    const plan = calculateWeightPlan({
+      currentKg: 62,
+      targetKg: 58,
+      tdee: 2000,
+      calorieTarget: 2000,
+      goal: "maintain",
+      menuDays: 7,
+    });
+    expect(plan.direction).toBe("maintain");
+    expect(plan.deltaKg).toBe(0);
+    expect(plan.goalWeeks).toBeNull();
+    expect(plan.summary.toLowerCase()).toContain("поддержан");
+  });
+
+  it("measures progress from start to target", () => {
+    expect(progressPercent({ startKg: 70, currentKg: 67, targetKg: 64, goal: "lose" })).toBe(50);
+    expect(progressPercent({ startKg: 70, currentKg: 70, targetKg: 70, goal: "maintain" })).toBeNull();
   });
 });
 

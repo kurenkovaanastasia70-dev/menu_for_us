@@ -8,7 +8,6 @@ import { materializeFromMenu } from "@/lib/optimizer";
 import { replaceMeal, suggestMealAlternatives } from "@/lib/planning/alternatives";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
 import { fetchMealPlan, replaceCartItems, updateMealPlanResult } from "@/lib/supabase/api";
-import { TrainingCard } from "@/pages/TrainingPage";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -133,19 +132,17 @@ export function MenuPage() {
         ))}
       </Card>
 
-      {result.trainingPlans && result.trainingPlans.length > 0 && (
-        <div className="mb-4">
-          <div className="mb-2 flex items-end justify-between">
+      <Card className="mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
             <h2 className="font-display text-xl">Тренировки</h2>
-            <button className="text-sm font-semibold text-sage" onClick={() => navigate("/training")}>
-              Открыть
-            </button>
+            <p className="mt-1 text-sm text-muted">Отдельный раздел. Меню их не заполняет.</p>
           </div>
-          {result.trainingPlans.slice(0, 1).map((plan) => (
-            <TrainingCard key={plan.personId} plan={plan} />
-          ))}
+          <Button variant="secondary" onClick={() => navigate("/training")}>
+            Открыть
+          </Button>
         </div>
-      )}
+      </Card>
 
       {result.cookingPlan.length > 0 && (
         <Card className="mb-4">

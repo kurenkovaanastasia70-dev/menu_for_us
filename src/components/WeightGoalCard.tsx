@@ -4,20 +4,28 @@ import type { WeightPlan } from "@/lib/nutrition/weight-goal";
 export function WeightGoalCard({ plan }: { plan: WeightPlan }) {
   const lose = plan.direction === "lose";
   const gain = plan.direction === "gain";
+  const maintain = plan.direction === "maintain";
   return (
     <Card>
-      <h2 className="font-display text-xl">Цель по весу</h2>
+      <h2 className="font-display text-xl">{maintain ? "Режим поддержания" : "Цель по весу"}</h2>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center">
         <Stat label="Сейчас" value={`${plan.currentKg} кг`} />
-        <Stat label="Цель" value={`${plan.targetKg} кг`} />
-        <Stat label={lose ? "Уйти" : gain ? "Набрать" : "Разница"} value={`${Math.abs(plan.deltaKg)} кг`} />
-        <Stat label="Срок цели" value={plan.goalWeeks ? `${plan.goalWeeks} нед.` : plan.weeksToGoal ? `${plan.weeksToGoal} нед.` : "—"} />
+        <Stat label={maintain ? "Коридор" : "Цель"} value={maintain ? "±0.5 кг" : `${plan.targetKg} кг`} />
+        {!maintain && (
+          <>
+            <Stat label={lose ? "Уйти" : gain ? "Набрать" : "Разница"} value={`${Math.abs(plan.deltaKg)} кг`} />
+            <Stat
+              label="Срок цели"
+              value={plan.goalWeeks ? `${plan.goalWeeks} нед.` : plan.weeksToGoal ? `${plan.weeksToGoal} нед.` : "—"}
+            />
+          </>
+        )}
       </div>
       <p className="mt-3 text-sm">{plan.summary}</p>
       <p className="mt-2 text-xs text-muted">{plan.menuDaysNote}</p>
       {!plan.safe && (
         <p className="mt-2 text-sm text-clay">
-          Темп быстрее безопасного (~0.25–0.75 кг/нед.). Лучше увеличить срок.
+          Темп быстрее безопасного (~0.25–0.75 кг/нед.). Лучше увеличить срок в профиле.
         </p>
       )}
       <p className="mt-2 text-xs text-muted">Ориентир, не медицинская рекомендация.</p>
