@@ -3,6 +3,8 @@ import { z } from "zod";
 export const llmMealSchema = z.object({
   name: z.string().min(2),
   recipe_id: z.string().min(1),
+  meal_type: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
+  leftover: z.boolean().optional(),
   ingredients: z
     .array(
       z.object({
@@ -10,7 +12,7 @@ export const llmMealSchema = z.object({
         grams: z.number().positive(),
       }),
     )
-    .min(1),
+    .optional(),
 });
 
 export const llmMenuSchema = z.object({

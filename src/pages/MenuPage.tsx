@@ -187,7 +187,9 @@ export function MenuPage() {
                         <div className="text-xs text-muted">
                           {meal.eatingOut
                             ? "Ем не дома — не в корзине"
-                            : `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g белка`}
+                            : meal.leftover
+                              ? "Остатки ужина · 5–8 мин"
+                              : `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g белка`}
                         </div>
                         {meal.sideSalad && !meal.eatingOut && (
                           <div className="text-xs text-muted">Салат: {meal.sideSalad.name}</div>

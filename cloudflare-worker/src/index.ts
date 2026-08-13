@@ -67,19 +67,29 @@ export default {
 };
 
 async function handleMenu(body: unknown, env: Env): Promise<Response> {
-  const prompt = `Ты шеф-повар. Верни ТОЛЬКО JSON без markdown.
+  const prompt = `Ты шеф-повар и нутрициолог. СОСТАВЬ меню на неделю и пошаговые гиды. Верни ТОЛЬКО JSON без markdown.
 
 Форма:
 {
-  "days":[{"day":1,"meals":[{"name":"...","recipe_id":"...","ingredients":[{"product_id":"...","grams":100}]}]}],
+  "days":[
+    {"day":1,"meals":[
+      {"meal_type":"breakfast","recipe_id":"...","name":"...","leftover":false},
+      {"meal_type":"lunch","recipe_id":"...","name":"...","leftover":false},
+      {"meal_type":"dinner","recipe_id":"...","name":"...","leftover":false}
+    ]}
+  ],
   "guides": ${GUIDE_SHAPE}
 }
 
-Правила:
-- Только recipe_id из списка. Не меняй состав продуктов.
-- Для каждого выбранного recipe_id обязателен гид: минимум 4 шага, конкретно (огонь, минуты, текстура).
-- Ужин звучит как горячее мясо/рыба + салат.
+Жёсткие правила:
+- Только recipe_id из списка recipes. Не выдумывай id.
+- meal_type обязателен и должен совпадать с типом рецепта (ужин — dinner).
+- Ужин: горячее мясо/рыба (или без мяса, если dietType=vegetarian). Салат приложит приложение.
+- Если quickLunches=true: обед либо leftover:true (остатки вчерашнего ужина, recipe_id того ужина), либо очень быстрый lunch ≤20 минут. Чередуй: день 1 быстрый, день 2 остатки, день 3 быстрый...
+- Для leftover:true гид — как разогреть за 5–8 минут, не как готовить с нуля.
+- Для каждого НЕ leftover блюда — гид минимум из 4 шагов: огонь, минуты, текстура.
 - Язык русский, живой, без воды.
+- Не меняй граммовки продуктов — приложение само возьмёт состав из каталога.
 
 Вход: ${JSON.stringify(body)}`;
   const parsed = await completeJson(prompt, env);

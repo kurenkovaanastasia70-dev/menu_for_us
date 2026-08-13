@@ -33,6 +33,7 @@ export function PlanPage() {
   const [variety, setVariety] = useState<"low" | "medium" | "high">("medium");
   const [stores, setStores] = useState<string[]>(household?.preferred_stores ?? ["pyaterochka", "magnit"]);
   const [eatingOut, setEatingOut] = useState<Set<string>>(new Set());
+  const [quickLunches, setQuickLunches] = useState(false);
   const [goalWeeks, setGoalWeeks] = useState<Record<string, number>>(() =>
     Object.fromEntries(
       members.map((member) => [
@@ -126,6 +127,7 @@ export function PlanPage() {
           preferredStoreIds: [...selectedStores],
           varietyPreference: variety,
           eatingOutSlots,
+          quickLunches,
         },
       });
       const start = new Date();
@@ -163,7 +165,8 @@ export function PlanPage() {
           Срок меню ({days} дн.) — это длина корзины. Срок цели по весу задаёте ниже, отдельно.
         </p>
         <p className="mt-2 text-sm text-muted">
-          Ужин всегда горячее мясо/рыба + салат. Вегетарианцам — горячее без мяса + салат.
+          Ужин всегда горячее мясо/рыба + салат. Вегетарианцам — горячее без мяса + салат. Меню и тексты рецептов пишет
+          модель, корзину и калории считает приложение.
         </p>
       </Card>
 
@@ -251,6 +254,20 @@ export function PlanPage() {
             <option value="high">Максимум разнообразия</option>
           </Select>
         </div>
+        <label className="flex items-start gap-3 rounded-2xl bg-cream px-3 py-3 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={quickLunches}
+            onChange={(e) => setQuickLunches(e.target.checked)}
+          />
+          <span>
+            <span className="font-semibold">Нет времени готовить обеды</span>
+            <span className="mt-1 block text-muted">
+              Обед — блюдо до 20 минут или остатки вчерашнего ужина (готовим ужин с запасом).
+            </span>
+          </span>
+        </label>
         <div>
           <Label>Магазины</Label>
           <div className="mt-2 grid grid-cols-2 gap-2">

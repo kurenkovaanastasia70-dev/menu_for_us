@@ -2634,5 +2634,136 @@
     "carbs": 8.6,
     "fiber": 5.4,
     "iron": 1.7
+  },
+  {
+    "id": "quick_tuna_toast",
+    "name": "Тосты с тунцом",
+    "cuisine": "european",
+    "meal_type": "lunch",
+    "cooking_time": 8,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "lunch",
+      "quick"
+    ],
+    "instructions": [
+      "Поджарьте хлеб.",
+      "Смешайте тунец с огурцом.",
+      "Выложите на тосты."
+    ],
+    "ingredients": [
+      {
+        "product_id": "bread",
+        "grams": 80
+      },
+      {
+        "product_id": "tuna_can",
+        "grams": 90
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 60
+      },
+      {
+        "product_id": "tomato",
+        "grams": 50
+      }
+    ],
+    "calories": 302,
+    "protein": 27,
+    "fat": 3.7,
+    "carbs": 38.5,
+    "fiber": 7.4,
+    "iron": 4.1
+  },
+  {
+    "id": "quick_chicken_pita",
+    "name": "Пита с курицей",
+    "cuisine": "mediterranean",
+    "meal_type": "lunch",
+    "cooking_time": 12,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "quick"
+    ],
+    "instructions": [
+      "Разогрейте готовую курицу или обжарьте тонкие полоски 5–6 минут.",
+      "Соберите питу с овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "pita",
+        "grams": 80
+      },
+      {
+        "product_id": "chicken_breast",
+        "grams": 120
+      },
+      {
+        "product_id": "lettuce",
+        "grams": 40
+      },
+      {
+        "product_id": "tomato",
+        "grams": 50
+      },
+      {
+        "product_id": "yogurt",
+        "grams": 30
+      }
+    ],
+    "calories": 384.6,
+    "protein": 37.5,
+    "fat": 4.1,
+    "carbs": 49.8,
+    "fiber": 4.4,
+    "iron": 2.2
+  },
+  {
+    "id": "quick_cottage_lunch",
+    "name": "Творог с овощами",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 5,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "lunch",
+      "quick"
+    ],
+    "instructions": [
+      "Выложите творог.",
+      "Нарежьте овощи и смешайте."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cottage_cheese",
+        "grams": 180
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 80
+      },
+      {
+        "product_id": "tomato",
+        "grams": 80
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      }
+    ],
+    "calories": 246.4,
+    "protein": 32.1,
+    "fat": 9.3,
+    "carbs": 9.6,
+    "fiber": 4,
+    "iron": 2
   }
 ]

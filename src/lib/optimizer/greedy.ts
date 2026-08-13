@@ -22,7 +22,9 @@ import {
   fallbackGuide,
   isEatingOutSlot,
   isHotDinnerMain,
+  isQuickLunch,
   isSideSalad,
+  leftoverFromDinner,
   plannedMealFromRecipe,
 } from "./meals";
 import { calculateVarietyScore } from "./variety";
@@ -59,6 +61,13 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
 
       for (const mealType of mealTypes) {
         const eatingOut = isEatingOutSlot(input.constraints, dayIndex, mealType);
+        if (mealType === "lunch" && input.constraints.quickLunches) {
+          const leftover = tryLeftoverLunch(selected, dayIndex, eatingOut);
+          if (leftover) {
+            selected.push(leftover);
+            continue;
+          }
+        }
         const candidate = pickRecipe({
           recipes,
           mealType,
@@ -149,6 +158,9 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
         `${eatingOutCount} приём(а) отмечены «ем не дома»: они не входят в корзину и в калории домашней недели.`,
       );
     }
+    if (input.constraints.quickLunches) {
+      warnings.push("Обеды: быстрые блюда (до 20 мин) или остатки вчерашнего ужина.");
+    }
 
     return {
       menu: selected,
@@ -214,6 +226,10 @@ function pickRecipe(args: {
   if (mealType === "dinner") {
     const hot = pool.filter((recipe) => isHotDinnerMain(recipe, vegetarian));
     if (hot.length > 0) pool = hot;
+  }
+  if (mealType === "lunch" && input.constraints.quickLunches) {
+    const quick = pool.filter(isQuickLunch);
+    if (quick.length > 0) pool = quick;
   }
   if (pool.length === 0) return recipes.find((recipe) => !isSideSalad(recipe)) ?? recipes[0] ?? null;
 
@@ -323,6 +339,12 @@ function cheapestOffer(productId: string, input: OptimizationInput) {
 
 function cashbackFor(storeId: string, input: OptimizationInput): number {
   return input.cashback.find((rule) => rule.store_id === storeId)?.percent ?? 0;
+}
+
+function tryLeftoverLunch(selected: PlannedMeal[], dayIndex: number, eatingOut: boolean): PlannedMeal | null {
+  if (dayIndex <= 0 || dayIndex % 2 === 0) return null;
+  const prevDinner = selected.find((meal) => meal.dayIndex === dayIndex - 1 && meal.mealType === "dinner" && !meal.eatingOut);
+  return prevDinner ? leftoverFromDinner(prevDinner, dayIndex, eatingOut) : null;
 }
 
 function pickSideSalad(recipes: Recipe[], selected: PlannedMeal[]): Recipe | null {

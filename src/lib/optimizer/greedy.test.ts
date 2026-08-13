@@ -294,4 +294,34 @@ describe("optimizer", () => {
     expect(skipped?.eatingOut).toBe(true);
     expect(result.warnings.some((warning) => warning.includes("не дома"))).toBe(true);
   });
+
+  it("uses leftover dinner or a quick recipe when lunches must be fast", () => {
+    const result = engine.optimize(
+      input({
+        days: 4,
+        recipes: [
+          ...recipes,
+          recipe({
+            id: "quick_lunch",
+            name: "Тосты с тунцом",
+            meal_type: "lunch",
+            cooking_time: 8,
+            protein_source: "fish",
+            tags: ["lunch", "quick"],
+            ingredients: [
+              { product_id: "oats", grams: 10 },
+              { product_id: "tomato", grams: 80 },
+            ],
+            calories: 280,
+            protein: 22,
+          }),
+        ],
+        constraints: { ...input().constraints, quickLunches: true },
+      }),
+    );
+    const lunches = result.menu.filter((meal) => meal.mealType === "lunch");
+    expect(lunches.some((meal) => meal.leftover)).toBe(true);
+    expect(lunches.some((meal) => !meal.leftover)).toBe(true);
+    expect(result.warnings.some((warning) => warning.includes("Обеды"))).toBe(true);
+  });
 });

@@ -1,6 +1,11 @@
 import type { OptimizationConstraints, PlannedMeal, Recipe, RecipeGuide, SideSalad } from "./types";
 
 const MEAT_SOURCES = new Set(["chicken", "beef", "pork", "turkey", "fish"]);
+export const QUICK_LUNCH_MINUTES = 20;
+
+export function isQuickLunch(recipe: Recipe): boolean {
+  return recipe.meal_type === "lunch" && recipe.cooking_time <= QUICK_LUNCH_MINUTES && !isSideSalad(recipe);
+}
 
 export function slotKey(dayIndex: number, mealType: string): string {
   return `${dayIndex}:${mealType}`;
@@ -69,6 +74,60 @@ export function plannedMealFromRecipe(
   };
 }
 
+export function leftoverFromDinner(dinner: PlannedMeal, dayIndex: number, eatingOut: boolean): PlannedMeal {
+  const name = dinner.recipeName.replace(/^Остатки:\s*/, "");
+  return {
+    ...dinner,
+    dayIndex,
+    mealType: "lunch",
+    eatingOut,
+    leftover: true,
+    leftoverFrom: name,
+    recipeName: `Остатки: ${name}`,
+    ingredients: dinner.ingredients.map((ing) => ({ ...ing })),
+    instructions: [
+      "Достаньте вчерашний ужин из холодильника за 20 минут.",
+      "Разогрейте горячее на сковороде или в микроволновке до горячего.",
+      "Салат ешьте холодным, не разогревайте.",
+    ],
+    sideSalad: dinner.sideSalad
+      ? {
+          ...dinner.sideSalad,
+          ingredients: dinner.sideSalad.ingredients.map((ing) => ({ ...ing })),
+        }
+      : undefined,
+    guide: {
+      recipe_id: dinner.recipeId,
+      title: `Остатки: ${name}`,
+      subtitle: "Вчерашний ужин, 5–8 минут",
+      time_minutes: 8,
+      servings: dinner.servings,
+      steps: [
+        {
+          order: 1,
+          title: "Достать",
+          text: "Контейнер с ужином достаньте заранее. Мясо и гарнир разогревайте, салат оставьте холодным.",
+          minutes: 2,
+        },
+        {
+          order: 2,
+          title: "Разогреть",
+          text: "Сковорода 3–4 минуты или микроволновка 2–3 минуты до горячего пара. Не разогревайте дважды.",
+          minutes: 5,
+        },
+        {
+          order: 3,
+          title: "Подать",
+          text: "Горячее на тарелку, салат сбоку. Если сухо — ложка воды или масла при разогреве.",
+          minutes: 1,
+        },
+      ],
+      tips: ["Вечером кладите сразу две порции.", "В холодильнике не дольше суток."],
+      plating: "Разогретое горячее и холодный салат.",
+    },
+  };
+}
+
 export function attachSideSalad(meal: PlannedMeal, salad: Recipe, peopleCount: number): PlannedMeal {
   const scaled = scaleIngredients(salad, peopleCount);
   const sideSalad: SideSalad = {
@@ -120,7 +179,11 @@ export function fallbackGuide(recipe: Recipe, meal: PlannedMeal): RecipeGuide {
   return {
     recipe_id: recipe.id,
     title: meal.recipeName || recipe.name,
-    subtitle: meal.mealType === "dinner" ? "Горячее + свежий салат" : "Пошаговый гид",
+    subtitle: meal.leftover
+      ? "Остатки вчерашнего ужина"
+      : meal.mealType === "dinner"
+        ? "Горячее + свежий салат"
+        : "Пошаговый гид",
     time_minutes: recipe.cooking_time + (meal.sideSalad ? 10 : 0),
     servings: meal.servings,
     steps,

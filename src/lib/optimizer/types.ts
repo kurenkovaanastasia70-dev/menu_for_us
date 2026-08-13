@@ -101,6 +101,7 @@ export interface OptimizationConstraints {
   maxStores: number;
   varietyPreference: "low" | "medium" | "high";
   eatingOutSlots?: EatingOutSlot[];
+  quickLunches?: boolean;
 }
 
 export interface FridgeStock {
@@ -169,6 +170,8 @@ export interface PlannedMeal {
   iron: number;
   instructions: string[];
   eatingOut?: boolean;
+  leftover?: boolean;
+  leftoverFrom?: string;
   sideSalad?: SideSalad;
   guide?: RecipeGuide;
 }
