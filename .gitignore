@@ -1,0 +1,22 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build
+node_modules/
+dist/
+build/
+.venv/
+__pycache__/
+*.pyc
