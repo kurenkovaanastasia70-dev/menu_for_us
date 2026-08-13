@@ -38,7 +38,7 @@ describe("nutrition calculator", () => {
   it("applies deficit, maintenance and surplus", () => {
     expect(calculateCalorieTarget(2000, "maintain", "female")).toBe(2000);
     expect(calculateCalorieTarget(2000, "lose", "female")).toBe(1640);
-    expect(calculateCalorieTarget(2000, "gain", "male")).toBe(2240);
+    expect(calculateCalorieTarget(2000, "gain", "male")).toBe(2250);
   });
 
   it("never goes below calorie floor", () => {
@@ -51,6 +51,14 @@ describe("nutrition calculator", () => {
     expect(macros.proteinTarget).toBe(140);
     expect(macros.fatTarget).toBe(56);
     expect(macros.carbsTarget).toBe(184);
+  });
+
+  it("uses a lean-bulk surplus and higher protein for mass gain", () => {
+    const macros = calculateMacros(2500, 80, "gain");
+    expect(macros.proteinTarget).toBe(160);
+    expect(macros.fatTarget).toBe(69.4);
+    expect(macros.carbsTarget).toBeGreaterThan(250);
+    expect(calculateCalorieTarget(2400, "gain", "male")).toBeGreaterThanOrEqual(2650);
   });
 
   it("returns a full nutrition profile", () => {

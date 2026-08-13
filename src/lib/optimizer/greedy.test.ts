@@ -162,6 +162,17 @@ const recipes: Recipe[] = [
     protein: 38,
   }),
   recipe({
+    id: "side_tomato",
+    name: "Салат из помидоров",
+    meal_type: "dinner",
+    protein_source: "vegetables",
+    tags: ["salad", "side", "vegetables"],
+    ingredients: [{ product_id: "tomato", grams: 100 }],
+    calories: 20,
+    protein: 1,
+    fiber: 2,
+  }),
+  recipe({
     id: "lunch_rice_bowl",
     name: "Рисовый боул",
     meal_type: "lunch",
@@ -264,5 +275,23 @@ describe("optimizer", () => {
     expect(chicken?.packageCount).toBe(0);
     expect(chicken?.price).toBe(0);
     expect(chicken?.fromFridgeGrams).toBeGreaterThan(0);
+  });
+
+  it("pairs dinner with a side salad and marks eating-out meals", () => {
+    const result = engine.optimize(
+      input({
+        constraints: {
+          ...input().constraints,
+          eatingOutSlots: [{ dayIndex: 0, mealType: "breakfast" }],
+        },
+      }),
+    );
+    const dinners = result.menu.filter((meal) => meal.mealType === "dinner");
+    expect(dinners.length).toBeGreaterThan(0);
+    expect(dinners.every((meal) => meal.sideSalad?.name)).toBe(true);
+    expect(dinners.every((meal) => meal.recipeName.includes(" + "))).toBe(true);
+    const skipped = result.menu.find((meal) => meal.dayIndex === 0 && meal.mealType === "breakfast");
+    expect(skipped?.eatingOut).toBe(true);
+    expect(result.warnings.some((warning) => warning.includes("не дома"))).toBe(true);
   });
 });

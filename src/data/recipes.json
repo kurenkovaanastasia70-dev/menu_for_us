@@ -2398,5 +2398,241 @@
     "carbs": 36.7,
     "fiber": 6.4,
     "iron": 3.7
+  },
+  {
+    "id": "side_cucumber_tomato",
+    "name": "Салат из огурцов и помидоров",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 10,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "vegetables",
+    "tags": [
+      "salad",
+      "side",
+      "vegetables"
+    ],
+    "instructions": [
+      "Огурцы и помидоры нарежьте одинаковыми кусками.",
+      "Добавьте тонко нарезанный лук и укроп.",
+      "Заправьте маслом, посолите, перемешайте и дайте постоять 5 минут."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cucumber",
+        "grams": 100
+      },
+      {
+        "product_id": "tomato",
+        "grams": 100
+      },
+      {
+        "product_id": "onion",
+        "grams": 20
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      }
+    ],
+    "calories": 115.1,
+    "protein": 2.1,
+    "fat": 8.3,
+    "carbs": 9.7,
+    "fiber": 5.4,
+    "iron": 1.8
+  },
+  {
+    "id": "side_cabbage",
+    "name": "Капустный салат",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 12,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "vegetables",
+    "tags": [
+      "salad",
+      "side",
+      "vegetables"
+    ],
+    "instructions": [
+      "Капусту тонко нашинкуйте и помните руками с солью.",
+      "Добавьте тёртую морковь.",
+      "Заправьте маслом и уберите в холодильник на 10 минут."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cabbage",
+        "grams": 120
+      },
+      {
+        "product_id": "carrot",
+        "grams": 40
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      }
+    ],
+    "calories": 120.5,
+    "protein": 2.1,
+    "fat": 8.2,
+    "carbs": 11.5,
+    "fiber": 4,
+    "iron": 1.3
+  },
+  {
+    "id": "side_greek",
+    "name": "Греческий салат",
+    "cuisine": "mediterranean",
+    "meal_type": "dinner",
+    "cooking_time": 12,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "vegetables",
+    "tags": [
+      "salad",
+      "side",
+      "vegetables"
+    ],
+    "instructions": [
+      "Крупно нарежьте помидоры, огурец и салат.",
+      "Добавьте фету кубиками и оливки.",
+      "Полейте оливковым маслом, не перемешивайте слишком сильно."
+    ],
+    "ingredients": [
+      {
+        "product_id": "tomato",
+        "grams": 80
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 80
+      },
+      {
+        "product_id": "lettuce",
+        "grams": 50
+      },
+      {
+        "product_id": "feta",
+        "grams": 30
+      },
+      {
+        "product_id": "olives",
+        "grams": 20
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 212.3,
+    "protein": 6.2,
+    "fat": 17.6,
+    "carbs": 9.5,
+    "fiber": 5.2,
+    "iron": 1.8
+  },
+  {
+    "id": "side_beet",
+    "name": "Свёкла с чесноком",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 15,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "vegetables",
+    "tags": [
+      "salad",
+      "side",
+      "vegetables"
+    ],
+    "instructions": [
+      "Отварную свёклу натрите на крупной тёрке.",
+      "Добавьте давленый чеснок, масло и укроп.",
+      "Посолите и охладите 10 минут."
+    ],
+    "ingredients": [
+      {
+        "product_id": "beet",
+        "grams": 120
+      },
+      {
+        "product_id": "garlic",
+        "grams": 5
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      }
+    ],
+    "calories": 133.1,
+    "protein": 2.4,
+    "fat": 8.3,
+    "carbs": 14,
+    "fiber": 3.6,
+    "iron": 1.1
+  },
+  {
+    "id": "side_lettuce",
+    "name": "Зелёный салат с лимоном",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 8,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "vegetables",
+    "tags": [
+      "salad",
+      "side",
+      "vegetables"
+    ],
+    "instructions": [
+      "Листья порвите руками, огурец нарежьте.",
+      "Смешайте масло с лимонным соком и солью.",
+      "Заправьте прямо перед подачей."
+    ],
+    "ingredients": [
+      {
+        "product_id": "lettuce",
+        "grams": 80
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 70
+      },
+      {
+        "product_id": "tomato",
+        "grams": 60
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      },
+      {
+        "product_id": "lemon",
+        "grams": 15
+      }
+    ],
+    "calories": 107.6,
+    "protein": 2,
+    "fat": 8.3,
+    "carbs": 8.6,
+    "fiber": 5.4,
+    "iron": 1.7
   }
 ]

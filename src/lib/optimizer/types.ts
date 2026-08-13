@@ -84,6 +84,11 @@ export interface PersonTargets {
   ironTarget: number;
 }
 
+export interface EatingOutSlot {
+  dayIndex: number;
+  mealType: Recipe["meal_type"];
+}
+
 export interface OptimizationConstraints {
   maxCookingTime: number;
   maxCookingSessions: number;
@@ -95,6 +100,7 @@ export interface OptimizationConstraints {
   preferredStoreIds: string[];
   maxStores: number;
   varietyPreference: "low" | "medium" | "high";
+  eatingOutSlots?: EatingOutSlot[];
 }
 
 export interface FridgeStock {
@@ -122,6 +128,31 @@ export interface OptimizationInput {
   constraints: OptimizationConstraints;
 }
 
+export interface RecipeGuideStep {
+  order: number;
+  title: string;
+  text: string;
+  minutes?: number;
+}
+
+export interface RecipeGuide {
+  recipe_id: string;
+  title: string;
+  subtitle: string;
+  time_minutes: number;
+  servings: number;
+  steps: RecipeGuideStep[];
+  tips: string[];
+  plating: string;
+}
+
+export interface SideSalad {
+  recipeId: string;
+  name: string;
+  ingredients: RecipeIngredient[];
+  instructions: string[];
+}
+
 export interface PlannedMeal {
   dayIndex: number;
   mealType: Recipe["meal_type"];
@@ -137,6 +168,9 @@ export interface PlannedMeal {
   fiber: number;
   iron: number;
   instructions: string[];
+  eatingOut?: boolean;
+  sideSalad?: SideSalad;
+  guide?: RecipeGuide;
 }
 
 export interface CartLine {
@@ -183,6 +217,7 @@ export interface OptimizationResult {
   cookingPlan: CookingSession[];
   feasible: boolean;
   warnings: string[];
+  trainingPlans?: import("../training/plan").PersonTrainingPlan[];
 }
 
 export interface CookingSession {

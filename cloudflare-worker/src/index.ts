@@ -11,6 +11,26 @@ export interface Env {
   LLM_PROVIDER?: string;
 }
 
+const GUIDE_SHAPE = `{
+  "guides": [
+    {
+      "recipe_id": "id_из_списка",
+      "title": "Аппетитное название",
+      "subtitle": "1 фраза зачем это блюдо",
+      "time_minutes": 30,
+      "servings": 2,
+      "steps": [
+        { "order": 1, "title": "Подготовка", "text": "Что сделать руками, 2–4 предложения.", "minutes": 5 },
+        { "order": 2, "title": "На огне", "text": "Температура, время, как понять что готово.", "minutes": 12 },
+        { "order": 3, "title": "Сборка", "text": "Как соединить и посолить.", "minutes": 3 },
+        { "order": 4, "title": "Подача", "text": "Как выглядит готовая тарелка.", "minutes": 2 }
+      ],
+      "tips": ["Практичный совет", "Ещё один"],
+      "plating": "Как подать тарелку"
+    }
+  ]
+}`;
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") {
@@ -36,6 +56,9 @@ export default {
     if (url.pathname.endsWith("/api/generate-menu")) {
       return handleMenu(body, env);
     }
+    if (url.pathname.endsWith("/api/generate-recipe")) {
+      return handleRecipe(body, env);
+    }
     if (url.pathname.endsWith("/api/generate-alternatives")) {
       return handleAlternatives(body, env);
     }
@@ -44,13 +67,44 @@ export default {
 };
 
 async function handleMenu(body: unknown, env: Env): Promise<Response> {
-  const prompt = `Верни ТОЛЬКО JSON вида {"days":[{"day":1,"meals":[{"name":"...","recipe_id":"...","ingredients":[{"product_id":"...","grams":100}]}]}]}.
-Используй только recipe_id из списка. Не меняй состав продуктов произвольно.
+  const prompt = `Ты шеф-повар. Верни ТОЛЬКО JSON без markdown.
+
+Форма:
+{
+  "days":[{"day":1,"meals":[{"name":"...","recipe_id":"...","ingredients":[{"product_id":"...","grams":100}]}]}],
+  "guides": ${GUIDE_SHAPE}
+}
+
+Правила:
+- Только recipe_id из списка. Не меняй состав продуктов.
+- Для каждого выбранного recipe_id обязателен гид: минимум 4 шага, конкретно (огонь, минуты, текстура).
+- Ужин звучит как горячее мясо/рыба + салат.
+- Язык русский, живой, без воды.
+
 Вход: ${JSON.stringify(body)}`;
   const parsed = await completeJson(prompt, env);
   if (!parsed) return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
   if (!isMenu(parsed)) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
-  return json({ ok: true, source: "llm", menu: parsed });
+  return json({ ok: true, source: "llm", menu: parsed, guides: parsed.guides ?? [] });
+}
+
+async function handleRecipe(body: unknown, env: Env): Promise<Response> {
+  const prompt = `Ты шеф-повар. Перепиши гид приготовления заново. Верни ТОЛЬКО JSON без markdown.
+
+Форма: ${GUIDE_SHAPE}
+
+Правила:
+- Только этот recipe_id.
+- Минимум 4 шага. Можно другое название и другие формулировки, но те же продукты.
+- Если это ужин — горячее + салат.
+- Язык русский.
+
+Вход: ${JSON.stringify(body)}`;
+  const parsed = await completeJson(prompt, env);
+  if (!parsed) return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
+  const guides = Array.isArray(parsed.guides) ? parsed.guides : parsed.recipe_id ? [parsed] : [];
+  if (guides.length === 0) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
+  return json({ ok: true, source: "llm", guides });
 }
 
 async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
@@ -98,7 +152,7 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, responseMimeType: "application/json" },
+          generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
         }),
       },
     );
@@ -120,7 +174,7 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
     },
     body: JSON.stringify({
       model,
-      temperature: 0.4,
+      temperature: 0.7,
       messages: [
         { role: "system", content: "Отвечай только валидным JSON." },
         { role: "user", content: prompt },

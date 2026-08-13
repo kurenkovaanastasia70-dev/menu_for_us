@@ -65,6 +65,16 @@ export interface WorkerGenerateResponse {
   ok: boolean;
   source: "llm" | "fallback";
   menu?: LLMMenu;
+  guides?: Array<{
+    recipe_id: string;
+    title: string;
+    subtitle: string;
+    time_minutes: number;
+    servings: number;
+    steps: Array<{ order: number; title: string; text: string; minutes?: number }>;
+    tips: string[];
+    plating: string;
+  }>;
   alternatives?: Array<{ name: string; recipe_id: string; reason: string }>;
   error?: string;
 }

@@ -1,5 +1,6 @@
 import { catalog } from "@/lib/catalog/repository";
 import { materializeFromMenu, type OptimizationInput, type OptimizationResult, type PlannedMeal, type Recipe } from "@/lib/optimizer";
+import { attachSideSalad, fallbackGuide, isSideSalad, plannedMealFromRecipe } from "@/lib/optimizer/meals";
 import { recipeUsesCart } from "./recipe-score";
 
 export function suggestMealAlternatives(
@@ -13,12 +14,13 @@ export function suggestMealAlternatives(
     (recipe) =>
       recipe.meal_type === meal.mealType &&
       recipe.id !== meal.recipeId &&
+      !recipe.tags.includes("side") &&
       recipe.cooking_time <= input.constraints.maxCookingTime,
   );
 
   const scored = candidates.map((recipe) => {
     const nextMenu = result.menu.map((item) =>
-      item === meal ? mealFromRecipe(recipe, item, input.people.length) : item,
+      item === meal ? mealFromRecipe(recipe, item, input.people.length, input.recipes) : item,
     );
     const next = materializeFromMenu(nextMenu, input);
     const extraCost = next.effectiveCost - result.effectiveCost;
@@ -58,10 +60,10 @@ export function replaceMeal(
 ): OptimizationResult {
   const nextMenu = result.menu.map((item) =>
     item.dayIndex === meal.dayIndex && item.mealType === meal.mealType
-      ? mealFromRecipe(recipe, item, input.people.length)
+      ? mealFromRecipe(recipe, item, input.people.length, input.recipes)
       : item,
   );
-  return materializeFromMenu(nextMenu, input);
+  return materializeFromMenu(nextMenu, input, { trainingPlans: result.trainingPlans });
 }
 
 export function replaceProduct(
@@ -104,26 +106,16 @@ export function replaceProduct(
       iron: Math.round(nutrition.iron * 10) / 10,
     };
   });
-  return materializeFromMenu(recalculated, input);
+  return materializeFromMenu(recalculated, input, { trainingPlans: result.trainingPlans });
 }
 
-function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, peopleCount: number): PlannedMeal {
-  const servings = peopleCount / recipe.servings;
-  return {
-    ...meal,
-    recipeId: recipe.id,
-    recipeName: recipe.name,
-    instructions: recipe.instructions,
-    servings: peopleCount,
-    ingredients: recipe.ingredients.map((ing) => ({
-      product_id: ing.product_id,
-      grams: Math.round(ing.grams * servings),
-    })),
-    calories: Math.round(recipe.calories * servings * 10) / 10,
-    protein: Math.round(recipe.protein * servings * 10) / 10,
-    fat: Math.round(recipe.fat * servings * 10) / 10,
-    carbs: Math.round(recipe.carbs * servings * 10) / 10,
-    fiber: Math.round((recipe.fiber ?? 0) * servings * 10) / 10,
-    iron: Math.round((recipe.iron ?? 0) * servings * 10) / 10,
-  };
+function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, peopleCount: number, recipes?: Recipe[]): PlannedMeal {
+  let next = plannedMealFromRecipe(recipe, meal, peopleCount);
+  if (meal.mealType === "dinner" && !isSideSalad(recipe)) {
+    const salad =
+      recipes?.find((item) => item.id === meal.sideSalad?.recipeId) ??
+      recipes?.find((item) => isSideSalad(item));
+    if (salad) next = attachSideSalad(next, salad, peopleCount);
+  }
+  return { ...next, eatingOut: meal.eatingOut, guide: fallbackGuide(recipe, next) };
 }

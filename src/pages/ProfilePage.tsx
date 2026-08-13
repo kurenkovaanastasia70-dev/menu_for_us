@@ -43,6 +43,14 @@ export function ProfilePage() {
         </Button>
       </Card>
 
+      <Card className="mt-4">
+        <h2 className="font-display text-xl">Ключ для рецептов</h2>
+        <p className="mt-2 text-sm">
+          Гиды пишет Gemini. Ключ берёте на aistudio.google.com/apikey, вставляете не в приложение, а в воркер:
+          `npx wrangler secret put GEMINI_API_KEY`. URL воркера — в `.env` как `VITE_API_URL`.
+        </p>
+      </Card>
+
       {profile && (
         <div className="mt-4">
           <WeightGoalCard

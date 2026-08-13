@@ -78,7 +78,8 @@ export function calculateCalorieTarget(
   if (goal === "lose") {
     target = tdee - Math.min(500, tdee * 0.18);
   } else if (goal === "gain") {
-    target = tdee + Math.min(300, tdee * 0.12);
+    // Lean bulk: ISSN ~250–500 kcal surplus. 0.25–0.4 кг/нед без лишнего жира.
+    target = tdee + Math.min(450, Math.max(250, tdee * 0.12));
   }
   return Math.max(CALORIE_FLOOR[gender], Math.round(target));
 }
@@ -88,10 +89,10 @@ export function calculateMacros(
   weightKg: number,
   goal: Goal,
 ): { proteinTarget: number; fatTarget: number; carbsTarget: number } {
-  const proteinPerKg = goal === "lose" ? 2.0 : goal === "gain" ? 1.8 : 1.6;
+  const proteinPerKg = goal === "lose" ? 2.0 : goal === "gain" ? 2.0 : 1.6;
   const proteinTarget = round1(proteinPerKg * weightKg);
   const proteinKcal = proteinTarget * 4;
-  const fatKcal = calorieTarget * (goal === "lose" ? 0.28 : 0.3);
+  const fatKcal = calorieTarget * (goal === "lose" ? 0.28 : goal === "gain" ? 0.25 : 0.3);
   const fatTarget = round1(fatKcal / 9);
   const carbsKcal = Math.max(0, calorieTarget - proteinKcal - fatKcal);
   const carbsTarget = round1(carbsKcal / 4);

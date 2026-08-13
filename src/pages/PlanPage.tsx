@@ -5,13 +5,22 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/field";
 import { useApp } from "@/context/AppContext";
 import { ageFromBirthDate, calculateNutritionTargets } from "@/lib/nutrition/calculator";
-import { calculateWeightPlan } from "@/lib/nutrition/weight-goal";
+import { calculateWeightPlan, suggestedWeeks } from "@/lib/nutrition/weight-goal";
 import { STORES } from "@/lib/optimizer";
+import type { EatingOutSlot } from "@/lib/optimizer/types";
 import { generateWeek } from "@/lib/planning/generate-week";
 import { cashbackInput, constraintsFromProfiles, peopleFromProfiles } from "@/lib/planning/from-profiles";
-import { saveMealPlan } from "@/lib/supabase/api";
+import { saveMealPlan, upsertProfile } from "@/lib/supabase/api";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const mealLabels: Record<string, string> = {
+  breakfast: "Завтрак",
+  lunch: "Обед",
+  dinner: "Ужин",
+  snack: "Перекус",
+};
 
 export function PlanPage() {
   const { household, members, cashback, profile, fridge, refresh } = useApp();
@@ -23,11 +32,39 @@ export function PlanPage() {
   const [sessions, setSessions] = useState(profile?.cooking_sessions ?? 3);
   const [variety, setVariety] = useState<"low" | "medium" | "high">("medium");
   const [stores, setStores] = useState<string[]>(household?.preferred_stores ?? ["pyaterochka", "magnit"]);
+  const [eatingOut, setEatingOut] = useState<Set<string>>(new Set());
+  const [goalWeeks, setGoalWeeks] = useState<Record<string, number>>(() =>
+    Object.fromEntries(
+      members.map((member) => [
+        member.id,
+        member.goal_weeks ??
+          suggestedWeeks(Number(member.weight_kg), Number(member.target_weight_kg ?? member.weight_kg)),
+      ]),
+    ),
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   const selectedStores = useMemo(() => new Set(stores), [stores]);
   const names = members.map((member) => member.name).join(" и ");
+  const mealTypes = useMemo(() => {
+    const types: Array<"breakfast" | "lunch" | "dinner" | "snack"> = ["breakfast", "lunch", "dinner"].slice(
+      0,
+      Math.min(3, Math.max(2, Number(meals))),
+    ) as Array<"breakfast" | "lunch" | "dinner" | "snack">;
+    if (Number(meals) >= 4 || members.some((member) => member.snacks)) types.push("snack");
+    return types;
+  }, [meals, members]);
+
+  function toggleSlot(dayIndex: number, mealType: string) {
+    const key = `${dayIndex}:${mealType}`;
+    setEatingOut((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   async function run() {
     if (!household || members.length === 0) {
@@ -37,14 +74,50 @@ export function PlanPage() {
     setPending(true);
     setError("");
     try {
-      const constraints = constraintsFromProfiles(members, household);
+      const patched = members.map((member) => {
+        const weeks = Number(goalWeeks[member.id] || member.goal_weeks || 0) || undefined;
+        const nutrition = calculateNutritionTargets({
+          gender: member.gender,
+          ageYears: ageFromBirthDate(member.birth_date),
+          heightCm: Number(member.height_cm),
+          weightKg: Number(member.weight_kg),
+          activityLevel: member.activity_level,
+          goal: member.goal,
+          targetWeightKg: Number(member.target_weight_kg ?? member.weight_kg),
+          goalWeeks: weeks,
+        });
+        return {
+          ...member,
+          goal_weeks: weeks ?? null,
+          calorie_target: nutrition.calorieTarget,
+          protein_target: nutrition.proteinTarget,
+          fat_target: nutrition.fatTarget,
+          carbs_target: nutrition.carbsTarget,
+          fiber_target: nutrition.fiberTarget,
+          iron_target: nutrition.ironTarget,
+        };
+      });
+      const self = patched.find((member) => member.id === profile?.id);
+      if (self) {
+        try {
+          await upsertProfile(self);
+        } catch {
+          // RLS может не пустить чужой профиль — считаем неделю с локальными цифрами.
+        }
+      }
+      const eatingOutSlots: EatingOutSlot[] = [...eatingOut].map((key) => {
+        const [day, mealType] = key.split(":");
+        return { dayIndex: Number(day), mealType: mealType as EatingOutSlot["mealType"] };
+      });
+      const constraints = constraintsFromProfiles(patched, household);
       const result = await generateWeek({
-        people: peopleFromProfiles(members),
+        people: peopleFromProfiles(patched),
         days: Number(days),
         budget: Number(budget),
         cashback: cashbackInput(cashback),
         fridge: fridge.map((item) => ({ productId: item.product_id, grams: item.grams })),
         useLlm: true,
+        trainingPeople: patched.map((member) => ({ id: member.id, name: member.name, goal: member.goal })),
         constraints: {
           ...constraints,
           mealsPerDay: Number(meals),
@@ -52,6 +125,7 @@ export function PlanPage() {
           maxCookingSessions: Number(sessions),
           preferredStoreIds: [...selectedStores],
           varietyPreference: variety,
+          eatingOutSlots,
         },
       });
       const start = new Date();
@@ -86,12 +160,16 @@ export function PlanPage() {
           Дикси) плюс ваш cashback. Это не парсинг сайта магазина.
         </p>
         <p className="mt-2 text-sm text-muted">
-          Срок меню ({days} дн.) — это длина корзины. Срок цели по весу считается отдельно в профиле.
+          Срок меню ({days} дн.) — это длина корзины. Срок цели по весу задаёте ниже, отдельно.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Ужин всегда горячее мясо/рыба + салат. Вегетарианцам — горячее без мяса + салат.
         </p>
       </Card>
 
       <div className="mb-4 space-y-3">
         {members.map((member) => {
+          const weeks = Number(goalWeeks[member.id] || member.goal_weeks || 0) || undefined;
           const nutrition = calculateNutritionTargets({
             gender: member.gender,
             ageYears: ageFromBirthDate(member.birth_date),
@@ -100,19 +178,38 @@ export function PlanPage() {
             activityLevel: member.activity_level,
             goal: member.goal,
             targetWeightKg: Number(member.target_weight_kg ?? member.weight_kg),
-            goalWeeks: member.goal_weeks ?? undefined,
+            goalWeeks: weeks,
           });
           return (
             <div key={member.id}>
               <p className="mb-2 text-sm font-semibold">{member.name}</p>
+              {member.goal !== "maintain" && (
+                <Card className="mb-3">
+                  <Label>Срок цели, недель</Label>
+                  <Input
+                    type="number"
+                    min={4}
+                    max={52}
+                    value={goalWeeks[member.id] ?? member.goal_weeks ?? 8}
+                    onChange={(e) =>
+                      setGoalWeeks((prev) => ({ ...prev, [member.id]: Number(e.target.value) }))
+                    }
+                  />
+                  <p className="mt-2 text-xs text-muted">
+                    {member.goal === "gain"
+                      ? "Массонабор: безопасный темп до ~0.4 кг/нед, белок 2.0 г/кг, профицит 250–450 ккал."
+                      : "Похудение: 0.25–0.75 кг/нед. Калории пересчитаются под этот срок."}
+                  </p>
+                </Card>
+              )}
               <WeightGoalCard
                 plan={calculateWeightPlan({
                   currentKg: Number(member.weight_kg),
                   targetKg: Number(member.target_weight_kg ?? member.weight_kg),
                   tdee: nutrition.tdee,
-                  calorieTarget: member.calorie_target,
+                  calorieTarget: nutrition.calorieTarget,
                   goal: member.goal,
-                  goalWeeks: member.goal_weeks ?? undefined,
+                  goalWeeks: weeks,
                   menuDays: Number(days),
                 })}
               />
@@ -179,6 +276,45 @@ export function PlanPage() {
             Отметить, что уже есть
           </button>
         </p>
+      </Card>
+
+      <Card className="mt-4">
+        <h2 className="font-display text-xl">Ем не дома</h2>
+        <p className="mt-1 text-sm text-muted">Отметьте приём — его не будет в корзине и в домашней готовке.</p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr>
+                <th className="py-1 pr-2">День</th>
+                {mealTypes.map((type) => (
+                  <th key={type} className="px-1 py-1 text-center">
+                    {mealLabels[type]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: Number(days) }).map((_, dayIndex) => (
+                <tr key={dayIndex}>
+                  <td className="py-2 pr-2 font-semibold">{dayNames[dayIndex % 7]}</td>
+                  {mealTypes.map((type) => {
+                    const key = `${dayIndex}:${type}`;
+                    return (
+                      <td key={key} className="px-1 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={eatingOut.has(key)}
+                          onChange={() => toggleSlot(dayIndex, type)}
+                          aria-label={`${dayNames[dayIndex % 7]} ${mealLabels[type]} не дома`}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
       {error && <p className="mt-4 text-sm text-clay">{error}</p>}
       <Button className="mt-4 w-full" disabled={pending} onClick={run}>

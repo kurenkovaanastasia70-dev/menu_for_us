@@ -4,9 +4,11 @@ import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatRub } from "@/lib/cn";
 import type { OptimizationResult, PlannedMeal } from "@/lib/optimizer";
+import { materializeFromMenu } from "@/lib/optimizer";
 import { replaceMeal, suggestMealAlternatives } from "@/lib/planning/alternatives";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
 import { fetchMealPlan, replaceCartItems, updateMealPlanResult } from "@/lib/supabase/api";
+import { TrainingCard } from "@/pages/TrainingPage";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -55,13 +57,8 @@ export function MenuPage() {
     return suggestMealAlternatives(activeMeal, result, input);
   }, [activeMeal, result, input]);
 
-  async function applyReplace(recipeId: string) {
-    if (!activeMeal || !result || !input || !planId && !latestPlan) return;
-    const recipe = input.recipes.find((item) => item.id === recipeId);
-    if (!recipe) return;
-    const next = replaceMeal(result, activeMeal, recipe, input);
+  async function persist(next: OptimizationResult) {
     setResult(next);
-    setActiveMeal(null);
     const id = planId ?? latestPlan?.id;
     if (!id || !household) return;
     setSaving(true);
@@ -69,6 +66,29 @@ export function MenuPage() {
     await replaceCartItems(id, household.id, next);
     await refresh();
     setSaving(false);
+  }
+
+  async function applyReplace(recipeId: string) {
+    if (!activeMeal || !result || !input) return;
+    const recipe = input.recipes.find((item) => item.id === recipeId);
+    if (!recipe) return;
+    const next = replaceMeal(result, activeMeal, recipe, input);
+    setActiveMeal(null);
+    await persist(next);
+  }
+
+  async function toggleEatingOut(meal: PlannedMeal) {
+    if (!result) return;
+    const nextMenu = result.menu.map((item) =>
+      item.dayIndex === meal.dayIndex && item.mealType === meal.mealType
+        ? { ...item, eatingOut: !item.eatingOut }
+        : item,
+    );
+    if (input) {
+      await persist(materializeFromMenu(nextMenu, input, { trainingPlans: result.trainingPlans }));
+      return;
+    }
+    setResult({ ...result, menu: nextMenu });
   }
 
   if (!result) {
@@ -113,6 +133,20 @@ export function MenuPage() {
         ))}
       </Card>
 
+      {result.trainingPlans && result.trainingPlans.length > 0 && (
+        <div className="mb-4">
+          <div className="mb-2 flex items-end justify-between">
+            <h2 className="font-display text-xl">Тренировки</h2>
+            <button className="text-sm font-semibold text-sage" onClick={() => navigate("/training")}>
+              Открыть
+            </button>
+          </div>
+          {result.trainingPlans.slice(0, 1).map((plan) => (
+            <TrainingCard key={plan.personId} plan={plan} />
+          ))}
+        </div>
+      )}
+
       {result.cookingPlan.length > 0 && (
         <Card className="mb-4">
           <h2 className="font-display text-xl">Meal prep</h2>
@@ -135,21 +169,44 @@ export function MenuPage() {
               {result.menu
                 .filter((meal) => meal.dayIndex === day)
                 .map((meal) => (
-                  <div key={`${meal.dayIndex}-${meal.mealType}`} className="rounded-2xl bg-cream p-3">
+                  <div
+                    key={`${meal.dayIndex}-${meal.mealType}`}
+                    className={`rounded-2xl bg-cream p-3 ${meal.eatingOut ? "opacity-60" : ""}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
+                      <button
+                        className="text-left"
+                        onClick={() =>
+                          navigate(`/menu/${planId ?? latestPlan?.id}/recipe/${meal.dayIndex}/${meal.mealType}`)
+                        }
+                      >
                         <div className="text-xs font-semibold tracking-wide text-muted uppercase">
                           {mealLabels[meal.mealType]}
                         </div>
                         <div className="font-semibold">{meal.recipeName}</div>
                         <div className="text-xs text-muted">
-                          {Math.round(meal.calories)} kcal · {Math.round(meal.protein)} g белка
+                          {meal.eatingOut
+                            ? "Ем не дома — не в корзине"
+                            : `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g белка`}
                         </div>
-                      </div>
+                        {meal.sideSalad && !meal.eatingOut && (
+                          <div className="text-xs text-muted">Салат: {meal.sideSalad.name}</div>
+                        )}
+                        <div className="mt-1 text-xs font-semibold text-sage">Открыть гид →</div>
+                      </button>
                       <button className="text-sm font-semibold text-sage" onClick={() => setActiveMeal(meal)}>
-                        🔄 Заменить
+                        🔄
                       </button>
                     </div>
+                    <label className="mt-3 flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(meal.eatingOut)}
+                        onChange={() => toggleEatingOut(meal)}
+                        disabled={saving}
+                      />
+                      Ем не дома
+                    </label>
                   </div>
                 ))}
             </div>

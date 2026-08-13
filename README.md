@@ -99,28 +99,40 @@ npm run preview
 
 ### 4. Cloudflare Worker
 
-Нужен хотя бы один LLM-ключ. Достаточно Gemini.
+Нужен хотя бы один LLM-ключ. Достаточно **Gemini** — он пишет пошаговые гиды рецептов.
+
+**Как получить ключ Gemini**
+
+1. Откройте [Google AI Studio](https://aistudio.google.com/apikey).
+2. Войдите аккаунтом Google.
+3. Нажмите **Create API key** (Создать ключ).
+4. Скопируйте строку вида `AIza...`. Никуда в приложение её не вставляйте — только в секрет воркера.
+
+**Куда вставить**
+
+Ключ живёт только в Cloudflare Worker, не в `.env` фронта и не в GitHub Pages.
 
 ```bash
 cd cloudflare-worker
 npm install
 npx wrangler login
 npx wrangler deploy
+npx wrangler secret put GEMINI_API_KEY
 ```
 
-Секреты (не в git):
+После `secret put` терминал спросит значение — вставьте ключ `AIza...` и нажмите Enter.
+
+URL воркера после `deploy` (вида `https://menu-for-us-llm.XXXX.workers.dev`) запишите:
+
+- локально в файл `.env` как `VITE_API_URL=https://....workers.dev`
+- в GitHub: Settings → Secrets and variables → Actions → `VITE_API_URL`
+
+Запасные провайдеры (необязательно):
 
 ```bash
-npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put GROQ_API_KEY
 npx wrangler secret put OPENROUTER_API_KEY
 ```
-
-Можно задать только Gemini. Groq и OpenRouter — запасные.
-
-URL воркера (вида `https://menu-for-us-llm.YOUR_SUBDOMAIN.workers.dev`) запишите в `VITE_API_URL`.
-
-Если воркер не настроен, приложение всё равно составляет меню из локального каталога рецептов.
 
 ### 5. Environment variables
 

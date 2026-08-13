@@ -10,7 +10,9 @@ import { MenuPage } from "@/pages/MenuPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { PlanPage } from "@/pages/PlanPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { RecipePage } from "@/pages/RecipePage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
+import { TrainingPage } from "@/pages/TrainingPage";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import type { ReactNode } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -83,6 +85,8 @@ export default function App() {
             <Route path="/plan" element={<PlanPage />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/menu/:planId" element={<MenuPage />} />
+            <Route path="/menu/:planId/recipe/:dayIndex/:mealType" element={<RecipePage />} />
+            <Route path="/training" element={<TrainingPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/cart/:planId" element={<CartPage />} />
             <Route path="/fridge" element={<FridgePage />} />

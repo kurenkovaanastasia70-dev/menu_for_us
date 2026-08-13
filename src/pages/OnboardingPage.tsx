@@ -199,9 +199,15 @@ export function OnboardingPage() {
               <Select value={form.goal} onChange={(e) => set("goal", e.target.value as Goal)}>
                 <option value="lose">Похудение</option>
                 <option value="maintain">Поддержание</option>
-                <option value="gain">Набор</option>
+                <option value="gain">Массонабор (мышцы)</option>
               </Select>
             </div>
+            {form.goal === "gain" && (
+              <p className="text-sm text-muted">
+                Массонабор: профицит 250–450 ккал, белок 2.0 г/кг, 4 силовые в неделю, мало кардио. Срок цели задаёт
+                темп набора (до ~0.4 кг/нед).
+              </p>
+            )}
             {form.goal !== "maintain" && (
               <div>
                 <Label>За сколько недель хотите выйти на цель</Label>

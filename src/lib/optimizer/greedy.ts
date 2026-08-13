@@ -17,6 +17,14 @@ import {
   type PlannedMeal,
   type Recipe,
 } from "./types";
+import {
+  attachSideSalad,
+  fallbackGuide,
+  isEatingOutSlot,
+  isHotDinnerMain,
+  isSideSalad,
+  plannedMealFromRecipe,
+} from "./meals";
 import { calculateVarietyScore } from "./variety";
 
 const STORES: Store[] = [
@@ -50,6 +58,7 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
       const mealTypes = mealTypesForDay(mealsPerDay, input.constraints.snacks);
 
       for (const mealType of mealTypes) {
+        const eatingOut = isEatingOutSlot(input.constraints, dayIndex, mealType);
         const candidate = pickRecipe({
           recipes,
           mealType,
@@ -66,28 +75,22 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
           continue;
         }
 
-        const servings = peopleCount / candidate.servings;
-        const ingredients = candidate.ingredients.map((ing) => ({
-          product_id: ing.product_id,
-          grams: Math.round(ing.grams * servings),
-        }));
+        let meal = plannedMealFromRecipe(
+          candidate,
+          { dayIndex, mealType, cookingSession: session, eatingOut },
+          peopleCount,
+        );
 
-        selected.push({
-          dayIndex,
-          mealType,
-          recipeId: candidate.id,
-          recipeName: candidate.name,
-          cookingSession: session,
-          servings: peopleCount,
-          ingredients,
-          calories: round(candidate.calories * servings),
-          protein: round(candidate.protein * servings),
-          fat: round(candidate.fat * servings),
-          carbs: round(candidate.carbs * servings),
-          fiber: round((candidate.fiber ?? 0) * servings),
-          iron: round((candidate.iron ?? 0) * servings),
-          instructions: candidate.instructions,
-        });
+        if (mealType === "dinner" && !isSideSalad(candidate)) {
+          const salad = pickSideSalad(recipes, selected);
+          if (salad) {
+            meal = attachSideSalad(meal, salad, peopleCount);
+            for (const ing of salad.ingredients) selectedProductIds.add(ing.product_id);
+          }
+        }
+
+        meal = { ...meal, guide: fallbackGuide(candidate, meal) };
+        selected.push(meal);
 
         const list = usedInSession.get(session) ?? [];
         if (!list.includes(candidate.id)) list.push(candidate.id);
@@ -139,6 +142,12 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
     }
     if (nutrition.ironPerDay < input.macroTargets.iron * 0.85) {
       warnings.push("Железа меньше нормы. Полезны печень, бобовые, гречка, шпинат.");
+    }
+    const eatingOutCount = selected.filter((meal) => meal.eatingOut).length;
+    if (eatingOutCount > 0) {
+      warnings.push(
+        `${eatingOutCount} приём(а) отмечены «ем не дома»: они не входят в корзину и в калории домашней недели.`,
+      );
     }
 
     return {
@@ -200,8 +209,13 @@ function pickRecipe(args: {
   peopleCount: number;
 }): Recipe | null {
   const { recipes, mealType, session, usedInSession, selected, selectedProductIds, input } = args;
-  const pool = recipes.filter((recipe) => recipe.meal_type === mealType);
-  if (pool.length === 0) return recipes[0] ?? null;
+  const vegetarian = input.constraints.dietType === "vegetarian";
+  let pool = recipes.filter((recipe) => recipe.meal_type === mealType && !isSideSalad(recipe));
+  if (mealType === "dinner") {
+    const hot = pool.filter((recipe) => isHotDinnerMain(recipe, vegetarian));
+    if (hot.length > 0) pool = hot;
+  }
+  if (pool.length === 0) return recipes.find((recipe) => !isSideSalad(recipe)) ?? recipes[0] ?? null;
 
   const sessionRecipes = usedInSession.get(session) ?? [];
   const usedGlobal = selected.map((meal) => meal.recipeId);
@@ -311,9 +325,20 @@ function cashbackFor(storeId: string, input: OptimizationInput): number {
   return input.cashback.find((rule) => rule.store_id === storeId)?.percent ?? 0;
 }
 
+function pickSideSalad(recipes: Recipe[], selected: PlannedMeal[]): Recipe | null {
+  const salads = recipes.filter(isSideSalad);
+  if (salads.length === 0) return null;
+  const used = selected.map((meal) => meal.sideSalad?.recipeId).filter(Boolean);
+  const unused = salads.filter((recipe) => !used.includes(recipe.id));
+  const pool = unused.length > 0 ? unused : salads;
+  const dinners = selected.filter((meal) => meal.mealType === "dinner").length;
+  return pool[dinners % pool.length] ?? pool[0] ?? null;
+}
+
 function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {
   const gramsByProduct = new Map<string, number>();
   for (const meal of menu) {
+    if (meal.eatingOut) continue;
     for (const ing of meal.ingredients) {
       gramsByProduct.set(ing.product_id, (gramsByProduct.get(ing.product_id) ?? 0) + ing.grams);
     }
@@ -403,25 +428,21 @@ function tryCheaperMenu(
   const clone = selected.map((meal) => ({ ...meal, ingredients: meal.ingredients.map((ing) => ({ ...ing })) }));
   const expensive = [...clone].sort((a, b) => recipeCostById(b.recipeId, recipes, input, peopleCount) - recipeCostById(a.recipeId, recipes, input, peopleCount));
   for (const meal of expensive.slice(0, 6)) {
-    const cheaper = recipes
-      .filter((recipe) => recipe.meal_type === meal.mealType && recipe.id !== meal.recipeId)
-      .sort((a, b) => recipeCost(a, input, peopleCount) - recipeCost(b, input, peopleCount))[0];
+    const vegetarian = input.constraints.dietType === "vegetarian";
+    let pool = recipes.filter(
+      (recipe) => recipe.meal_type === meal.mealType && recipe.id !== meal.recipeId && !isSideSalad(recipe),
+    );
+    if (meal.mealType === "dinner") {
+      const hot = pool.filter((recipe) => isHotDinnerMain(recipe, vegetarian));
+      if (hot.length > 0) pool = hot;
+    }
+    const cheaper = pool.sort((a, b) => recipeCost(a, input, peopleCount) - recipeCost(b, input, peopleCount))[0];
     if (!cheaper) continue;
-    const servings = peopleCount / cheaper.servings;
-    meal.recipeId = cheaper.id;
-    meal.recipeName = cheaper.name;
-    meal.instructions = cheaper.instructions;
-    meal.ingredients = cheaper.ingredients.map((ing) => ({
-      product_id: ing.product_id,
-      grams: Math.round(ing.grams * servings),
-    }));
-    meal.calories = round(cheaper.calories * servings);
-    meal.protein = round(cheaper.protein * servings);
-    meal.fat = round(cheaper.fat * servings);
-    meal.carbs = round(cheaper.carbs * servings);
-    meal.fiber = round((cheaper.fiber ?? 0) * servings);
-    meal.iron = round((cheaper.iron ?? 0) * servings);
-    meal.cookingSession = sessions[meal.dayIndex] ?? 0;
+    const next = plannedMealFromRecipe(cheaper, meal, peopleCount);
+    const salad =
+      meal.mealType === "dinner" ? pickSideSalad(recipes, clone.filter((item) => item !== meal)) : null;
+    const withSalad = salad ? attachSideSalad(next, salad, peopleCount) : next;
+    Object.assign(meal, { ...withSalad, guide: fallbackGuide(cheaper, withSalad), cookingSession: sessions[meal.dayIndex] ?? 0 });
   }
   const cart = buildCart(clone, input);
   const effective = cart.reduce((sum, line) => sum + line.effectivePrice, 0);
@@ -444,7 +465,7 @@ function summarizeNutrition(
   input: OptimizationInput,
   days: number,
 ): OptimizationResult["nutritionSummary"] {
-  const totals = sumNutrition(menu);
+  const totals = sumNutrition(menu.filter((meal) => !meal.eatingOut));
   return {
     caloriesPerDay: round(totals.calories / days),
     proteinPerDay: round(totals.protein / days),
@@ -476,7 +497,7 @@ function toCookingPlan(sessions: number[], menu: PlannedMeal[]): CookingSession[
   const unique = [...new Set(sessions)];
   return unique.map((index) => {
     const dayIndex = sessions.indexOf(index);
-    const meals = menu.filter((meal) => meal.cookingSession === index);
+    const meals = menu.filter((meal) => meal.cookingSession === index && !meal.eatingOut);
     const recipeIds = [...new Set(meals.map((meal) => meal.recipeId))];
     return {
       index,
@@ -520,6 +541,7 @@ export function nutritionFromCart(
 export function materializeFromMenu(
   menu: PlannedMeal[],
   input: OptimizationInput,
+  extras?: Pick<OptimizationResult, "trainingPlans">,
 ): OptimizationResult {
   const days = Math.max(1, input.days);
   const cart = limitStores(buildCart(menu, input), input);
@@ -531,6 +553,13 @@ export function materializeFromMenu(
     return sum + (line.leftoverGrams / line.packageWeight) * line.effectivePrice;
   }, 0);
   const nutrition = summarizeNutrition(menu, input, days);
+  const eatingOutCount = menu.filter((meal) => meal.eatingOut).length;
+  const warnings = [
+    ...(effectiveCost > input.budget ? ["После замены стоимость превышает бюджет."] : []),
+    ...(eatingOutCount > 0
+      ? [`${eatingOutCount} приём(а) отмечены «ем не дома»: они не входят в корзину.`]
+      : []),
+  ];
   return {
     menu,
     cart,
@@ -544,8 +573,11 @@ export function materializeFromMenu(
       Array.from({ length: days }, (_, day) => menu.find((meal) => meal.dayIndex === day)?.cookingSession ?? 0),
       menu,
     ),
-    feasible: effectiveCost <= input.budget && nutrition.proteinPerDay >= input.macroTargets.protein * 0.85,
-    warnings: effectiveCost > input.budget ? ["После замены стоимость превышает бюджет."] : [],
+    feasible:
+      effectiveCost <= input.budget &&
+      (eatingOutCount > 0 || nutrition.proteinPerDay >= input.macroTargets.protein * 0.85),
+    warnings,
+    trainingPlans: extras?.trainingPlans,
   };
 }
 

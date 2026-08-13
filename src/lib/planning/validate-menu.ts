@@ -7,10 +7,11 @@ export function validateMenuNutrition(
   const warnings = [...result.warnings];
   const { nutritionSummary } = result;
 
-  if (nutritionSummary.caloriesPerDay < input.calorieTargets * 0.8) {
+  const eatingOut = result.menu.some((meal) => meal.eatingOut);
+  if (!eatingOut && nutritionSummary.caloriesPerDay < input.calorieTargets * 0.8) {
     warnings.push("После проверки калории ниже цели.");
   }
-  if (nutritionSummary.proteinPerDay < input.macroTargets.protein * 0.85) {
+  if (!eatingOut && nutritionSummary.proteinPerDay < input.macroTargets.protein * 0.85) {
     warnings.push("Белка меньше целевого уровня.");
   }
   if (nutritionSummary.fiberPerDay < input.macroTargets.fiber * 0.85) {
@@ -33,6 +34,8 @@ export function validateMenuNutrition(
   return {
     ...result,
     warnings: [...new Set(warnings)],
-    feasible: result.effectiveCost <= input.budget && nutritionSummary.proteinPerDay >= input.macroTargets.protein * 0.85,
+    feasible:
+      result.effectiveCost <= input.budget &&
+      (eatingOut || nutritionSummary.proteinPerDay >= input.macroTargets.protein * 0.85),
   };
 }

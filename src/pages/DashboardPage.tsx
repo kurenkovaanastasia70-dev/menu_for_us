@@ -66,6 +66,9 @@ export function DashboardPage() {
           <Button variant="secondary" onClick={() => navigate(latestPlan ? `/menu/${latestPlan.id}` : "/plan")}>
             Посмотреть меню
           </Button>
+          <Button variant="secondary" onClick={() => navigate("/training")}>
+            Тренировки
+          </Button>
           <Button variant="ghost" onClick={() => navigate(latestPlan ? `/cart/${latestPlan.id}` : "/cart")}>
             Корзина
           </Button>

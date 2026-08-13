@@ -11,7 +11,7 @@ export function WeightGoalCard({ plan }: { plan: WeightPlan }) {
         <Stat label="Сейчас" value={`${plan.currentKg} кг`} />
         <Stat label="Цель" value={`${plan.targetKg} кг`} />
         <Stat label={lose ? "Уйти" : gain ? "Набрать" : "Разница"} value={`${Math.abs(plan.deltaKg)} кг`} />
-        <Stat label="Срок цели" value={plan.weeksToGoal ? `${plan.weeksToGoal} нед.` : "—"} />
+        <Stat label="Срок цели" value={plan.goalWeeks ? `${plan.goalWeeks} нед.` : plan.weeksToGoal ? `${plan.weeksToGoal} нед.` : "—"} />
       </div>
       <p className="mt-3 text-sm">{plan.summary}</p>
       <p className="mt-2 text-xs text-muted">{plan.menuDaysNote}</p>
