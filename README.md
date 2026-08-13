@@ -108,9 +108,11 @@ npm run preview
 3. Нажмите **Create API key** (Создать ключ).
 4. Скопируйте строку вида `AIza...`. Никуда в приложение её не вставляйте — только в секрет воркера.
 
-**Куда вставить**
+**Куда вставить, чтобы работало на github.io**
 
-Ключ живёт только в Cloudflare Worker, не в `.env` фронта и не в GitHub Pages.
+Ключ Gemini **нельзя** класть в GitHub Pages, в `.env` фронта и в секрет `VITE_*` — его увидят все, кто откроет сайт.
+
+1. Ключ → только Cloudflare Worker:
 
 ```bash
 cd cloudflare-worker
@@ -120,12 +122,15 @@ npx wrangler deploy
 npx wrangler secret put GEMINI_API_KEY
 ```
 
-После `secret put` терминал спросит значение — вставьте ключ `AIza...` и нажмите Enter.
+Терминал спросит значение — вставьте ключ и Enter.
 
-URL воркера после `deploy` (вида `https://menu-for-us-llm.XXXX.workers.dev`) запишите:
+2. URL воркера после `deploy` (пример: `https://menu-for-us-llm.XXXX.workers.dev`) → секрет GitHub **`VITE_API_URL`**:
+   Settings → Secrets and variables → Actions → `VITE_API_URL`.
+   Локально тот же URL в `.env`.
 
-- локально в файл `.env` как `VITE_API_URL=https://....workers.dev`
-- в GitHub: Settings → Secrets and variables → Actions → `VITE_API_URL`
+3. Пересоберите сайт: Actions → Deploy → Run workflow (или просто push в `main`).
+
+Сайт на github.io ходит на воркер, воркер уже с ключом вызывает Gemini.
 
 Запасные провайдеры (необязательно):
 
@@ -161,7 +166,7 @@ LLM-ключи никогда не попадают в frontend.
 2. Заполнить профиль (калории считаются автоматически)
 3. Создать пару / ввести код
 4. «Составить неделю» → бюджет и дни → «Рассчитать»
-5. Меню, замена блюда, корзина с галочкой «Куплено»
+5. Меню, замена блюда, корзина: галочка «уже есть» и «купили»
 6. История и «Повторить неделю»
 
 На телефоне: «Добавить на экран домой» — это PWA.

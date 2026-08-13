@@ -287,12 +287,6 @@ export function PlanPage() {
             ))}
           </div>
         </div>
-        <p className="text-sm text-muted">
-          Холодильник: {fridge.length} позиций.{" "}
-          <button className="font-semibold text-sage" onClick={() => navigate("/fridge")}>
-            Отметить, что уже есть
-          </button>
-        </p>
       </Card>
 
       <Card className="mt-4">

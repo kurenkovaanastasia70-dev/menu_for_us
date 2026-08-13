@@ -44,11 +44,24 @@ export function ProfilePage() {
       </Card>
 
       <Card className="mt-4">
-        <h2 className="font-display text-xl">Ключ для рецептов</h2>
-        <p className="mt-2 text-sm">
-          Гиды пишет Gemini. Ключ берёте на aistudio.google.com/apikey, вставляете не в приложение, а в воркер:
-          `npx wrangler secret put GEMINI_API_KEY`. URL воркера — в `.env` как `VITE_API_URL`.
-        </p>
+        <h2 className="font-display text-xl">Ключ для рецептов на github.io</h2>
+        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm">
+          <li>
+            Ключ Gemini берёте на aistudio.google.com/apikey. В GitHub Pages его вставлять нельзя — сайт открыт всем.
+          </li>
+          <li>
+            На компьютере: папка cloudflare-worker → `npx wrangler login` → `npx wrangler deploy` →{" "}
+            `npx wrangler secret put GEMINI_API_KEY` и вставьте ключ.
+          </li>
+          <li>
+            После deploy скопируйте URL вида https://menu-for-us-llm.XXXX.workers.dev
+          </li>
+          <li>
+            GitHub → репозиторий menu_for_us → Settings → Secrets and variables → Actions. Создайте или обновите секрет{" "}
+            <span className="font-semibold">VITE_API_URL</span> — туда только URL воркера, не сам ключ Gemini.
+          </li>
+          <li>Actions → Deploy → Run workflow. После сборки рецепты заработают на github.io.</li>
+        </ol>
       </Card>
 
       {profile && (

@@ -18,7 +18,7 @@ const mealLabels: Record<string, string> = {
 };
 
 export function DashboardPage() {
-  const { latestPlan, members, household, error, offlineCache, fridge } = useApp();
+  const { latestPlan, members, household, error, offlineCache } = useApp();
   const navigate = useNavigate();
   const result = latestPlan?.result_json as OptimizationResult | undefined;
   const calories = members.reduce((sum, p) => sum + p.calorie_target, 0);
@@ -104,16 +104,6 @@ export function DashboardPage() {
           );
         })}
       </div>
-
-      <Card className="mt-4">
-        <p className="text-sm text-muted">
-          В холодильнике {fridge.length} продукт(ов). Они вычитаются из покупки. Цены — из каталога приложения
-          (типичные ценники Пятёрочки, Магнита, Перекрёстка и Дикси), не с сайта магазина в реальном времени.
-        </p>
-        <Button className="mt-3 w-full" variant="secondary" onClick={() => navigate("/fridge")}>
-          Что уже есть дома
-        </Button>
-      </Card>
 
       {result ? (
         <div className="mt-6 space-y-4">

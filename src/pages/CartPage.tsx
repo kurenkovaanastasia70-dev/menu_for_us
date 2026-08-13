@@ -4,12 +4,25 @@ import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatGrams, formatRub } from "@/lib/cn";
 import { catalog } from "@/lib/catalog/repository";
-import type { OptimizationResult } from "@/lib/optimizer";
+import { materializeFromMenu, type CartLine, type OptimizationResult } from "@/lib/optimizer";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
 import { replaceProduct } from "@/lib/planning/alternatives";
-import { fetchCartItems, fetchMealPlan, replaceCartItems, togglePurchased, updateMealPlanResult } from "@/lib/supabase/api";
+import {
+  deleteFridgeItem,
+  fetchCartItems,
+  fetchFridge,
+  fetchMealPlan,
+  replaceCartItems,
+  togglePurchased,
+  updateMealPlanResult,
+  upsertFridgeItem,
+} from "@/lib/supabase/api";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
+function alreadyHave(line: CartLine): boolean {
+  return (line.toBuyGrams ?? line.quantityGrams) <= 0 && (line.fromFridgeGrams ?? 0) > 0;
+}
 
 export function CartPage() {
   const { planId } = useParams();
@@ -19,6 +32,7 @@ export function CartPage() {
   const [purchased, setPurchased] = useState<Record<string, boolean>>({});
   const [itemIds, setItemIds] = useState<Record<string, string>>({});
   const [swapFrom, setSwapFrom] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const id = planId ?? latestPlan?.id;
 
@@ -44,6 +58,7 @@ export function CartPage() {
   const byStore = useMemo(() => {
     const groups = new Map<string, number>();
     for (const line of result?.cart ?? []) {
+      if ((line.toBuyGrams ?? line.quantityGrams) <= 0) continue;
       groups.set(line.storeName, (groups.get(line.storeName) ?? 0) + line.effectivePrice);
     }
     return [...groups.entries()];
@@ -61,20 +76,53 @@ export function CartPage() {
     });
   }, [household, members, cashback, latestPlan, fridge]);
 
-  async function toggle(productId: string) {
+  async function persistCart(next: OptimizationResult) {
+    setResult(next);
+    if (!id || !household) return;
+    await updateMealPlanResult(id, next);
+    await replaceCartItems(id, household.id, next);
+    await refresh();
+  }
+
+  async function toggleBought(productId: string) {
     const next = !purchased[productId];
     setPurchased((prev) => ({ ...prev, [productId]: next }));
     if (itemIds[productId]) await togglePurchased(itemIds[productId], next);
   }
 
+  async function toggleHave(line: CartLine) {
+    if (!household || !result || !input || !id) return;
+    setSaving(true);
+    try {
+      if (alreadyHave(line)) {
+        await deleteFridgeItem(household.id, line.productId);
+      } else {
+        await upsertFridgeItem({
+          household_id: household.id,
+          product_id: line.productId,
+          grams: line.quantityGrams,
+        });
+      }
+      const nextFridge = await fetchFridge(household.id);
+      const next = materializeFromMenu(
+        result.menu,
+        {
+          ...input,
+          fridge: nextFridge.map((item) => ({ productId: item.product_id, grams: item.grams })),
+        },
+        { trainingPlans: result.trainingPlans },
+      );
+      await persistCart(next);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function applyProductSwap(toId: string) {
     if (!swapFrom || !result || !input || !id || !household) return;
     const next = replaceProduct(result, swapFrom, toId, input);
-    setResult(next);
     setSwapFrom(null);
-    await updateMealPlanResult(id, next);
-    await replaceCartItems(id, household.id, next);
-    await refresh();
+    await persistCart(next);
   }
 
   if (!result) {
@@ -94,13 +142,12 @@ export function CartPage() {
     <Screen title="Корзина">
       <Card>
         <p className="text-sm text-muted">
-          Цены из каталога приложения на 1 августа 2026: типичные ценники Пятёрочки, Магнита, Перекрёстка и Дикси плюс
-          ваш cashback. Это не онлайн-витрина магазина.
+          Отметьте «уже есть» — продукт не покупаем, сумма корзины пересчитается. «Купили» — галочка для магазина.
         </p>
         <div className="mt-3 space-y-1 text-sm">
           <Row label="Стоимость" value={formatRub(result.totalCost)} />
           <Row label="Cashback" value={formatRub(result.cashback)} />
-          <Row label="Итого" value={formatRub(result.effectiveCost)} strong />
+          <Row label="Итого к покупке" value={formatRub(result.effectiveCost)} strong />
         </div>
         <div className="mt-4 space-y-1 text-sm text-muted">
           {byStore.map(([store, sum]) => (
@@ -110,37 +157,50 @@ export function CartPage() {
       </Card>
 
       <div className="mt-4 space-y-3">
-        {result.cart.map((line) => (
-          <Card key={line.productId} className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="mt-1 h-5 w-5"
-              checked={Boolean(purchased[line.productId])}
-              onChange={() => toggle(line.productId)}
-              disabled={(line.toBuyGrams ?? line.quantityGrams) <= 0}
-            />
-            <div className="flex-1">
+        {result.cart.map((line) => {
+          const have = alreadyHave(line);
+          return (
+            <Card key={line.productId} className={have ? "opacity-70" : ""}>
               <div className="font-semibold">{line.productName}</div>
-              <div className="text-sm text-muted">
+              <div className="mt-1 text-sm text-muted">
                 нужно {formatGrams(line.quantityGrams)}
-                {line.fromFridgeGrams
-                  ? ` · из холодильника ${formatGrams(line.fromFridgeGrams)}`
-                  : ""}
-                {(line.toBuyGrams ?? line.quantityGrams) > 0
-                  ? ` · купить ${line.packageCount} × ${formatGrams(line.packageWeight)} · ${line.storeName}`
-                  : " · покупать не нужно"}
+                {have
+                  ? " · покупать не нужно"
+                  : ` · купить ${line.packageCount} × ${formatGrams(line.packageWeight)} · ${line.storeName}`}
               </div>
-              {(line.toBuyGrams ?? line.quantityGrams) > 0 && (
+              {!have && (
                 <div className="mt-1 text-sm">
                   {formatRub(line.price)} · cashback {line.cashbackPercent}% · итого {formatRub(line.effectivePrice)}
                 </div>
               )}
+              <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-2 font-semibold">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5"
+                    checked={have}
+                    disabled={saving}
+                    onChange={() => toggleHave(line)}
+                  />
+                  уже есть
+                </label>
+                <label className="flex items-center gap-2 text-muted">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5"
+                    checked={Boolean(purchased[line.productId])}
+                    onChange={() => toggleBought(line.productId)}
+                    disabled={have}
+                  />
+                  купили
+                </label>
+              </div>
               <button className="mt-2 text-sm font-semibold text-sage" onClick={() => setSwapFrom(line.productId)}>
                 Заменить продукт
               </button>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
       {swapFrom && (
