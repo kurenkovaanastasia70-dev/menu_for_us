@@ -44,24 +44,27 @@ export function ProfilePage() {
       </Card>
 
       <Card className="mt-4">
-        <h2 className="font-display text-xl">Ключ для рецептов на github.io</h2>
-        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm">
-          <li>
-            Ключ Gemini берёте на aistudio.google.com/apikey. В GitHub Pages его вставлять нельзя — сайт открыт всем.
-          </li>
-          <li>
-            На компьютере: папка cloudflare-worker → `npx wrangler login` → `npx wrangler deploy` →{" "}
-            `npx wrangler secret put GEMINI_API_KEY` и вставьте ключ.
-          </li>
-          <li>
-            После deploy скопируйте URL вида https://menu-for-us-llm.XXXX.workers.dev
-          </li>
-          <li>
-            GitHub → репозиторий menu_for_us → Settings → Secrets and variables → Actions. Создайте или обновите секрет{" "}
-            <span className="font-semibold">VITE_API_URL</span> — туда только URL воркера, не сам ключ Gemini.
-          </li>
-          <li>Actions → Deploy → Run workflow. После сборки рецепты заработают на github.io.</li>
-        </ol>
+        <h2 className="font-display text-xl">Куда вставить Gemini</h2>
+        <p className="mt-2 text-sm font-semibold text-clay">
+          Ключ Gemini в GitHub вставлять нельзя. Сайт github.io открыт всем — ключ украдут.
+        </p>
+        <p className="mt-3 text-sm">
+          В GitHub кладётся только адрес воркера. Путь: репозиторий{" "}
+          <span className="font-semibold">menu_for_us</span> → вкладка{" "}
+          <span className="font-semibold">Settings</span> →{" "}
+          <span className="font-semibold">Secrets and variables</span> →{" "}
+          <span className="font-semibold">Actions</span> →{" "}
+          <span className="font-semibold">New repository secret</span>.
+        </p>
+        <p className="mt-2 text-sm">
+          Имя секрета: <span className="font-semibold">VITE_API_URL</span>
+          <br />
+          Значение: URL после `npx wrangler deploy`, например https://menu-for-us-llm.XXXX.workers.dev
+        </p>
+        <p className="mt-3 text-sm">
+          Сам ключ Gemini: на компьютере в папке cloudflare-worker выполните{" "}
+          <span className="font-semibold">npx wrangler secret put GEMINI_API_KEY</span> и вставьте ключ в терминал.
+        </p>
       </Card>
 
       {profile && (

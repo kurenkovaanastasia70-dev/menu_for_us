@@ -2,14 +2,28 @@ import { z } from "zod";
 
 export const llmMealSchema = z.object({
   name: z.string().min(2),
-  recipe_id: z.string().min(1),
+  recipe_id: z.string().optional(),
   meal_type: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
   leftover: z.boolean().optional(),
+  calories: z.number().nonnegative().optional(),
+  protein: z.number().nonnegative().optional(),
+  fat: z.number().nonnegative().optional(),
+  carbs: z.number().nonnegative().optional(),
   ingredients: z
     .array(
       z.object({
         product_id: z.string(),
         grams: z.number().positive(),
+      }),
+    )
+    .optional(),
+  steps: z
+    .array(
+      z.object({
+        order: z.number().int().positive().optional(),
+        title: z.string().min(1),
+        text: z.string().min(4),
+        minutes: z.number().optional(),
       }),
     )
     .optional(),

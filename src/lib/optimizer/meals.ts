@@ -263,3 +263,49 @@ export function fallbackGuide(recipe: Recipe, meal: PlannedMeal): RecipeGuide {
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
+
+export function nutritionFromIngredients(
+  ingredients: Array<{ product_id: string; grams: number }>,
+  products: Product[],
+) {
+  return ingredients.reduce(
+    (acc, ing) => {
+      const product = products.find((item) => item.id === ing.product_id);
+      if (!product) return acc;
+      const macros = macrosFromGrams({
+        grams: ing.grams,
+        caloriesPer100g: product.calories_per_100g,
+        proteinPer100g: product.protein_per_100g,
+        fatPer100g: product.fat_per_100g,
+        carbsPer100g: product.carbs_per_100g,
+        fiberPer100g: product.fiber_per_100g,
+        ironPer100g: product.iron_per_100g,
+      });
+      return {
+        calories: round1(acc.calories + macros.calories),
+        protein: round1(acc.protein + macros.protein),
+        fat: round1(acc.fat + macros.fat),
+        carbs: round1(acc.carbs + macros.carbs),
+        fiber: round1(acc.fiber + macros.fiber),
+        iron: round1(acc.iron + macros.iron),
+      };
+    },
+    { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, iron: 0 },
+  );
+}
+
+export function scalePlannedMeal(meal: PlannedMeal, factor: number, products: Product[]): PlannedMeal {
+  const ingredients = meal.ingredients.map((ing) => ({
+    ...ing,
+    grams: Math.max(1, Math.round(ing.grams * factor)),
+  }));
+  const nutrition = nutritionFromIngredients(ingredients, products);
+  return {
+    ...meal,
+    ingredients,
+    ...nutrition,
+    sideFruit: meal.sideFruit
+      ? { ...meal.sideFruit, grams: Math.max(1, Math.round(meal.sideFruit.grams * factor)) }
+      : meal.sideFruit,
+  };
+}

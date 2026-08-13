@@ -2,24 +2,8 @@ import { catalog } from "@/lib/catalog/repository";
 import { FallbackLLMProvider, requestWorker } from "@/lib/llm/client";
 import { parseGuides } from "@/lib/llm/recipe-guide";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
-import {
-  GreedyOptimizationEngine,
-  materializeFromMenu,
-  type OptimizationInput,
-  type OptimizationResult,
-  type PlannedMeal,
-} from "@/lib/optimizer";
-import {
-  attachSideSalad,
-  attachSnackFruit,
-  fallbackGuide,
-  isHotDinnerMain,
-  isQuickLunch,
-  isSideSalad,
-  leftoverFromDinner,
-  pickSnackFruit,
-  plannedMealFromRecipe,
-} from "@/lib/optimizer/meals";
+import { GreedyOptimizationEngine, materializeFromMenu, type OptimizationInput, type OptimizationResult } from "@/lib/optimizer";
+import { fillMissingSlots, fitMenuToBudget, mealsFromLlmMenu, scaleMenuToMacroTargets } from "./from-llm";
 import { buildTrainingPlans, type TrainingPerson } from "@/lib/training/plan";
 import { validateMenuNutrition } from "./validate-menu";
 
@@ -56,152 +40,49 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     constraints: { ...params.constraints, snacks: true },
   };
 
-  const result = engine.optimize(input);
-  const withTraining: OptimizationResult = {
-    ...result,
-    trainingPlans: buildTrainingPlans(params.trainingPeople ?? [], params.days),
-  };
-  const validated = validateMenuNutrition(withTraining, input);
+  const fallback = engine.optimize(input);
+  const trainingPlans = buildTrainingPlans(params.trainingPeople ?? [], params.days);
+  const fallbackWithTraining: OptimizationResult = { ...fallback, trainingPlans };
 
-  if (!params.useLlm) return validated;
-
-  const compactRecipes = catalog.getRecipes().map((recipe) => ({
-    id: recipe.id,
-    name: recipe.name,
-    meal_type: recipe.meal_type,
-    cooking_time: recipe.cooking_time,
-    protein_source: recipe.protein_source,
-    tags: recipe.tags,
-  }));
+  if (!params.useLlm) return validateMenuNutrition(fallbackWithTraining, input);
 
   const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
     days: params.days,
     peopleCount: params.people.length,
     calorieTarget: input.calorieTargets,
     proteinTarget: input.macroTargets.protein,
+    fatTarget: input.macroTargets.fat,
+    carbsTarget: input.macroTargets.carbs,
+    budget: params.budget,
     quickLunches: Boolean(params.constraints.quickLunches),
     dietType: params.constraints.dietType,
     eatingOutSlots: params.constraints.eatingOutSlots ?? [],
-    recipes: compactRecipes,
-    compose: true,
+    products: catalog.getProducts().map((product) => ({
+      id: product.id,
+      name: product.canonical_name,
+      category: product.category,
+    })),
   });
 
   if (!worker.ok || !worker.data.menu) {
-    validated.warnings.push(
-      "Меню собрано из каталога: языковая модель недоступна. Гиды — из рецептов. Нужен ключ Gemini в воркере.",
+    fallbackWithTraining.warnings.push(
+      "Модель недоступна — меню из каталога. Ключ Gemini кладётся в Cloudflare Worker, в GitHub только VITE_API_URL.",
     );
-    return validated;
+    return validateMenuNutrition(fallbackWithTraining, input);
   }
 
-  const composed = applyLlmComposedMenu(validated, worker.data, input);
-  return validateMenuNutrition(composed, input);
-}
+  const guides = parseGuides(worker.data.guides ? { guides: worker.data.guides } : worker.data);
+  let menu = mealsFromLlmMenu(worker.data.menu, input, guides);
+  menu = fillMissingSlots(menu, fallback.menu);
+  menu = scaleMenuToMacroTargets(menu, input);
+  menu = fitMenuToBudget(menu, input);
 
-function applyLlmComposedMenu(
-  baseline: OptimizationResult,
-  llm: WorkerGenerateResponse,
-  input: OptimizationInput,
-): OptimizationResult {
-  const recipes = input.recipes;
-  const peopleCount = Math.max(1, input.people.length);
-  const vegetarian = input.constraints.dietType === "vegetarian";
-  const guides = parseGuides(llm.guides ? { guides: llm.guides } : llm);
-  const guideById = new Map(guides.map((guide) => [guide.recipe_id, guide]));
-
-  const llmBySlot = new Map<string, { recipe_id: string; name?: string; leftover?: boolean; meal_type?: string }>();
-  if (llm.menu) {
-    for (const day of llm.menu.days) {
-      for (const meal of day.meals) {
-        const mealType = meal.meal_type ?? inferMealType(day.meals.indexOf(meal));
-        llmBySlot.set(`${day.day - 1}:${mealType}`, {
-          recipe_id: meal.recipe_id,
-          name: meal.name,
-          leftover: meal.leftover,
-          meal_type: mealType,
-        });
-      }
-    }
-  }
-
-  const nextMenu: PlannedMeal[] = [];
-  for (const baselineMeal of baseline.menu) {
-    const key = `${baselineMeal.dayIndex}:${baselineMeal.mealType}`;
-    const llmMeal = llmBySlot.get(key);
-    if (baselineMeal.mealType === "lunch" && (llmMeal?.leftover || (input.constraints.quickLunches && baselineMeal.leftover))) {
-      const prev = nextMenu.find((item) => item.dayIndex === baselineMeal.dayIndex - 1 && item.mealType === "dinner" && !item.eatingOut);
-      if (prev) {
-        nextMenu.push(leftoverFromDinner(prev, baselineMeal.dayIndex, Boolean(baselineMeal.eatingOut)));
-        continue;
-      }
-    }
-
-    const recipe = llmMeal ? recipes.find((item) => item.id === llmMeal.recipe_id) : undefined;
-    if (!recipe || isSideSalad(recipe)) {
-      nextMenu.push(applyGuide(baselineMeal, guideById.get(baselineMeal.recipeId)));
-      continue;
-    }
-    if (baselineMeal.mealType === "lunch" && input.constraints.quickLunches && !isQuickLunch(recipe) && !llmMeal?.leftover) {
-      nextMenu.push(applyGuide(baselineMeal, guideById.get(baselineMeal.recipeId)));
-      continue;
-    }
-    if (baselineMeal.mealType === "dinner" && !isHotDinnerMain(recipe, vegetarian)) {
-      nextMenu.push(applyGuide(baselineMeal, guideById.get(baselineMeal.recipeId)));
-      continue;
-    }
-
-    let meal = plannedMealFromRecipe(
-      recipe,
-      {
-        dayIndex: baselineMeal.dayIndex,
-        mealType: baselineMeal.mealType,
-        cookingSession: baselineMeal.cookingSession,
-        eatingOut: baselineMeal.eatingOut,
-      },
-      peopleCount,
-    );
-    if (meal.mealType === "dinner") {
-      const salad =
-        recipes.find((item) => item.id === baselineMeal.sideSalad?.recipeId) ??
-        recipes.find((item) => isSideSalad(item));
-      if (salad) meal = attachSideSalad(meal, salad, peopleCount);
-    }
-    if (meal.mealType === "snack") {
-      const fruit =
-        input.products.find((item) => item.id === baselineMeal.sideFruit?.productId) ??
-        pickSnackFruit(input.products, nextMenu);
-      if (fruit) meal = attachSnackFruit(meal, fruit, peopleCount);
-    }
-    const title = llmMeal?.name;
-    if (title) {
-      meal = {
-        ...meal,
-        recipeName: meal.sideSalad
-          ? `${title} + ${meal.sideSalad.name}`
-          : meal.sideFruit
-            ? `${title} + ${meal.sideFruit.name}`
-            : title,
-      };
-    }
-    meal = { ...meal, guide: guideById.get(recipe.id) ?? fallbackGuide(recipe, meal) };
-    nextMenu.push(meal);
-  }
-
-  const materialized = materializeFromMenu(nextMenu, input, { trainingPlans: baseline.trainingPlans });
-  materialized.warnings = [...new Set([...baseline.warnings, ...materialized.warnings, "Меню и гиды составила языковая модель, корзина и КБЖУ — по каталогу."])];
-  return materialized;
-}
-
-function applyGuide(meal: PlannedMeal, guide: ReturnType<typeof parseGuides>[number] | undefined): PlannedMeal {
-  if (!guide) return meal;
-  return {
-    ...meal,
-    recipeName: meal.sideSalad ? `${guide.title} + ${meal.sideSalad.name}` : guide.title,
-    guide,
-  };
-}
-
-function inferMealType(index: number): "breakfast" | "lunch" | "dinner" | "snack" {
-  return (["breakfast", "lunch", "dinner", "snack"][index] ?? "lunch") as "breakfast" | "lunch" | "dinner" | "snack";
+  const result = materializeFromMenu(menu, input, { trainingPlans });
+  result.warnings = [
+    ...result.warnings,
+    "Рецепты и примерное КБЖУ предложила модель. Граммы, корзина и итоговое КБЖУ подогнаны кодом под цель и бюджет.",
+  ];
+  return validateMenuNutrition(result, input);
 }
 
 export function localFallbackProvider() {

@@ -191,6 +191,12 @@ export function MenuPage() {
                               ? "Остатки ужина · 5–8 мин"
                               : `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g белка`}
                         </div>
+                        {meal.llmEstimate && !meal.eatingOut && (
+                          <div className="text-xs text-muted">
+                            оценка модели: {Math.round(meal.llmEstimate.calories)} kcal ·{" "}
+                            {Math.round(meal.llmEstimate.protein)} g белка
+                          </div>
+                        )}
                         {meal.sideSalad && !meal.eatingOut && (
                           <div className="text-xs text-muted">Салат: {meal.sideSalad.name}</div>
                         )}

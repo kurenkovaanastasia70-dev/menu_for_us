@@ -67,30 +67,45 @@ export default {
 };
 
 async function handleMenu(body: unknown, env: Env): Promise<Response> {
-  const prompt = `Ты шеф-повар и нутрициолог. СОСТАВЬ меню на неделю и пошаговые гиды. Верни ТОЛЬКО JSON без markdown.
+  const prompt = `Ты шеф-повар и нутрициолог. Придумай меню на неделю: рецепты + примерное КБЖУ.
+Верни ТОЛЬКО JSON без markdown.
 
 Форма:
 {
   "days":[
     {"day":1,"meals":[
-      {"meal_type":"breakfast","recipe_id":"...","name":"...","leftover":false},
-      {"meal_type":"lunch","recipe_id":"...","name":"...","leftover":false},
-      {"meal_type":"dinner","recipe_id":"...","name":"...","leftover":false}
+      {
+        "meal_type":"breakfast",
+        "recipe_id":"day1_breakfast",
+        "name":"Название блюда",
+        "leftover":false,
+        "calories":450,
+        "protein":28,
+        "fat":14,
+        "carbs":48,
+        "ingredients":[{"product_id":"oats","grams":80},{"product_id":"milk","grams":200}],
+        "steps":[
+          {"order":1,"title":"Подготовка","text":"Что сделать руками.","minutes":5},
+          {"order":2,"title":"На огне","text":"Температура и время.","minutes":10},
+          {"order":3,"title":"Сборка","text":"Как подать.","minutes":3},
+          {"order":4,"title":"Подача","text":"Как выглядит тарелка.","minutes":1}
+        ]
+      }
     ]}
-  ],
-  "guides": ${GUIDE_SHAPE}
+  ]
 }
 
-Жёсткие правила:
-- Только recipe_id из списка recipes. Не выдумывай id.
-- meal_type обязателен и должен совпадать с типом рецепта (ужин — dinner).
-- Ужин: горячее мясо/рыба (или без мяса, если dietType=vegetarian). Салат приложит приложение.
-- Если quickLunches=true: обед либо leftover:true (остатки вчерашнего ужина, recipe_id того ужина), либо очень быстрый lunch ≤20 минут. Чередуй: день 1 быстрый, день 2 остатки, день 3 быстрый...
-- Каждый день обязателен перекус. К перекусу всегда дополнительная порция фруктов — название фрукта можно вписать в name, id фрукта приложение добавит само.
-- Для leftover:true гид — как разогреть за 5–8 минут, не как готовить с нуля.
-- Для каждого НЕ leftover блюда — гид минимум из 4 шагов: огонь, минуты, текстура.
-- Язык русский, живой, без воды.
-- Не меняй граммовки продуктов — приложение само возьмёт состав из каталога.
+Правила:
+- product_id ТОЛЬКО из списка products. Не выдумывай продукты.
+- grams — на всю семью (peopleCount порций).
+- calories/protein/fat/carbs — твоя ПРИМЕРНАЯ оценка на эти порции. Код потом подгонит под цель и бюджет.
+- Каждый день: breakfast, lunch, dinner, snack.
+- Ужин: горячее мясо/рыба (если не vegetarian) + овощи. Салат код может добавить.
+- Перекус: белок/молочка плюс можно фрукт. Код всё равно добавит доп. фрукт.
+- Если quickLunches=true: нечётные дни lunch leftover:true (остатки вчерашнего ужина), чётные — быстрый обед.
+- Минимум 4 шага, если leftover=false.
+- Цель примерно calorieTarget ккал и proteinTarget г белка на день на семью.
+- Язык русский.
 
 Вход: ${JSON.stringify(body)}`;
   const parsed = await completeJson(prompt, env);

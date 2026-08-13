@@ -110,27 +110,25 @@ npm run preview
 
 **Куда вставить, чтобы работало на github.io**
 
-Ключ Gemini **нельзя** класть в GitHub Pages, в `.env` фронта и в секрет `VITE_*` — его увидят все, кто откроет сайт.
+Ключ Gemini **нельзя** класть в GitHub. Ни в Secrets для Pages, ни в `.env` фронта — его увидят все.
 
-1. Ключ → только Cloudflare Worker:
+В GitHub вставляется только URL воркера:
+
+1. Откройте репозиторий `menu_for_us` на GitHub.
+2. **Settings → Secrets and variables → Actions → New repository secret**
+3. Name: `VITE_API_URL`
+4. Secret: `https://menu-for-us-llm.XXXX.workers.dev` (URL после `npx wrangler deploy`)
+
+Ключ Gemini — в Cloudflare, не в GitHub:
 
 ```bash
 cd cloudflare-worker
-npm install
 npx wrangler login
 npx wrangler deploy
 npx wrangler secret put GEMINI_API_KEY
 ```
 
-Терминал спросит значение — вставьте ключ и Enter.
-
-2. URL воркера после `deploy` (пример: `https://menu-for-us-llm.XXXX.workers.dev`) → секрет GitHub **`VITE_API_URL`**:
-   Settings → Secrets and variables → Actions → `VITE_API_URL`.
-   Локально тот же URL в `.env`.
-
-3. Пересоберите сайт: Actions → Deploy → Run workflow (или просто push в `main`).
-
-Сайт на github.io ходит на воркер, воркер уже с ключом вызывает Gemini.
+Потом Actions → Deploy → Run workflow.
 
 Запасные провайдеры (необязательно):
 
