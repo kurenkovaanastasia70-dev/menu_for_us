@@ -1,6 +1,6 @@
 import { catalog } from "@/lib/catalog/repository";
 import { materializeFromMenu, type OptimizationInput, type OptimizationResult, type PlannedMeal, type Recipe } from "@/lib/optimizer";
-import { attachSideSalad, fallbackGuide, isSideSalad, plannedMealFromRecipe } from "@/lib/optimizer/meals";
+import { attachSideSalad, attachSnackFruit, fallbackGuide, isSideSalad, pickSnackFruit, plannedMealFromRecipe } from "@/lib/optimizer/meals";
 import { recipeUsesCart } from "./recipe-score";
 
 export function suggestMealAlternatives(
@@ -116,6 +116,12 @@ function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, peopleCount: number, 
       recipes?.find((item) => item.id === meal.sideSalad?.recipeId) ??
       recipes?.find((item) => isSideSalad(item));
     if (salad) next = attachSideSalad(next, salad, peopleCount);
+  }
+  if (meal.mealType === "snack") {
+    const products = catalog.getProducts();
+    const fruit =
+      products.find((item) => item.id === meal.sideFruit?.productId) ?? pickSnackFruit(products, []);
+    if (fruit) next = attachSnackFruit(next, fruit, peopleCount);
   }
   return { ...next, eatingOut: meal.eatingOut, guide: fallbackGuide(recipe, next) };
 }

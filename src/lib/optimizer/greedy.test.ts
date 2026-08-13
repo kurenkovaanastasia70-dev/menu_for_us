@@ -76,7 +76,22 @@ const tomato: Product = {
   tags: ["vegetable"],
 };
 
-const products = [chicken, rice, oats, milk, tomato];
+const apple: Product = {
+  id: "apple",
+  canonical_name: "Яблоки",
+  category: "fruit",
+  calories_per_100g: 52,
+  protein_per_100g: 0.3,
+  fat_per_100g: 0.2,
+  carbs_per_100g: 14,
+  fiber_per_100g: 2.4,
+  iron_per_100g: 0.1,
+  package_weight: 1000,
+  unit: "g",
+  tags: ["fruit"],
+};
+
+const products = [chicken, rice, oats, milk, tomato, apple];
 
 function offer(productId: string, storeId: string, price: number, pack = 900): StoreProduct {
   return {
@@ -102,6 +117,7 @@ const prices: StoreProduct[] = [
   offer("oats", "pyaterochka", 70, 500),
   offer("milk", "pyaterochka", 80, 900),
   offer("tomato", "pyaterochka", 100, 500),
+  offer("apple", "pyaterochka", 129, 1000),
 ];
 
 function recipe(partial: Partial<Recipe> & Pick<Recipe, "id" | "name" | "meal_type" | "ingredients">): Recipe {
@@ -183,6 +199,16 @@ const recipes: Recipe[] = [
     ],
     calories: 380,
     protein: 35,
+  }),
+  recipe({
+    id: "snack_yogurt",
+    name: "Йогурт",
+    meal_type: "snack",
+    protein_source: "dairy",
+    tags: ["snack"],
+    ingredients: [{ product_id: "milk", grams: 150 }],
+    calories: 80,
+    protein: 8,
   }),
 ];
 
@@ -323,5 +349,14 @@ describe("optimizer", () => {
     expect(lunches.some((meal) => meal.leftover)).toBe(true);
     expect(lunches.some((meal) => !meal.leftover)).toBe(true);
     expect(result.warnings.some((warning) => warning.includes("Обеды"))).toBe(true);
+  });
+
+  it("adds extra fruit to every snack", () => {
+    const result = engine.optimize(input({ constraints: { ...input().constraints, snacks: true } }));
+    const snacks = result.menu.filter((meal) => meal.mealType === "snack");
+    expect(snacks.length).toBeGreaterThan(0);
+    expect(snacks.every((meal) => meal.sideFruit?.productId === "apple")).toBe(true);
+    expect(snacks.every((meal) => meal.ingredients.some((ing) => ing.product_id === "apple"))).toBe(true);
+    expect(result.cart.some((line) => line.productId === "apple")).toBe(true);
   });
 });

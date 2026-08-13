@@ -19,12 +19,14 @@ import {
 } from "./types";
 import {
   attachSideSalad,
+  attachSnackFruit,
   fallbackGuide,
   isEatingOutSlot,
   isHotDinnerMain,
   isQuickLunch,
   isSideSalad,
   leftoverFromDinner,
+  pickSnackFruit,
   plannedMealFromRecipe,
 } from "./meals";
 import { calculateVarietyScore } from "./variety";
@@ -95,6 +97,14 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
           if (salad) {
             meal = attachSideSalad(meal, salad, peopleCount);
             for (const ing of salad.ingredients) selectedProductIds.add(ing.product_id);
+          }
+        }
+
+        if (mealType === "snack") {
+          const fruit = pickSnackFruit(input.products, selected);
+          if (fruit) {
+            meal = attachSnackFruit(meal, fruit, peopleCount);
+            selectedProductIds.add(fruit.id);
           }
         }
 
@@ -463,8 +473,12 @@ function tryCheaperMenu(
     const next = plannedMealFromRecipe(cheaper, meal, peopleCount);
     const salad =
       meal.mealType === "dinner" ? pickSideSalad(recipes, clone.filter((item) => item !== meal)) : null;
-    const withSalad = salad ? attachSideSalad(next, salad, peopleCount) : next;
-    Object.assign(meal, { ...withSalad, guide: fallbackGuide(cheaper, withSalad), cookingSession: sessions[meal.dayIndex] ?? 0 });
+    let nextMeal = salad ? attachSideSalad(next, salad, peopleCount) : next;
+    if (meal.mealType === "snack") {
+      const fruit = pickSnackFruit(input.products, clone.filter((item) => item !== meal));
+      if (fruit) nextMeal = attachSnackFruit(nextMeal, fruit, peopleCount);
+    }
+    Object.assign(meal, { ...nextMeal, guide: fallbackGuide(cheaper, nextMeal), cookingSession: sessions[meal.dayIndex] ?? 0 });
   }
   const cart = buildCart(clone, input);
   const effective = cart.reduce((sum, line) => sum + line.effectivePrice, 0);

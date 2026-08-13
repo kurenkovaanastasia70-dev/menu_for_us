@@ -194,6 +194,11 @@ export function MenuPage() {
                         {meal.sideSalad && !meal.eatingOut && (
                           <div className="text-xs text-muted">Салат: {meal.sideSalad.name}</div>
                         )}
+                        {meal.sideFruit && !meal.eatingOut && (
+                          <div className="text-xs text-muted">
+                            Фрукт: {meal.sideFruit.name} · {meal.sideFruit.grams} г
+                          </div>
+                        )}
                         <div className="mt-1 text-xs font-semibold text-sage">Открыть гид →</div>
                       </button>
                       <button className="text-sm font-semibold text-sage" onClick={() => setActiveMeal(meal)}>

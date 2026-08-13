@@ -154,6 +154,12 @@ export interface SideSalad {
   instructions: string[];
 }
 
+export interface SideFruit {
+  productId: string;
+  name: string;
+  grams: number;
+}
+
 export interface PlannedMeal {
   dayIndex: number;
   mealType: Recipe["meal_type"];
@@ -173,6 +179,7 @@ export interface PlannedMeal {
   leftover?: boolean;
   leftoverFrom?: string;
   sideSalad?: SideSalad;
+  sideFruit?: SideFruit;
   guide?: RecipeGuide;
 }
 

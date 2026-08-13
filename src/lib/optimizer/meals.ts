@@ -1,4 +1,5 @@
-import type { OptimizationConstraints, PlannedMeal, Recipe, RecipeGuide, SideSalad } from "./types";
+import { macrosFromGrams } from "../nutrition/calculator";
+import type { OptimizationConstraints, PlannedMeal, Product, Recipe, RecipeGuide, SideFruit, SideSalad } from "./types";
 
 const MEAT_SOURCES = new Set(["chicken", "beef", "pork", "turkey", "fish"]);
 export const QUICK_LUNCH_MINUTES = 20;
@@ -151,6 +152,55 @@ export function attachSideSalad(meal: PlannedMeal, salad: Recipe, peopleCount: n
   };
 }
 
+const SNACK_FRUIT_IDS = ["apple", "banana", "pear", "orange", "kiwi", "berries"] as const;
+const SNACK_FRUIT_GRAMS: Record<string, number> = {
+  apple: 150,
+  banana: 120,
+  pear: 160,
+  orange: 150,
+  kiwi: 80,
+  berries: 100,
+};
+
+export function pickSnackFruit(products: Product[], selected: PlannedMeal[]): Product | null {
+  const fruits = SNACK_FRUIT_IDS.map((id) => products.find((product) => product.id === id)).filter(
+    (product): product is Product => Boolean(product),
+  );
+  if (fruits.length === 0) return null;
+  const used = selected.map((meal) => meal.sideFruit?.productId).filter(Boolean);
+  const unused = fruits.filter((product) => !used.includes(product.id));
+  const pool = unused.length > 0 ? unused : fruits;
+  const snacks = selected.filter((meal) => meal.mealType === "snack").length;
+  return pool[snacks % pool.length] ?? pool[0] ?? null;
+}
+
+export function attachSnackFruit(meal: PlannedMeal, fruit: Product, peopleCount: number): PlannedMeal {
+  const grams = Math.round((SNACK_FRUIT_GRAMS[fruit.id] ?? 120) * peopleCount);
+  const macros = macrosFromGrams({
+    grams,
+    caloriesPer100g: fruit.calories_per_100g,
+    proteinPer100g: fruit.protein_per_100g,
+    fatPer100g: fruit.fat_per_100g,
+    carbsPer100g: fruit.carbs_per_100g,
+    fiberPer100g: fruit.fiber_per_100g,
+    ironPer100g: fruit.iron_per_100g,
+  });
+  const sideFruit: SideFruit = { productId: fruit.id, name: fruit.canonical_name, grams };
+  return {
+    ...meal,
+    recipeName: `${meal.recipeName} + ${fruit.canonical_name}`,
+    sideFruit,
+    ingredients: [...meal.ingredients, { product_id: fruit.id, grams }],
+    calories: round1(meal.calories + macros.calories),
+    protein: round1(meal.protein + macros.protein),
+    fat: round1(meal.fat + macros.fat),
+    carbs: round1(meal.carbs + macros.carbs),
+    fiber: round1(meal.fiber + macros.fiber),
+    iron: round1(meal.iron + macros.iron),
+    instructions: [...meal.instructions, `Дополнительно: ${fruit.canonical_name}, ${grams} г.`],
+  };
+}
+
 export function fallbackGuide(recipe: Recipe, meal: PlannedMeal): RecipeGuide {
   const steps = (recipe.instructions.length ? recipe.instructions : ["Приготовьте блюдо по составу продуктов."]).map(
     (text, index) => ({
@@ -176,6 +226,14 @@ export function fallbackGuide(recipe: Recipe, meal: PlannedMeal): RecipeGuide {
       minutes: 8,
     });
   }
+  if (meal.sideFruit) {
+    steps.push({
+      order: steps.length + 1,
+      title: "Фрукт",
+      text: `К перекусу обязательно ${meal.sideFruit.name}, ${meal.sideFruit.grams} г. Можно целиком или нарезать.`,
+      minutes: 1,
+    });
+  }
   return {
     recipe_id: recipe.id,
     title: meal.recipeName || recipe.name,
@@ -183,16 +241,22 @@ export function fallbackGuide(recipe: Recipe, meal: PlannedMeal): RecipeGuide {
       ? "Остатки вчерашнего ужина"
       : meal.mealType === "dinner"
         ? "Горячее + свежий салат"
-        : "Пошаговый гид",
-    time_minutes: recipe.cooking_time + (meal.sideSalad ? 10 : 0),
+        : meal.mealType === "snack"
+          ? "Перекус + фрукт"
+          : "Пошаговый гид",
+    time_minutes: recipe.cooking_time + (meal.sideSalad ? 10 : 0) + (meal.sideFruit ? 1 : 0),
     servings: meal.servings,
     steps,
-    tips: meal.sideSalad
-      ? [`Салат «${meal.sideSalad.name}» соберите перед подачей, чтобы зелень не дала сок.`]
-      : ["Не пережаривайте белок — сочность важнее корочки."],
+    tips: [
+      ...(meal.sideSalad ? [`Салат «${meal.sideSalad.name}» соберите перед подачей, чтобы зелень не дала сок.`] : []),
+      ...(meal.sideFruit ? [`Фрукт к перекусу не пропускайте — клетчатка и калий.`] : []),
+      ...(!meal.sideSalad && !meal.sideFruit ? ["Не пережаривайте белок — сочность важнее корочки."] : []),
+    ],
     plating: meal.sideSalad
       ? `Горячее сбоку, салат «${meal.sideSalad.name}» отдельной горкой.`
-      : "Подавайте сразу, пока горячее.",
+      : meal.sideFruit
+        ? `Перекус в миске, ${meal.sideFruit.name} рядом.`
+        : "Подавайте сразу, пока горячее.",
   };
 }
 

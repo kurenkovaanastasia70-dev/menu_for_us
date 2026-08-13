@@ -53,9 +53,9 @@ export function PlanPage() {
       0,
       Math.min(3, Math.max(2, Number(meals))),
     ) as Array<"breakfast" | "lunch" | "dinner" | "snack">;
-    if (Number(meals) >= 4 || members.some((member) => member.snacks)) types.push("snack");
+    types.push("snack");
     return types;
-  }, [meals, members]);
+  }, [meals]);
 
   function toggleSlot(dayIndex: number, mealType: string) {
     const key = `${dayIndex}:${mealType}`;

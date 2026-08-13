@@ -11,11 +11,13 @@ import {
 } from "@/lib/optimizer";
 import {
   attachSideSalad,
+  attachSnackFruit,
   fallbackGuide,
   isHotDinnerMain,
   isQuickLunch,
   isSideSalad,
   leftoverFromDinner,
+  pickSnackFruit,
   plannedMealFromRecipe,
 } from "@/lib/optimizer/meals";
 import { buildTrainingPlans, type TrainingPerson } from "@/lib/training/plan";
@@ -51,7 +53,7 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     recipes: catalog.getRecipes(),
     cashback: params.cashback,
     fridge: params.fridge ?? [],
-    constraints: params.constraints,
+    constraints: { ...params.constraints, snacks: true },
   };
 
   const result = engine.optimize(input);
@@ -163,11 +165,21 @@ function applyLlmComposedMenu(
         recipes.find((item) => isSideSalad(item));
       if (salad) meal = attachSideSalad(meal, salad, peopleCount);
     }
+    if (meal.mealType === "snack") {
+      const fruit =
+        input.products.find((item) => item.id === baselineMeal.sideFruit?.productId) ??
+        pickSnackFruit(input.products, nextMenu);
+      if (fruit) meal = attachSnackFruit(meal, fruit, peopleCount);
+    }
     const title = llmMeal?.name;
     if (title) {
       meal = {
         ...meal,
-        recipeName: meal.sideSalad ? `${title} + ${meal.sideSalad.name}` : title,
+        recipeName: meal.sideSalad
+          ? `${title} + ${meal.sideSalad.name}`
+          : meal.sideFruit
+            ? `${title} + ${meal.sideFruit.name}`
+            : title,
       };
     }
     meal = { ...meal, guide: guideById.get(recipe.id) ?? fallbackGuide(recipe, meal) };
