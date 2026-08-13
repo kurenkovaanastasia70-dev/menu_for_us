@@ -17,6 +17,13 @@ Desktop.ini
 node_modules/
 dist/
 build/
+dev-dist/
 .venv/
 __pycache__/
 *.pyc
+coverage/
+*.tsbuildinfo
+
+# Cloudflare
+.wrangler/
+cloudflare-worker/.dev.vars

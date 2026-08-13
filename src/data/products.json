@@ -1,0 +1,1559 @@
+[
+  {
+    "id": "chicken_breast",
+    "canonical_name": "Куриная грудка",
+    "category": "protein",
+    "calories_per_100g": 110,
+    "protein_per_100g": 23.6,
+    "fat_per_100g": 1.9,
+    "carbs_per_100g": 0,
+    "package_weight": 900,
+    "unit": "g",
+    "tags": [
+      "chicken",
+      "meat"
+    ]
+  },
+  {
+    "id": "chicken_thigh",
+    "canonical_name": "Куриное бедро",
+    "category": "protein",
+    "calories_per_100g": 185,
+    "protein_per_100g": 21,
+    "fat_per_100g": 11,
+    "carbs_per_100g": 0,
+    "package_weight": 900,
+    "unit": "g",
+    "tags": [
+      "chicken",
+      "meat"
+    ]
+  },
+  {
+    "id": "turkey_fillet",
+    "canonical_name": "Филе индейки",
+    "category": "protein",
+    "calories_per_100g": 117,
+    "protein_per_100g": 24,
+    "fat_per_100g": 1.9,
+    "carbs_per_100g": 0,
+    "package_weight": 600,
+    "unit": "g",
+    "tags": [
+      "turkey",
+      "meat"
+    ]
+  },
+  {
+    "id": "ground_turkey",
+    "canonical_name": "Фарш индейки",
+    "category": "protein",
+    "calories_per_100g": 160,
+    "protein_per_100g": 20,
+    "fat_per_100g": 8,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "turkey",
+      "meat"
+    ]
+  },
+  {
+    "id": "ground_chicken",
+    "canonical_name": "Фарш куриный",
+    "category": "protein",
+    "calories_per_100g": 143,
+    "protein_per_100g": 18,
+    "fat_per_100g": 8,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "chicken",
+      "meat"
+    ]
+  },
+  {
+    "id": "beef",
+    "canonical_name": "Говядина",
+    "category": "protein",
+    "calories_per_100g": 187,
+    "protein_per_100g": 22,
+    "fat_per_100g": 11,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "beef",
+      "meat"
+    ]
+  },
+  {
+    "id": "ground_beef",
+    "canonical_name": "Фарш говяжий",
+    "category": "protein",
+    "calories_per_100g": 254,
+    "protein_per_100g": 17,
+    "fat_per_100g": 20,
+    "carbs_per_100g": 0,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "beef",
+      "meat"
+    ]
+  },
+  {
+    "id": "pork_tenderloin",
+    "canonical_name": "Свиная вырезка",
+    "category": "protein",
+    "calories_per_100g": 142,
+    "protein_per_100g": 21,
+    "fat_per_100g": 6,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "pork",
+      "meat"
+    ]
+  },
+  {
+    "id": "salmon",
+    "canonical_name": "Лосось",
+    "category": "protein",
+    "calories_per_100g": 208,
+    "protein_per_100g": 20,
+    "fat_per_100g": 13,
+    "carbs_per_100g": 0,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "id": "pollock",
+    "canonical_name": "Минтай",
+    "category": "protein",
+    "calories_per_100g": 72,
+    "protein_per_100g": 16,
+    "fat_per_100g": 0.9,
+    "carbs_per_100g": 0,
+    "package_weight": 700,
+    "unit": "g",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "id": "cod",
+    "canonical_name": "Треска",
+    "category": "protein",
+    "calories_per_100g": 82,
+    "protein_per_100g": 18,
+    "fat_per_100g": 0.7,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "id": "tuna_can",
+    "canonical_name": "Тунец консервированный",
+    "category": "protein",
+    "calories_per_100g": 96,
+    "protein_per_100g": 21,
+    "fat_per_100g": 1,
+    "carbs_per_100g": 0,
+    "package_weight": 185,
+    "unit": "g",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "id": "shrimp",
+    "canonical_name": "Креветки",
+    "category": "protein",
+    "calories_per_100g": 95,
+    "protein_per_100g": 20,
+    "fat_per_100g": 1.1,
+    "carbs_per_100g": 0,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "id": "eggs",
+    "canonical_name": "Яйца куриные",
+    "category": "protein",
+    "calories_per_100g": 157,
+    "protein_per_100g": 13,
+    "fat_per_100g": 11,
+    "carbs_per_100g": 1,
+    "package_weight": 600,
+    "unit": "g",
+    "tags": [
+      "eggs"
+    ]
+  },
+  {
+    "id": "tofu",
+    "canonical_name": "Тофу",
+    "category": "protein",
+    "calories_per_100g": 76,
+    "protein_per_100g": 8,
+    "fat_per_100g": 4.8,
+    "carbs_per_100g": 1.9,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "soy",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "lentils",
+    "canonical_name": "Чечевица",
+    "category": "protein",
+    "calories_per_100g": 116,
+    "protein_per_100g": 9,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 20,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "legume",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "chickpeas",
+    "canonical_name": "Нут",
+    "category": "protein",
+    "calories_per_100g": 164,
+    "protein_per_100g": 8.9,
+    "fat_per_100g": 2.6,
+    "carbs_per_100g": 27,
+    "package_weight": 450,
+    "unit": "g",
+    "tags": [
+      "legume",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "beans",
+    "canonical_name": "Фасоль",
+    "category": "protein",
+    "calories_per_100g": 127,
+    "protein_per_100g": 8.7,
+    "fat_per_100g": 0.5,
+    "carbs_per_100g": 22,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "legume",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "cottage_cheese",
+    "canonical_name": "Творог 5%",
+    "category": "dairy",
+    "calories_per_100g": 121,
+    "protein_per_100g": 17,
+    "fat_per_100g": 5,
+    "carbs_per_100g": 1.8,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "greek_yogurt",
+    "canonical_name": "Греческий йогурт",
+    "category": "dairy",
+    "calories_per_100g": 66,
+    "protein_per_100g": 8,
+    "fat_per_100g": 2,
+    "carbs_per_100g": 3.5,
+    "package_weight": 250,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "yogurt",
+    "canonical_name": "Йогурт натуральный",
+    "category": "dairy",
+    "calories_per_100g": 60,
+    "protein_per_100g": 4,
+    "fat_per_100g": 2.5,
+    "carbs_per_100g": 6,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "milk",
+    "canonical_name": "Молоко 2.5%",
+    "category": "dairy",
+    "calories_per_100g": 52,
+    "protein_per_100g": 2.9,
+    "fat_per_100g": 2.5,
+    "carbs_per_100g": 4.8,
+    "package_weight": 900,
+    "unit": "ml",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "kefir",
+    "canonical_name": "Кефир 2.5%",
+    "category": "dairy",
+    "calories_per_100g": 50,
+    "protein_per_100g": 3,
+    "fat_per_100g": 2.5,
+    "carbs_per_100g": 4,
+    "package_weight": 900,
+    "unit": "ml",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "ryazhenka",
+    "canonical_name": "Ряженка",
+    "category": "dairy",
+    "calories_per_100g": 67,
+    "protein_per_100g": 3,
+    "fat_per_100g": 4,
+    "carbs_per_100g": 4.2,
+    "package_weight": 450,
+    "unit": "ml",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "cheese",
+    "canonical_name": "Сыр полутвёрдый",
+    "category": "dairy",
+    "calories_per_100g": 350,
+    "protein_per_100g": 23,
+    "fat_per_100g": 28,
+    "carbs_per_100g": 0,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "mozzarella",
+    "canonical_name": "Моцарелла",
+    "category": "dairy",
+    "calories_per_100g": 280,
+    "protein_per_100g": 18,
+    "fat_per_100g": 22,
+    "carbs_per_100g": 2,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "feta",
+    "canonical_name": "Фета",
+    "category": "dairy",
+    "calories_per_100g": 264,
+    "protein_per_100g": 14,
+    "fat_per_100g": 21,
+    "carbs_per_100g": 4,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "sour_cream",
+    "canonical_name": "Сметана 15%",
+    "category": "dairy",
+    "calories_per_100g": 162,
+    "protein_per_100g": 2.6,
+    "fat_per_100g": 15,
+    "carbs_per_100g": 3,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "rice",
+    "canonical_name": "Рис",
+    "category": "grain",
+    "calories_per_100g": 130,
+    "protein_per_100g": 2.7,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 28,
+    "package_weight": 900,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "buckwheat",
+    "canonical_name": "Гречка",
+    "category": "grain",
+    "calories_per_100g": 132,
+    "protein_per_100g": 4.5,
+    "fat_per_100g": 1.6,
+    "carbs_per_100g": 25,
+    "package_weight": 900,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "oats",
+    "canonical_name": "Овсянка",
+    "category": "grain",
+    "calories_per_100g": 379,
+    "protein_per_100g": 13,
+    "fat_per_100g": 6.2,
+    "carbs_per_100g": 65,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "pasta",
+    "canonical_name": "Макароны",
+    "category": "grain",
+    "calories_per_100g": 344,
+    "protein_per_100g": 11,
+    "fat_per_100g": 1.3,
+    "carbs_per_100g": 71,
+    "package_weight": 450,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "spaghetti",
+    "canonical_name": "Спагетти",
+    "category": "grain",
+    "calories_per_100g": 359,
+    "protein_per_100g": 13,
+    "fat_per_100g": 2,
+    "carbs_per_100g": 70,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "potato",
+    "canonical_name": "Картофель",
+    "category": "grain",
+    "calories_per_100g": 77,
+    "protein_per_100g": 2,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 17,
+    "package_weight": 2000,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "bread",
+    "canonical_name": "Хлеб цельнозерновой",
+    "category": "grain",
+    "calories_per_100g": 247,
+    "protein_per_100g": 9,
+    "fat_per_100g": 3.3,
+    "carbs_per_100g": 43,
+    "package_weight": 350,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "quinoa",
+    "canonical_name": "Киноа",
+    "category": "grain",
+    "calories_per_100g": 120,
+    "protein_per_100g": 4.4,
+    "fat_per_100g": 1.9,
+    "carbs_per_100g": 21,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "bulgur",
+    "canonical_name": "Булгур",
+    "category": "grain",
+    "calories_per_100g": 83,
+    "protein_per_100g": 3.1,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 19,
+    "package_weight": 450,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "couscous",
+    "canonical_name": "Кускус",
+    "category": "grain",
+    "calories_per_100g": 112,
+    "protein_per_100g": 3.8,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 23,
+    "package_weight": 450,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "millet",
+    "canonical_name": "Пшено",
+    "category": "grain",
+    "calories_per_100g": 119,
+    "protein_per_100g": 3.5,
+    "fat_per_100g": 1,
+    "carbs_per_100g": 23,
+    "package_weight": 800,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "barley",
+    "canonical_name": "Перловка",
+    "category": "grain",
+    "calories_per_100g": 123,
+    "protein_per_100g": 2.3,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 28,
+    "package_weight": 800,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "noodles",
+    "canonical_name": "Лапша удон",
+    "category": "grain",
+    "calories_per_100g": 140,
+    "protein_per_100g": 4.5,
+    "fat_per_100g": 0.5,
+    "carbs_per_100g": 28,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "tomato",
+    "canonical_name": "Помидоры",
+    "category": "vegetable",
+    "calories_per_100g": 18,
+    "protein_per_100g": 0.9,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 3.9,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "cucumber",
+    "canonical_name": "Огурцы",
+    "category": "vegetable",
+    "calories_per_100g": 15,
+    "protein_per_100g": 0.8,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 3.6,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "onion",
+    "canonical_name": "Лук репчатый",
+    "category": "vegetable",
+    "calories_per_100g": 40,
+    "protein_per_100g": 1.1,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 9,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "garlic",
+    "canonical_name": "Чеснок",
+    "category": "vegetable",
+    "calories_per_100g": 149,
+    "protein_per_100g": 6.4,
+    "fat_per_100g": 0.5,
+    "carbs_per_100g": 33,
+    "package_weight": 150,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "carrot",
+    "canonical_name": "Морковь",
+    "category": "vegetable",
+    "calories_per_100g": 41,
+    "protein_per_100g": 0.9,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 10,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "cabbage",
+    "canonical_name": "Капуста белокочанная",
+    "category": "vegetable",
+    "calories_per_100g": 25,
+    "protein_per_100g": 1.3,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 6,
+    "package_weight": 1500,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "broccoli",
+    "canonical_name": "Брокколи",
+    "category": "vegetable",
+    "calories_per_100g": 34,
+    "protein_per_100g": 2.8,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 7,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "spinach",
+    "canonical_name": "Шпинат",
+    "category": "vegetable",
+    "calories_per_100g": 23,
+    "protein_per_100g": 2.9,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 3.6,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "bell_pepper",
+    "canonical_name": "Перец болгарский",
+    "category": "vegetable",
+    "calories_per_100g": 27,
+    "protein_per_100g": 1,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 6,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "zucchini",
+    "canonical_name": "Кабачки",
+    "category": "vegetable",
+    "calories_per_100g": 17,
+    "protein_per_100g": 1.2,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 3.4,
+    "package_weight": 800,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "eggplant",
+    "canonical_name": "Баклажаны",
+    "category": "vegetable",
+    "calories_per_100g": 25,
+    "protein_per_100g": 1.1,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 6,
+    "package_weight": 600,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "beet",
+    "canonical_name": "Свёкла",
+    "category": "vegetable",
+    "calories_per_100g": 43,
+    "protein_per_100g": 1.6,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 10,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "lettuce",
+    "canonical_name": "Салат айсберг",
+    "category": "vegetable",
+    "calories_per_100g": 14,
+    "protein_per_100g": 0.9,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 3,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "vegetable",
+      "salad"
+    ]
+  },
+  {
+    "id": "mushroom",
+    "canonical_name": "Шампиньоны",
+    "category": "vegetable",
+    "calories_per_100g": 27,
+    "protein_per_100g": 4.3,
+    "fat_per_100g": 1,
+    "carbs_per_100g": 1,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "cherry_tomato",
+    "canonical_name": "Черри",
+    "category": "vegetable",
+    "calories_per_100g": 18,
+    "protein_per_100g": 0.9,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 3.9,
+    "package_weight": 250,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "green_beans",
+    "canonical_name": "Стручковая фасоль",
+    "category": "vegetable",
+    "calories_per_100g": 31,
+    "protein_per_100g": 1.8,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 7,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "cauliflower",
+    "canonical_name": "Цветная капуста",
+    "category": "vegetable",
+    "calories_per_100g": 25,
+    "protein_per_100g": 1.9,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 5,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "pumpkin",
+    "canonical_name": "Тыква",
+    "category": "vegetable",
+    "calories_per_100g": 26,
+    "protein_per_100g": 1,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 7,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "corn",
+    "canonical_name": "Кукуруза",
+    "category": "vegetable",
+    "calories_per_100g": 96,
+    "protein_per_100g": 3.3,
+    "fat_per_100g": 1.4,
+    "carbs_per_100g": 19,
+    "package_weight": 340,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "peas",
+    "canonical_name": "Горошек",
+    "category": "vegetable",
+    "calories_per_100g": 81,
+    "protein_per_100g": 5.4,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 14,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "celery",
+    "canonical_name": "Сельдерей",
+    "category": "vegetable",
+    "calories_per_100g": 16,
+    "protein_per_100g": 0.7,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 3,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "dill",
+    "canonical_name": "Укроп",
+    "category": "vegetable",
+    "calories_per_100g": 43,
+    "protein_per_100g": 3.5,
+    "fat_per_100g": 0.5,
+    "carbs_per_100g": 7,
+    "package_weight": 50,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "parsley",
+    "canonical_name": "Петрушка",
+    "category": "vegetable",
+    "calories_per_100g": 36,
+    "protein_per_100g": 3,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 6,
+    "package_weight": 50,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "ginger",
+    "canonical_name": "Имбирь",
+    "category": "vegetable",
+    "calories_per_100g": 80,
+    "protein_per_100g": 1.8,
+    "fat_per_100g": 0.8,
+    "carbs_per_100g": 18,
+    "package_weight": 100,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "banana",
+    "canonical_name": "Бананы",
+    "category": "fruit",
+    "calories_per_100g": 89,
+    "protein_per_100g": 1.1,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 23,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "apple",
+    "canonical_name": "Яблоки",
+    "category": "fruit",
+    "calories_per_100g": 52,
+    "protein_per_100g": 0.3,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 14,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "orange",
+    "canonical_name": "Апельсины",
+    "category": "fruit",
+    "calories_per_100g": 47,
+    "protein_per_100g": 0.9,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 12,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "lemon",
+    "canonical_name": "Лимоны",
+    "category": "fruit",
+    "calories_per_100g": 29,
+    "protein_per_100g": 1.1,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 9,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "berries",
+    "canonical_name": "Ягодный микс",
+    "category": "fruit",
+    "calories_per_100g": 43,
+    "protein_per_100g": 0.7,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 9,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "kiwi",
+    "canonical_name": "Киви",
+    "category": "fruit",
+    "calories_per_100g": 61,
+    "protein_per_100g": 1.1,
+    "fat_per_100g": 0.5,
+    "carbs_per_100g": 15,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "pear",
+    "canonical_name": "Груши",
+    "category": "fruit",
+    "calories_per_100g": 57,
+    "protein_per_100g": 0.4,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 15,
+    "package_weight": 800,
+    "unit": "g",
+    "tags": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "olive_oil",
+    "canonical_name": "Оливковое масло",
+    "category": "fat",
+    "calories_per_100g": 884,
+    "protein_per_100g": 0,
+    "fat_per_100g": 100,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "ml",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "sunflower_oil",
+    "canonical_name": "Подсолнечное масло",
+    "category": "fat",
+    "calories_per_100g": 899,
+    "protein_per_100g": 0,
+    "fat_per_100g": 100,
+    "carbs_per_100g": 0,
+    "package_weight": 900,
+    "unit": "ml",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "butter",
+    "canonical_name": "Сливочное масло",
+    "category": "fat",
+    "calories_per_100g": 748,
+    "protein_per_100g": 0.5,
+    "fat_per_100g": 82.5,
+    "carbs_per_100g": 0.8,
+    "package_weight": 180,
+    "unit": "g",
+    "tags": [
+      "fat",
+      "dairy"
+    ]
+  },
+  {
+    "id": "avocado",
+    "canonical_name": "Авокадо",
+    "category": "fat",
+    "calories_per_100g": 160,
+    "protein_per_100g": 2,
+    "fat_per_100g": 15,
+    "carbs_per_100g": 9,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "fruit",
+      "fat"
+    ]
+  },
+  {
+    "id": "nuts",
+    "canonical_name": "Грецкий орех",
+    "category": "fat",
+    "calories_per_100g": 654,
+    "protein_per_100g": 15,
+    "fat_per_100g": 65,
+    "carbs_per_100g": 14,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "seeds",
+    "canonical_name": "Семена льна",
+    "category": "fat",
+    "calories_per_100g": 534,
+    "protein_per_100g": 18,
+    "fat_per_100g": 42,
+    "carbs_per_100g": 29,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "peanut_butter",
+    "canonical_name": "Арахисовая паста",
+    "category": "fat",
+    "calories_per_100g": 588,
+    "protein_per_100g": 25,
+    "fat_per_100g": 50,
+    "carbs_per_100g": 20,
+    "package_weight": 250,
+    "unit": "g",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "flour",
+    "canonical_name": "Мука пшеничная",
+    "category": "pantry",
+    "calories_per_100g": 364,
+    "protein_per_100g": 10,
+    "fat_per_100g": 1,
+    "carbs_per_100g": 76,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "sugar",
+    "canonical_name": "Сахар",
+    "category": "pantry",
+    "calories_per_100g": 387,
+    "protein_per_100g": 0,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 100,
+    "package_weight": 1000,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "salt",
+    "canonical_name": "Соль",
+    "category": "pantry",
+    "calories_per_100g": 0,
+    "protein_per_100g": 0,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 0,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "honey",
+    "canonical_name": "Мёд",
+    "category": "pantry",
+    "calories_per_100g": 304,
+    "protein_per_100g": 0.3,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 82,
+    "package_weight": 250,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "soy_sauce",
+    "canonical_name": "Соевый соус",
+    "category": "pantry",
+    "calories_per_100g": 53,
+    "protein_per_100g": 6,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 7,
+    "package_weight": 250,
+    "unit": "ml",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "tomato_paste",
+    "canonical_name": "Томатная паста",
+    "category": "pantry",
+    "calories_per_100g": 82,
+    "protein_per_100g": 4.3,
+    "fat_per_100g": 0.5,
+    "carbs_per_100g": 19,
+    "package_weight": 140,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "canned_tomatoes",
+    "canonical_name": "Томаты в с.с.",
+    "category": "pantry",
+    "calories_per_100g": 24,
+    "protein_per_100g": 1.2,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 5,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "teriyaki",
+    "canonical_name": "Соус терияки",
+    "category": "pantry",
+    "calories_per_100g": 89,
+    "protein_per_100g": 5,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 17,
+    "package_weight": 250,
+    "unit": "ml",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "mustard",
+    "canonical_name": "Горчица",
+    "category": "pantry",
+    "calories_per_100g": 162,
+    "protein_per_100g": 6,
+    "fat_per_100g": 10,
+    "carbs_per_100g": 11,
+    "package_weight": 170,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "vinegar",
+    "canonical_name": "Уксус яблочный",
+    "category": "pantry",
+    "calories_per_100g": 21,
+    "protein_per_100g": 0,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 0.9,
+    "package_weight": 500,
+    "unit": "ml",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "spices",
+    "canonical_name": "Набор специй",
+    "category": "pantry",
+    "calories_per_100g": 250,
+    "protein_per_100g": 10,
+    "fat_per_100g": 7,
+    "carbs_per_100g": 50,
+    "package_weight": 50,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "mayo",
+    "canonical_name": "Майонез",
+    "category": "pantry",
+    "calories_per_100g": 624,
+    "protein_per_100g": 0.8,
+    "fat_per_100g": 67,
+    "carbs_per_100g": 2.6,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "ketchup",
+    "canonical_name": "Кетчуп",
+    "category": "pantry",
+    "calories_per_100g": 101,
+    "protein_per_100g": 1.8,
+    "fat_per_100g": 0.3,
+    "carbs_per_100g": 23,
+    "package_weight": 350,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "jam",
+    "canonical_name": "Варенье",
+    "category": "pantry",
+    "calories_per_100g": 250,
+    "protein_per_100g": 0.4,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 62,
+    "package_weight": 350,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "dark_chocolate",
+    "canonical_name": "Тёмный шоколад",
+    "category": "snack",
+    "calories_per_100g": 546,
+    "protein_per_100g": 6,
+    "fat_per_100g": 35,
+    "carbs_per_100g": 52,
+    "package_weight": 90,
+    "unit": "g",
+    "tags": [
+      "snack"
+    ]
+  },
+  {
+    "id": "rice_cakes",
+    "canonical_name": "Хлебцы",
+    "category": "snack",
+    "calories_per_100g": 310,
+    "protein_per_100g": 10,
+    "fat_per_100g": 2.5,
+    "carbs_per_100g": 64,
+    "package_weight": 100,
+    "unit": "g",
+    "tags": [
+      "snack"
+    ]
+  },
+  {
+    "id": "hummus",
+    "canonical_name": "Хумус",
+    "category": "snack",
+    "calories_per_100g": 177,
+    "protein_per_100g": 8,
+    "fat_per_100g": 10,
+    "carbs_per_100g": 14,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "snack",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "pita",
+    "canonical_name": "Пита",
+    "category": "grain",
+    "calories_per_100g": 275,
+    "protein_per_100g": 9,
+    "fat_per_100g": 1.2,
+    "carbs_per_100g": 56,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "grain"
+    ]
+  },
+  {
+    "id": "coconut_milk",
+    "canonical_name": "Кокосовое молоко",
+    "category": "pantry",
+    "calories_per_100g": 197,
+    "protein_per_100g": 2,
+    "fat_per_100g": 21,
+    "carbs_per_100g": 3,
+    "package_weight": 400,
+    "unit": "ml",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "curry_paste",
+    "canonical_name": "Паста карри",
+    "category": "pantry",
+    "calories_per_100g": 120,
+    "protein_per_100g": 3,
+    "fat_per_100g": 7,
+    "carbs_per_100g": 12,
+    "package_weight": 100,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "canned_corn",
+    "canonical_name": "Кукуруза консервированная",
+    "category": "vegetable",
+    "calories_per_100g": 58,
+    "protein_per_100g": 2.2,
+    "fat_per_100g": 0.4,
+    "carbs_per_100g": 11,
+    "package_weight": 340,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "olives",
+    "canonical_name": "Оливки",
+    "category": "fat",
+    "calories_per_100g": 145,
+    "protein_per_100g": 1,
+    "fat_per_100g": 15,
+    "carbs_per_100g": 4,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "capers",
+    "canonical_name": "Каперсы",
+    "category": "pantry",
+    "calories_per_100g": 23,
+    "protein_per_100g": 2.4,
+    "fat_per_100g": 0.9,
+    "carbs_per_100g": 4.9,
+    "package_weight": 100,
+    "unit": "g",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "rice_vinegar",
+    "canonical_name": "Рисовый уксус",
+    "category": "pantry",
+    "calories_per_100g": 54,
+    "protein_per_100g": 0.3,
+    "fat_per_100g": 0,
+    "carbs_per_100g": 13,
+    "package_weight": 250,
+    "unit": "ml",
+    "tags": [
+      "pantry"
+    ]
+  },
+  {
+    "id": "sesame",
+    "canonical_name": "Кунжут",
+    "category": "fat",
+    "calories_per_100g": 573,
+    "protein_per_100g": 18,
+    "fat_per_100g": 50,
+    "carbs_per_100g": 23,
+    "package_weight": 100,
+    "unit": "g",
+    "tags": [
+      "fat"
+    ]
+  },
+  {
+    "id": "yogurt_drink",
+    "canonical_name": "Айран",
+    "category": "dairy",
+    "calories_per_100g": 35,
+    "protein_per_100g": 1.8,
+    "fat_per_100g": 1.2,
+    "carbs_per_100g": 3.5,
+    "package_weight": 500,
+    "unit": "ml",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "quark_soft",
+    "canonical_name": "Творожная масса",
+    "category": "dairy",
+    "calories_per_100g": 232,
+    "protein_per_100g": 12,
+    "fat_per_100g": 15,
+    "carbs_per_100g": 12,
+    "package_weight": 200,
+    "unit": "g",
+    "tags": [
+      "dairy"
+    ]
+  },
+  {
+    "id": "herring",
+    "canonical_name": "Сельдь",
+    "category": "protein",
+    "calories_per_100g": 161,
+    "protein_per_100g": 18,
+    "fat_per_100g": 9,
+    "carbs_per_100g": 0,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "id": "chicken_liver",
+    "canonical_name": "Куриная печень",
+    "category": "protein",
+    "calories_per_100g": 136,
+    "protein_per_100g": 20,
+    "fat_per_100g": 6,
+    "carbs_per_100g": 1,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "chicken",
+      "meat"
+    ]
+  },
+  {
+    "id": "cabbage_savoy",
+    "canonical_name": "Капуста пекинская",
+    "category": "vegetable",
+    "calories_per_100g": 16,
+    "protein_per_100g": 1.2,
+    "fat_per_100g": 0.2,
+    "carbs_per_100g": 3.2,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  },
+  {
+    "id": "radish",
+    "canonical_name": "Редис",
+    "category": "vegetable",
+    "calories_per_100g": 16,
+    "protein_per_100g": 0.7,
+    "fat_per_100g": 0.1,
+    "carbs_per_100g": 3.4,
+    "package_weight": 300,
+    "unit": "g",
+    "tags": [
+      "vegetable"
+    ]
+  }
+]

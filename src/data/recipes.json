@@ -1,0 +1,2286 @@
+[
+  {
+    "id": "oats_banana",
+    "name": "Овсянка с бананом",
+    "cuisine": "european",
+    "meal_type": "breakfast",
+    "cooking_time": 10,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "oats",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Залить овсянку кипятком или молоком.",
+      "Добавить банан и мёд."
+    ],
+    "ingredients": [
+      {
+        "product_id": "oats",
+        "grams": 60
+      },
+      {
+        "product_id": "milk",
+        "grams": 200
+      },
+      {
+        "product_id": "banana",
+        "grams": 80
+      },
+      {
+        "product_id": "honey",
+        "grams": 10
+      }
+    ],
+    "calories": 433,
+    "protein": 14.5,
+    "fat": 9,
+    "carbs": 75.2
+  },
+  {
+    "id": "omelet_veg",
+    "name": "Омлет с овощами",
+    "cuisine": "european",
+    "meal_type": "breakfast",
+    "cooking_time": 15,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "eggs",
+    "tags": [
+      "breakfast",
+      "vegetables"
+    ],
+    "instructions": [
+      "Взбить яйца.",
+      "Обжарить овощи и залить яйцами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "eggs",
+        "grams": 120
+      },
+      {
+        "product_id": "tomato",
+        "grams": 80
+      },
+      {
+        "product_id": "spinach",
+        "grams": 40
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 5
+      }
+    ],
+    "calories": 256.2,
+    "protein": 17.5,
+    "fat": 18.5,
+    "carbs": 5.8
+  },
+  {
+    "id": "cottage_berries",
+    "name": "Творог с ягодами",
+    "cuisine": "russian",
+    "meal_type": "breakfast",
+    "cooking_time": 5,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Смешать творог с ягодами и мёдом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cottage_cheese",
+        "grams": 180
+      },
+      {
+        "product_id": "berries",
+        "grams": 70
+      },
+      {
+        "product_id": "honey",
+        "grams": 10
+      }
+    ],
+    "calories": 278.3,
+    "protein": 31.1,
+    "fat": 9.3,
+    "carbs": 17.7
+  },
+  {
+    "id": "greek_yogurt_honey",
+    "name": "Греческий йогурт с мёдом",
+    "cuisine": "mediterranean",
+    "meal_type": "breakfast",
+    "cooking_time": 5,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Выложить йогурт, добавить мёд и орехи."
+    ],
+    "ingredients": [
+      {
+        "product_id": "greek_yogurt",
+        "grams": 200
+      },
+      {
+        "product_id": "honey",
+        "grams": 15
+      },
+      {
+        "product_id": "nuts",
+        "grams": 15
+      }
+    ],
+    "calories": 275.7,
+    "protein": 18.3,
+    "fat": 13.8,
+    "carbs": 21.4
+  },
+  {
+    "id": "syrniki",
+    "name": "Сырники",
+    "cuisine": "russian",
+    "meal_type": "breakfast",
+    "cooking_time": 25,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Смешать творог, яйцо и муку.",
+      "Обжарить на сковороде."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cottage_cheese",
+        "grams": 180
+      },
+      {
+        "product_id": "eggs",
+        "grams": 50
+      },
+      {
+        "product_id": "flour",
+        "grams": 30
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 477.4,
+    "protein": 40.1,
+    "fat": 22.8,
+    "carbs": 26.5
+  },
+  {
+    "id": "buckwheat_milk",
+    "name": "Гречневая каша на молоке",
+    "cuisine": "russian",
+    "meal_type": "breakfast",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "buckwheat",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Сварить гречку на молоке."
+    ],
+    "ingredients": [
+      {
+        "product_id": "buckwheat",
+        "grams": 70
+      },
+      {
+        "product_id": "milk",
+        "grams": 220
+      }
+    ],
+    "calories": 206.8,
+    "protein": 9.5,
+    "fat": 6.6,
+    "carbs": 28.1
+  },
+  {
+    "id": "toast_egg_avocado",
+    "name": "Тост с яйцом и авокадо",
+    "cuisine": "european",
+    "meal_type": "breakfast",
+    "cooking_time": 12,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "eggs",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Поджарить хлеб.",
+      "Размять авокадо, сверху яйцо."
+    ],
+    "ingredients": [
+      {
+        "product_id": "bread",
+        "grams": 70
+      },
+      {
+        "product_id": "eggs",
+        "grams": 60
+      },
+      {
+        "product_id": "avocado",
+        "grams": 70
+      }
+    ],
+    "calories": 379.1,
+    "protein": 15.5,
+    "fat": 19.4,
+    "carbs": 37
+  },
+  {
+    "id": "omelet_cheese",
+    "name": "Омлет с сыром",
+    "cuisine": "european",
+    "meal_type": "breakfast",
+    "cooking_time": 12,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "eggs",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Взбить яйца с сыром и пожарить."
+    ],
+    "ingredients": [
+      {
+        "product_id": "eggs",
+        "grams": 120
+      },
+      {
+        "product_id": "cheese",
+        "grams": 30
+      },
+      {
+        "product_id": "milk",
+        "grams": 30
+      },
+      {
+        "product_id": "butter",
+        "grams": 5
+      }
+    ],
+    "calories": 346.4,
+    "protein": 23.4,
+    "fat": 26.5,
+    "carbs": 2.7
+  },
+  {
+    "id": "millet_porridge",
+    "name": "Пшённая каша",
+    "cuisine": "russian",
+    "meal_type": "breakfast",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "millet",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Сварить пшено на молоке."
+    ],
+    "ingredients": [
+      {
+        "product_id": "millet",
+        "grams": 70
+      },
+      {
+        "product_id": "milk",
+        "grams": 220
+      },
+      {
+        "product_id": "butter",
+        "grams": 5
+      }
+    ],
+    "calories": 235.1,
+    "protein": 8.9,
+    "fat": 10.3,
+    "carbs": 26.7
+  },
+  {
+    "id": "kefir_oats",
+    "name": "Овсянка на кефире",
+    "cuisine": "russian",
+    "meal_type": "breakfast",
+    "cooking_time": 8,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "oats",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Замочить овсянку в кефире, добавить яблоко."
+    ],
+    "ingredients": [
+      {
+        "product_id": "oats",
+        "grams": 50
+      },
+      {
+        "product_id": "kefir",
+        "grams": 200
+      },
+      {
+        "product_id": "apple",
+        "grams": 80
+      }
+    ],
+    "calories": 331.1,
+    "protein": 12.7,
+    "fat": 8.3,
+    "carbs": 51.7
+  },
+  {
+    "id": "chicken_teriyaki",
+    "name": "Курица терияки с рисом",
+    "cuisine": "asian",
+    "meal_type": "lunch",
+    "cooking_time": 30,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Обжарить курицу.",
+      "Добавить соус терияки.",
+      "Подать с рисом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 160
+      },
+      {
+        "product_id": "rice",
+        "grams": 70
+      },
+      {
+        "product_id": "teriyaki",
+        "grams": 20
+      },
+      {
+        "product_id": "broccoli",
+        "grams": 80
+      },
+      {
+        "product_id": "soy_sauce",
+        "grams": 8
+      }
+    ],
+    "calories": 316.2,
+    "protein": 43.4,
+    "fat": 3.6,
+    "carbs": 29.2
+  },
+  {
+    "id": "chicken_bowl",
+    "name": "Куриный боул",
+    "cuisine": "asian",
+    "meal_type": "lunch",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "vegetables"
+    ],
+    "instructions": [
+      "Собрать боул из риса, курицы и овощей."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 150
+      },
+      {
+        "product_id": "rice",
+        "grams": 60
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 70
+      },
+      {
+        "product_id": "carrot",
+        "grams": 50
+      },
+      {
+        "product_id": "soy_sauce",
+        "grams": 10
+      }
+    ],
+    "calories": 279.3,
+    "protein": 38.6,
+    "fat": 3.2,
+    "carbs": 25
+  },
+  {
+    "id": "pasta_chicken",
+    "name": "Паста с курицей",
+    "cuisine": "italian",
+    "meal_type": "dinner",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Отварить пасту.",
+      "Обжарить курицу со сливками/сметаной."
+    ],
+    "ingredients": [
+      {
+        "product_id": "pasta",
+        "grams": 90
+      },
+      {
+        "product_id": "chicken_breast",
+        "grams": 140
+      },
+      {
+        "product_id": "sour_cream",
+        "grams": 40
+      },
+      {
+        "product_id": "garlic",
+        "grams": 5
+      },
+      {
+        "product_id": "spices",
+        "grams": 2
+      }
+    ],
+    "calories": 540.9,
+    "protein": 44.5,
+    "fat": 10,
+    "carbs": 67.8
+  },
+  {
+    "id": "buckwheat_chicken",
+    "name": "Гречка с курицей",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 30,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Сварить гречку.",
+      "Запечь или обжарить курицу."
+    ],
+    "ingredients": [
+      {
+        "product_id": "buckwheat",
+        "grams": 80
+      },
+      {
+        "product_id": "chicken_breast",
+        "grams": 150
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 358.5,
+    "protein": 39.4,
+    "fat": 12.2,
+    "carbs": 23.6
+  },
+  {
+    "id": "turkey_veg",
+    "name": "Индейка с овощами",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "turkey",
+    "tags": [
+      "dinner",
+      "vegetables"
+    ],
+    "instructions": [
+      "Запечь индейку с овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "turkey_fillet",
+        "grams": 160
+      },
+      {
+        "product_id": "zucchini",
+        "grams": 100
+      },
+      {
+        "product_id": "bell_pepper",
+        "grams": 80
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      },
+      {
+        "product_id": "spices",
+        "grams": 2
+      }
+    ],
+    "calories": 301.5,
+    "protein": 40.6,
+    "fat": 11.7,
+    "carbs": 9.2
+  },
+  {
+    "id": "pollock_potato",
+    "name": "Минтай с картофелем",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Запечь рыбу и картофель."
+    ],
+    "ingredients": [
+      {
+        "product_id": "pollock",
+        "grams": 180
+      },
+      {
+        "product_id": "potato",
+        "grams": 200
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 356.5,
+    "protein": 33,
+    "fat": 9.8,
+    "carbs": 34.4
+  },
+  {
+    "id": "salmon_rice",
+    "name": "Лосось с рисом",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 25,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Запечь лосось.",
+      "Подать с рисом и лимоном."
+    ],
+    "ingredients": [
+      {
+        "product_id": "salmon",
+        "grams": 140
+      },
+      {
+        "product_id": "rice",
+        "grams": 70
+      },
+      {
+        "product_id": "lemon",
+        "grams": 20
+      },
+      {
+        "product_id": "broccoli",
+        "grams": 80
+      }
+    ],
+    "calories": 415.2,
+    "protein": 32.4,
+    "fat": 18.8,
+    "carbs": 27
+  },
+  {
+    "id": "cod_buckwheat",
+    "name": "Треска с гречкой",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 30,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Приготовить треску на пару или в духовке.",
+      "Подать с гречкой."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cod",
+        "grams": 170
+      },
+      {
+        "product_id": "buckwheat",
+        "grams": 70
+      },
+      {
+        "product_id": "lemon",
+        "grams": 15
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 6
+      }
+    ],
+    "calories": 289.2,
+    "protein": 33.9,
+    "fat": 8.4,
+    "carbs": 18.9
+  },
+  {
+    "id": "chicken_cutlets",
+    "name": "Куриные котлеты",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 30,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Смешать фарш, сформировать котлеты, обжарить."
+    ],
+    "ingredients": [
+      {
+        "product_id": "ground_chicken",
+        "grams": 160
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "eggs",
+        "grams": 20
+      },
+      {
+        "product_id": "bread",
+        "grams": 20
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 397.5,
+    "protein": 33.6,
+    "fat": 23.7,
+    "carbs": 12.4
+  },
+  {
+    "id": "turkey_meatballs",
+    "name": "Тефтели из индейки с рисом",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "turkey",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Сформировать тефтели, тушить в томатном соусе, подать с рисом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "ground_turkey",
+        "grams": 150
+      },
+      {
+        "product_id": "rice",
+        "grams": 70
+      },
+      {
+        "product_id": "tomato_paste",
+        "grams": 20
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      }
+    ],
+    "calories": 363.4,
+    "protein": 33.2,
+    "fat": 12.4,
+    "carbs": 27
+  },
+  {
+    "id": "borsch",
+    "name": "Борщ",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 40,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "beef",
+    "tags": [
+      "lunch",
+      "vegetables"
+    ],
+    "instructions": [
+      "Сварить бульон.",
+      "Добавить овощи и свёклу."
+    ],
+    "ingredients": [
+      {
+        "product_id": "beef",
+        "grams": 80
+      },
+      {
+        "product_id": "beet",
+        "grams": 80
+      },
+      {
+        "product_id": "cabbage",
+        "grams": 80
+      },
+      {
+        "product_id": "potato",
+        "grams": 80
+      },
+      {
+        "product_id": "carrot",
+        "grams": 40
+      },
+      {
+        "product_id": "sour_cream",
+        "grams": 20
+      }
+    ],
+    "calories": 314.4,
+    "protein": 22.4,
+    "fat": 12.2,
+    "carbs": 31
+  },
+  {
+    "id": "shchi",
+    "name": "Щи",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 40,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "vegetables"
+    ],
+    "instructions": [
+      "Сварить куриный бульон с капустой."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_thigh",
+        "grams": 100
+      },
+      {
+        "product_id": "cabbage",
+        "grams": 120
+      },
+      {
+        "product_id": "carrot",
+        "grams": 40
+      },
+      {
+        "product_id": "potato",
+        "grams": 80
+      }
+    ],
+    "calories": 293,
+    "protein": 24.5,
+    "fat": 11.3,
+    "carbs": 24.8
+  },
+  {
+    "id": "chicken_soup",
+    "name": "Куриный суп",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Сварить курицу с овощами и лапшой."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 120
+      },
+      {
+        "product_id": "carrot",
+        "grams": 50
+      },
+      {
+        "product_id": "onion",
+        "grams": 30
+      },
+      {
+        "product_id": "noodles",
+        "grams": 40
+      }
+    ],
+    "calories": 220.5,
+    "protein": 30.9,
+    "fat": 2.6,
+    "carbs": 18.9
+  },
+  {
+    "id": "lentil_soup",
+    "name": "Чечевичный суп",
+    "cuisine": "mediterranean",
+    "meal_type": "lunch",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "lentils",
+    "tags": [
+      "lunch",
+      "vegetarian",
+      "vegetables"
+    ],
+    "instructions": [
+      "Отварить чечевицу с овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "lentils",
+        "grams": 80
+      },
+      {
+        "product_id": "carrot",
+        "grams": 50
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "tomato_paste",
+        "grams": 15
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 212.3,
+    "protein": 8.7,
+    "fat": 8.5,
+    "carbs": 27.5
+  },
+  {
+    "id": "pasta_light_carbonara",
+    "name": "Паста с яйцом и сыром",
+    "cuisine": "italian",
+    "meal_type": "dinner",
+    "cooking_time": 20,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "eggs",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Смешать горячую пасту с яйцом и сыром."
+    ],
+    "ingredients": [
+      {
+        "product_id": "spaghetti",
+        "grams": 90
+      },
+      {
+        "product_id": "eggs",
+        "grams": 60
+      },
+      {
+        "product_id": "cheese",
+        "grams": 30
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 6
+      }
+    ],
+    "calories": 575.3,
+    "protein": 26.4,
+    "fat": 22.8,
+    "carbs": 63.6
+  },
+  {
+    "id": "bolognese",
+    "name": "Спагетти болоньезе",
+    "cuisine": "italian",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "beef",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Потушить фарш с томатами.",
+      "Смешать со спагетти."
+    ],
+    "ingredients": [
+      {
+        "product_id": "spaghetti",
+        "grams": 90
+      },
+      {
+        "product_id": "ground_beef",
+        "grams": 120
+      },
+      {
+        "product_id": "canned_tomatoes",
+        "grams": 120
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      }
+    ],
+    "calories": 672.7,
+    "protein": 34,
+    "fat": 26.1,
+    "carbs": 72.6
+  },
+  {
+    "id": "plov",
+    "name": "Плов с курицей",
+    "cuisine": "central_asian",
+    "meal_type": "lunch",
+    "cooking_time": 40,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Обжарить курицу с морковью и луком, добавить рис."
+    ],
+    "ingredients": [
+      {
+        "product_id": "rice",
+        "grams": 80
+      },
+      {
+        "product_id": "chicken_thigh",
+        "grams": 140
+      },
+      {
+        "product_id": "carrot",
+        "grams": 70
+      },
+      {
+        "product_id": "onion",
+        "grams": 50
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 10
+      }
+    ],
+    "calories": 501.6,
+    "protein": 32.7,
+    "fat": 25.8,
+    "carbs": 33.9
+  },
+  {
+    "id": "turkey_stew",
+    "name": "Рагу из индейки",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 40,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "turkey",
+    "tags": [
+      "dinner",
+      "vegetables"
+    ],
+    "instructions": [
+      "Тушить индейку с овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "turkey_fillet",
+        "grams": 150
+      },
+      {
+        "product_id": "carrot",
+        "grams": 60
+      },
+      {
+        "product_id": "zucchini",
+        "grams": 80
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "tomato_paste",
+        "grams": 15
+      }
+    ],
+    "calories": 242,
+    "protein": 38.6,
+    "fat": 3.3,
+    "carbs": 15.2
+  },
+  {
+    "id": "chickpea_stew",
+    "name": "Овощное рагу с нутом",
+    "cuisine": "mediterranean",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chickpeas",
+    "tags": [
+      "dinner",
+      "vegetarian",
+      "vegetables"
+    ],
+    "instructions": [
+      "Тушить нут с овощами и специями."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chickpeas",
+        "grams": 80
+      },
+      {
+        "product_id": "zucchini",
+        "grams": 80
+      },
+      {
+        "product_id": "bell_pepper",
+        "grams": 70
+      },
+      {
+        "product_id": "canned_tomatoes",
+        "grams": 100
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 258.4,
+    "protein": 10,
+    "fat": 10.7,
+    "carbs": 33.5
+  },
+  {
+    "id": "tofu_stirfry",
+    "name": "Тофу стир-фрай",
+    "cuisine": "asian",
+    "meal_type": "dinner",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "tofu",
+    "tags": [
+      "dinner",
+      "vegetarian",
+      "vegetables"
+    ],
+    "instructions": [
+      "Обжарить тофу и овощи, добавить соевый соус."
+    ],
+    "ingredients": [
+      {
+        "product_id": "tofu",
+        "grams": 150
+      },
+      {
+        "product_id": "broccoli",
+        "grams": 80
+      },
+      {
+        "product_id": "bell_pepper",
+        "grams": 70
+      },
+      {
+        "product_id": "soy_sauce",
+        "grams": 12
+      },
+      {
+        "product_id": "rice",
+        "grams": 60
+      }
+    ],
+    "calories": 244.5,
+    "protein": 17.3,
+    "fat": 7.9,
+    "carbs": 30.3
+  },
+  {
+    "id": "greek_salad_chicken",
+    "name": "Греческий салат с курицей",
+    "cuisine": "mediterranean",
+    "meal_type": "lunch",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "salad",
+      "vegetables"
+    ],
+    "instructions": [
+      "Собрать салат, сверху курица."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 130
+      },
+      {
+        "product_id": "tomato",
+        "grams": 80
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 80
+      },
+      {
+        "product_id": "feta",
+        "grams": 40
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      },
+      {
+        "product_id": "olives",
+        "grams": 20
+      }
+    ],
+    "calories": 374.7,
+    "protein": 37.8,
+    "fat": 22.1,
+    "carbs": 8.4
+  },
+  {
+    "id": "caesar_chicken",
+    "name": "Цезарь с курицей",
+    "cuisine": "european",
+    "meal_type": "lunch",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "salad"
+    ],
+    "instructions": [
+      "Собрать салат с курицей и сыром."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 140
+      },
+      {
+        "product_id": "lettuce",
+        "grams": 80
+      },
+      {
+        "product_id": "cheese",
+        "grams": 20
+      },
+      {
+        "product_id": "bread",
+        "grams": 20
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 355.3,
+    "protein": 40.2,
+    "fat": 17,
+    "carbs": 11
+  },
+  {
+    "id": "tuna_salad",
+    "name": "Салат с тунцом",
+    "cuisine": "mediterranean",
+    "meal_type": "lunch",
+    "cooking_time": 15,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "lunch",
+      "salad",
+      "vegetables"
+    ],
+    "instructions": [
+      "Смешать тунец с овощами и яйцом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "tuna_can",
+        "grams": 90
+      },
+      {
+        "product_id": "eggs",
+        "grams": 60
+      },
+      {
+        "product_id": "lettuce",
+        "grams": 60
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 70
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 6
+      }
+    ],
+    "calories": 252.5,
+    "protein": 27.8,
+    "fat": 13.6,
+    "carbs": 4.9
+  },
+  {
+    "id": "baked_chicken_potato",
+    "name": "Запечённая курица с картофелем",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 40,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Запечь курицу и картофель со специями."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_thigh",
+        "grams": 180
+      },
+      {
+        "product_id": "potato",
+        "grams": 200
+      },
+      {
+        "product_id": "garlic",
+        "grams": 5
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 565.2,
+    "protein": 42.1,
+    "fat": 28,
+    "carbs": 35.7
+  },
+  {
+    "id": "chicken_cream",
+    "name": "Курица в сливочном соусе",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 30,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Обжарить курицу, тушить в сметане."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 160
+      },
+      {
+        "product_id": "sour_cream",
+        "grams": 50
+      },
+      {
+        "product_id": "mushroom",
+        "grams": 80
+      },
+      {
+        "product_id": "rice",
+        "grams": 60
+      }
+    ],
+    "calories": 356.6,
+    "protein": 44.1,
+    "fat": 11.5,
+    "carbs": 19.1
+  },
+  {
+    "id": "beef_buckwheat",
+    "name": "Говядина с гречкой",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 40,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "beef",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Тушить говядину, подать с гречкой."
+    ],
+    "ingredients": [
+      {
+        "product_id": "beef",
+        "grams": 140
+      },
+      {
+        "product_id": "buckwheat",
+        "grams": 70
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 442.1,
+    "protein": 34.4,
+    "fat": 24.6,
+    "carbs": 21.1
+  },
+  {
+    "id": "shrimp_rice",
+    "name": "Креветки с рисом",
+    "cuisine": "asian",
+    "meal_type": "dinner",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Обжарить креветки с чесноком, подать с рисом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "shrimp",
+        "grams": 150
+      },
+      {
+        "product_id": "rice",
+        "grams": 70
+      },
+      {
+        "product_id": "garlic",
+        "grams": 5
+      },
+      {
+        "product_id": "soy_sauce",
+        "grams": 10
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 6
+      }
+    ],
+    "calories": 299.3,
+    "protein": 32.8,
+    "fat": 7.9,
+    "carbs": 21.9
+  },
+  {
+    "id": "chicken_fricassee",
+    "name": "Фрикасе из курицы",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Тушить курицу со сметаной и овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 150
+      },
+      {
+        "product_id": "carrot",
+        "grams": 50
+      },
+      {
+        "product_id": "peas",
+        "grams": 50
+      },
+      {
+        "product_id": "sour_cream",
+        "grams": 40
+      },
+      {
+        "product_id": "rice",
+        "grams": 60
+      }
+    ],
+    "calories": 368.8,
+    "protein": 41.2,
+    "fat": 9.3,
+    "carbs": 30
+  },
+  {
+    "id": "bulgur_chicken",
+    "name": "Булгур с курицей и овощами",
+    "cuisine": "mediterranean",
+    "meal_type": "lunch",
+    "cooking_time": 30,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "vegetables"
+    ],
+    "instructions": [
+      "Приготовить булгур, обжарить курицу с овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "bulgur",
+        "grams": 70
+      },
+      {
+        "product_id": "chicken_breast",
+        "grams": 140
+      },
+      {
+        "product_id": "bell_pepper",
+        "grams": 70
+      },
+      {
+        "product_id": "zucchini",
+        "grams": 70
+      }
+    ],
+    "calories": 242.9,
+    "protein": 36.8,
+    "fat": 3.2,
+    "carbs": 19.9
+  },
+  {
+    "id": "quinoa_bowl",
+    "name": "Боул с киноа",
+    "cuisine": "european",
+    "meal_type": "lunch",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch",
+      "vegetables"
+    ],
+    "instructions": [
+      "Собрать боул из киноа, курицы и овощей."
+    ],
+    "ingredients": [
+      {
+        "product_id": "quinoa",
+        "grams": 70
+      },
+      {
+        "product_id": "chicken_breast",
+        "grams": 130
+      },
+      {
+        "product_id": "spinach",
+        "grams": 50
+      },
+      {
+        "product_id": "cherry_tomato",
+        "grams": 70
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 321.8,
+    "protein": 35.8,
+    "fat": 12.1,
+    "carbs": 19.2
+  },
+  {
+    "id": "baked_potato_cottage",
+    "name": "Картофель с творогом",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Запечь картофель, подать с творогом и зеленью."
+    ],
+    "ingredients": [
+      {
+        "product_id": "potato",
+        "grams": 250
+      },
+      {
+        "product_id": "cottage_cheese",
+        "grams": 120
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      },
+      {
+        "product_id": "sour_cream",
+        "grams": 20
+      }
+    ],
+    "calories": 372.2,
+    "protein": 26.1,
+    "fat": 9.3,
+    "carbs": 45.6
+  },
+  {
+    "id": "stuffed_zucchini",
+    "name": "Кабачки с фаршем",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 40,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "turkey",
+    "tags": [
+      "dinner",
+      "vegetables"
+    ],
+    "instructions": [
+      "Нафаршировать кабачки, запечь."
+    ],
+    "ingredients": [
+      {
+        "product_id": "zucchini",
+        "grams": 200
+      },
+      {
+        "product_id": "ground_turkey",
+        "grams": 130
+      },
+      {
+        "product_id": "rice",
+        "grams": 30
+      },
+      {
+        "product_id": "tomato_paste",
+        "grams": 20
+      }
+    ],
+    "calories": 297.4,
+    "protein": 30.1,
+    "fat": 11.2,
+    "carbs": 19
+  },
+  {
+    "id": "stuffed_pepper",
+    "name": "Перец фаршированный",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 40,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner",
+      "vegetables"
+    ],
+    "instructions": [
+      "Нафаршировать перцы рисом и фаршем, тушить."
+    ],
+    "ingredients": [
+      {
+        "product_id": "bell_pepper",
+        "grams": 180
+      },
+      {
+        "product_id": "ground_chicken",
+        "grams": 130
+      },
+      {
+        "product_id": "rice",
+        "grams": 40
+      },
+      {
+        "product_id": "tomato_paste",
+        "grams": 20
+      }
+    ],
+    "calories": 302.9,
+    "protein": 27.1,
+    "fat": 11.2,
+    "carbs": 25.8
+  },
+  {
+    "id": "cottage_casserole",
+    "name": "Творожная запеканка",
+    "cuisine": "russian",
+    "meal_type": "breakfast",
+    "cooking_time": 35,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "breakfast"
+    ],
+    "instructions": [
+      "Смешать творог с яйцом, запечь."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cottage_cheese",
+        "grams": 180
+      },
+      {
+        "product_id": "eggs",
+        "grams": 50
+      }
+    ],
+    "calories": 296.3,
+    "protein": 37.1,
+    "fat": 14.5,
+    "carbs": 3.7
+  },
+  {
+    "id": "fish_cutlets",
+    "name": "Рыбные котлеты",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 30,
+    "difficulty": "medium",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Измельчить рыбу, сформировать котлеты, обжарить."
+    ],
+    "ingredients": [
+      {
+        "product_id": "pollock",
+        "grams": 180
+      },
+      {
+        "product_id": "eggs",
+        "grams": 30
+      },
+      {
+        "product_id": "onion",
+        "grams": 30
+      },
+      {
+        "product_id": "bread",
+        "grams": 20
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 310,
+    "protein": 34.8,
+    "fat": 13.6,
+    "carbs": 11.6
+  },
+  {
+    "id": "beans_veg",
+    "name": "Фасоль с овощами",
+    "cuisine": "mediterranean",
+    "meal_type": "dinner",
+    "cooking_time": 30,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "beans",
+    "tags": [
+      "dinner",
+      "vegetarian",
+      "vegetables"
+    ],
+    "instructions": [
+      "Тушить фасоль с овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "beans",
+        "grams": 90
+      },
+      {
+        "product_id": "tomato",
+        "grams": 80
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "carrot",
+        "grams": 50
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 235.9,
+    "protein": 9.4,
+    "fat": 8.8,
+    "carbs": 31.5
+  },
+  {
+    "id": "hummus_veg",
+    "name": "Хумус с овощами и питой",
+    "cuisine": "mediterranean",
+    "meal_type": "snack",
+    "cooking_time": 10,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chickpeas",
+    "tags": [
+      "snack",
+      "vegetarian"
+    ],
+    "instructions": [
+      "Подать хумус с питой и овощами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "hummus",
+        "grams": 80
+      },
+      {
+        "product_id": "pita",
+        "grams": 70
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 60
+      },
+      {
+        "product_id": "carrot",
+        "grams": 40
+      }
+    ],
+    "calories": 359.5,
+    "protein": 13.5,
+    "fat": 9,
+    "carbs": 56.6
+  },
+  {
+    "id": "shakshuka",
+    "name": "Шакшука",
+    "cuisine": "mediterranean",
+    "meal_type": "breakfast",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "eggs",
+    "tags": [
+      "breakfast",
+      "vegetables"
+    ],
+    "instructions": [
+      "Потушить томаты и перец, вбить яйца."
+    ],
+    "ingredients": [
+      {
+        "product_id": "eggs",
+        "grams": 120
+      },
+      {
+        "product_id": "tomato",
+        "grams": 150
+      },
+      {
+        "product_id": "bell_pepper",
+        "grams": 80
+      },
+      {
+        "product_id": "onion",
+        "grams": 40
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 323.7,
+    "protein": 18.2,
+    "fat": 21.8,
+    "carbs": 15.5
+  },
+  {
+    "id": "pasta_tuna",
+    "name": "Паста с тунцом",
+    "cuisine": "italian",
+    "meal_type": "lunch",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Смешать пасту с тунцом и томатами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "pasta",
+        "grams": 90
+      },
+      {
+        "product_id": "tuna_can",
+        "grams": 90
+      },
+      {
+        "product_id": "canned_tomatoes",
+        "grams": 80
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 6
+      }
+    ],
+    "calories": 468.2,
+    "protein": 29.8,
+    "fat": 8.2,
+    "carbs": 67.9
+  },
+  {
+    "id": "chicken_skewers",
+    "name": "Куриные шашлычки с салатом",
+    "cuisine": "caucasian",
+    "meal_type": "dinner",
+    "cooking_time": 30,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner",
+      "salad"
+    ],
+    "instructions": [
+      "Запечь курицу, подать с овощным салатом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_breast",
+        "grams": 170
+      },
+      {
+        "product_id": "tomato",
+        "grams": 80
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 80
+      },
+      {
+        "product_id": "lettuce",
+        "grams": 50
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 291.1,
+    "protein": 41.9,
+    "fat": 11.5,
+    "carbs": 7.5
+  },
+  {
+    "id": "udon_chicken",
+    "name": "Удон с курицей",
+    "cuisine": "asian",
+    "meal_type": "dinner",
+    "cooking_time": 20,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Обжарить курицу и овощи, смешать с лапшой."
+    ],
+    "ingredients": [
+      {
+        "product_id": "noodles",
+        "grams": 120
+      },
+      {
+        "product_id": "chicken_breast",
+        "grams": 140
+      },
+      {
+        "product_id": "bell_pepper",
+        "grams": 70
+      },
+      {
+        "product_id": "soy_sauce",
+        "grams": 12
+      }
+    ],
+    "calories": 347.3,
+    "protein": 39.9,
+    "fat": 3.5,
+    "carbs": 38.6
+  },
+  {
+    "id": "chickpea_curry",
+    "name": "Карри с нутом",
+    "cuisine": "indian",
+    "meal_type": "dinner",
+    "cooking_time": 30,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chickpeas",
+    "tags": [
+      "dinner",
+      "vegetarian"
+    ],
+    "instructions": [
+      "Тушить нут в кокосовом молоке с карри, подать с рисом."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chickpeas",
+        "grams": 80
+      },
+      {
+        "product_id": "coconut_milk",
+        "grams": 80
+      },
+      {
+        "product_id": "curry_paste",
+        "grams": 12
+      },
+      {
+        "product_id": "rice",
+        "grams": 70
+      },
+      {
+        "product_id": "spinach",
+        "grams": 40
+      }
+    ],
+    "calories": 403.4,
+    "protein": 12.1,
+    "fat": 20.1,
+    "carbs": 46.5
+  },
+  {
+    "id": "apple_cottage_snack",
+    "name": "Творог с яблоком",
+    "cuisine": "russian",
+    "meal_type": "snack",
+    "cooking_time": 5,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "snack"
+    ],
+    "instructions": [
+      "Смешать творог с яблоком."
+    ],
+    "ingredients": [
+      {
+        "product_id": "cottage_cheese",
+        "grams": 120
+      },
+      {
+        "product_id": "apple",
+        "grams": 80
+      }
+    ],
+    "calories": 186.8,
+    "protein": 20.6,
+    "fat": 6.2,
+    "carbs": 13.4
+  },
+  {
+    "id": "yogurt_berries_snack",
+    "name": "Йогурт с ягодами",
+    "cuisine": "european",
+    "meal_type": "snack",
+    "cooking_time": 3,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "dairy",
+    "tags": [
+      "snack"
+    ],
+    "instructions": [
+      "Смешать йогурт с ягодами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "greek_yogurt",
+        "grams": 150
+      },
+      {
+        "product_id": "berries",
+        "grams": 60
+      }
+    ],
+    "calories": 124.8,
+    "protein": 12.4,
+    "fat": 3.2,
+    "carbs": 10.6
+  },
+  {
+    "id": "rice_cakes_pb",
+    "name": "Хлебцы с арахисовой пастой",
+    "cuisine": "european",
+    "meal_type": "snack",
+    "cooking_time": 3,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "nuts",
+    "tags": [
+      "snack"
+    ],
+    "instructions": [
+      "Намазать хлебцы пастой, добавить банан."
+    ],
+    "ingredients": [
+      {
+        "product_id": "rice_cakes",
+        "grams": 30
+      },
+      {
+        "product_id": "peanut_butter",
+        "grams": 20
+      },
+      {
+        "product_id": "banana",
+        "grams": 60
+      }
+    ],
+    "calories": 264,
+    "protein": 8.7,
+    "fat": 10.9,
+    "carbs": 37
+  },
+  {
+    "id": "omelet_dinner",
+    "name": "Омлет с грибами на ужин",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 15,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "eggs",
+    "tags": [
+      "dinner",
+      "vegetables"
+    ],
+    "instructions": [
+      "Обжарить грибы, залить яйцами."
+    ],
+    "ingredients": [
+      {
+        "product_id": "eggs",
+        "grams": 150
+      },
+      {
+        "product_id": "mushroom",
+        "grams": 100
+      },
+      {
+        "product_id": "spinach",
+        "grams": 40
+      },
+      {
+        "product_id": "olive_oil",
+        "grams": 6
+      }
+    ],
+    "calories": 324.7,
+    "protein": 25,
+    "fat": 23.7,
+    "carbs": 3.9
+  },
+  {
+    "id": "liver_buckwheat",
+    "name": "Куриная печень с гречкой",
+    "cuisine": "russian",
+    "meal_type": "lunch",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "chicken",
+    "tags": [
+      "lunch"
+    ],
+    "instructions": [
+      "Обжарить печень с луком, подать с гречкой."
+    ],
+    "ingredients": [
+      {
+        "product_id": "chicken_liver",
+        "grams": 150
+      },
+      {
+        "product_id": "buckwheat",
+        "grams": 70
+      },
+      {
+        "product_id": "onion",
+        "grams": 50
+      },
+      {
+        "product_id": "sour_cream",
+        "grams": 20
+      }
+    ],
+    "calories": 348.8,
+    "protein": 34.2,
+    "fat": 13.2,
+    "carbs": 24.1
+  },
+  {
+    "id": "herring_potato",
+    "name": "Сельдь с картофелем",
+    "cuisine": "russian",
+    "meal_type": "dinner",
+    "cooking_time": 25,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "fish",
+    "tags": [
+      "dinner"
+    ],
+    "instructions": [
+      "Отварить картофель, подать с сельдью и луком."
+    ],
+    "ingredients": [
+      {
+        "product_id": "herring",
+        "grams": 100
+      },
+      {
+        "product_id": "potato",
+        "grams": 200
+      },
+      {
+        "product_id": "onion",
+        "grams": 30
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 398.9,
+    "protein": 22.3,
+    "fat": 17.2,
+    "carbs": 36.7
+  }
+]

@@ -1,0 +1,184 @@
+export interface Product {
+  id: string;
+  canonical_name: string;
+  category: ProductCategory;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  fat_per_100g: number;
+  carbs_per_100g: number;
+  package_weight: number;
+  unit: "g" | "ml" | "pcs";
+  tags: string[];
+}
+
+export type ProductCategory =
+  | "protein"
+  | "dairy"
+  | "grain"
+  | "vegetable"
+  | "fruit"
+  | "fat"
+  | "pantry"
+  | "snack";
+
+export interface Store {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface StoreProduct {
+  id: string;
+  canonical_product_id: string;
+  store_id: string;
+  external_id: string;
+  name: string;
+  brand: string;
+  package_weight: number;
+  price: number;
+  available: boolean;
+  url: string;
+  updated_at: string;
+}
+
+export interface RecipeIngredient {
+  product_id: string;
+  grams: number;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  cuisine: string;
+  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
+  cooking_time: number;
+  difficulty: "easy" | "medium";
+  servings: number;
+  ingredients: RecipeIngredient[];
+  instructions: string[];
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  protein_source: string;
+  tags: string[];
+}
+
+export interface CashbackRule {
+  store_id: string;
+  percent: number;
+}
+
+export interface PersonTargets {
+  id: string;
+  name: string;
+  calorieTarget: number;
+  proteinTarget: number;
+  fatTarget: number;
+  carbsTarget: number;
+}
+
+export interface OptimizationConstraints {
+  maxCookingTime: number;
+  maxCookingSessions: number;
+  mealsPerDay: number;
+  snacks: boolean;
+  excludedProductIds: string[];
+  allergies: string[];
+  dietType: string;
+  preferredStoreIds: string[];
+  maxStores: number;
+  varietyPreference: "low" | "medium" | "high";
+}
+
+export interface OptimizationInput {
+  people: PersonTargets[];
+  days: number;
+  calorieTargets: number;
+  macroTargets: {
+    protein: number;
+    fat: number;
+    carbs: number;
+  };
+  budget: number;
+  products: Product[];
+  prices: StoreProduct[];
+  recipes: Recipe[];
+  cashback: CashbackRule[];
+  constraints: OptimizationConstraints;
+}
+
+export interface PlannedMeal {
+  dayIndex: number;
+  mealType: Recipe["meal_type"];
+  recipeId: string;
+  recipeName: string;
+  cookingSession: number;
+  servings: number;
+  ingredients: RecipeIngredient[];
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  instructions: string[];
+}
+
+export interface CartLine {
+  productId: string;
+  productName: string;
+  storeId: string;
+  storeName: string;
+  quantityGrams: number;
+  packageCount: number;
+  packageWeight: number;
+  price: number;
+  cashbackPercent: number;
+  cashback: number;
+  effectivePrice: number;
+  leftoverGrams: number;
+}
+
+export interface NutritionSummary {
+  caloriesPerDay: number;
+  proteinPerDay: number;
+  fatPerDay: number;
+  carbsPerDay: number;
+  calorieTarget: number;
+  proteinTarget: number;
+  fatTarget: number;
+  carbsTarget: number;
+}
+
+export interface OptimizationResult {
+  menu: PlannedMeal[];
+  cart: CartLine[];
+  totalCost: number;
+  cashback: number;
+  effectiveCost: number;
+  nutritionSummary: NutritionSummary;
+  varietyScore: number;
+  wasteScore: number;
+  cookingPlan: CookingSession[];
+  feasible: boolean;
+  warnings: string[];
+}
+
+export interface CookingSession {
+  index: number;
+  dayIndex: number;
+  label: string;
+  recipeIds: string[];
+  recipeNames: string[];
+}
+
+export interface OptimizationEngine {
+  optimize(input: OptimizationInput): OptimizationResult;
+}
+
+export const OPTIMIZER_WEIGHTS = {
+  cost: 1,
+  uniqueProducts: 35,
+  cookingTime: 1.5,
+  waste: 0.4,
+  repetition: 90,
+};

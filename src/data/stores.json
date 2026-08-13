@@ -1,0 +1,22 @@
+[
+  {
+    "id": "pyaterochka",
+    "name": "Пятёрочка",
+    "slug": "pyaterochka"
+  },
+  {
+    "id": "perekrestok",
+    "name": "Перекрёсток",
+    "slug": "perekrestok"
+  },
+  {
+    "id": "magnit",
+    "name": "Магнит",
+    "slug": "magnit"
+  },
+  {
+    "id": "dixy",
+    "name": "Дикси",
+    "slug": "dixy"
+  }
+]
