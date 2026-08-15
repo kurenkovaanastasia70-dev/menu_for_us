@@ -20,6 +20,46 @@ export function peopleFromProfiles(profiles: Profile[]) {
   });
 }
 
+/** Всегда два человека для меню пары: реальные профили + черновик партнёра, если второй ещё не подключился. */
+export function couplePeopleForPlan(
+  profiles: Profile[],
+  draft?: { id?: string; name: string; calorieTarget: number; proteinTarget?: number },
+) {
+  const people = peopleFromProfiles(profiles);
+  if (people.length >= 2) return people.slice(0, 2);
+  const primary = people[0];
+  const partner = {
+    id: draft?.id ?? "partner-draft",
+    name: draft?.name?.trim() || "Партнёр",
+    calorieTarget: Math.max(1200, Number(draft?.calorieTarget) || primary?.calorieTarget || 2000),
+    proteinTarget: Math.max(60, Number(draft?.proteinTarget) || Math.round((draft?.calorieTarget || primary?.calorieTarget || 2000) * 0.08)),
+    fatTarget: primary?.fatTarget ?? 70,
+    carbsTarget: primary?.carbsTarget ?? 200,
+    fiberTarget: primary?.fiberTarget ?? 25,
+    ironTarget: primary?.ironTarget ?? 12,
+  };
+  if (primary) return [primary, partner];
+  return [partner];
+}
+
+export function couplePlannerSlots(
+  profiles: Profile[],
+  draft?: { id?: string; name: string; calorieTarget: number },
+): Array<{ id: string; name: string; isDraft: boolean }> {
+  if (profiles.length >= 2) {
+    return profiles.slice(0, 2).map((profile) => ({ id: profile.id, name: profile.name, isDraft: false }));
+  }
+  const first = profiles[0];
+  return [
+    { id: first?.id ?? "solo", name: first?.name ?? "Я", isDraft: false },
+    {
+      id: draft?.id ?? "partner-draft",
+      name: draft?.name?.trim() || "Партнёр",
+      isDraft: true,
+    },
+  ];
+}
+
 export function constraintsFromProfiles(profiles: Profile[], household: Household): OptimizationInput["constraints"] {
   const primary = profiles[0];
   const excluded = [...new Set(profiles.flatMap((profile) => profile.excluded_products))];

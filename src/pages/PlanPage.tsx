@@ -6,9 +6,14 @@ import { useApp } from "@/context/AppContext";
 import { STORES } from "@/lib/optimizer";
 import type { EatingOutSlot } from "@/lib/optimizer/types";
 import { generateWeek } from "@/lib/planning/generate-week";
-import { cashbackInput, constraintsFromProfiles, peopleFromProfiles } from "@/lib/planning/from-profiles";
+import {
+  cashbackInput,
+  constraintsFromProfiles,
+  couplePeopleForPlan,
+  couplePlannerSlots,
+} from "@/lib/planning/from-profiles";
 import { saveMealPlan } from "@/lib/supabase/api";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -18,6 +23,25 @@ const mealLabels: Record<string, string> = {
   dinner: "Ужин",
   snack: "Перекус",
 };
+
+const PARTNER_DRAFT_KEY = "menu_for_us_partner_draft";
+
+function loadPartnerDraft(householdId?: string | null) {
+  if (!householdId || typeof localStorage === "undefined") {
+    return { name: "Партнёр", calorieTarget: 2000 };
+  }
+  try {
+    const raw = localStorage.getItem(`${PARTNER_DRAFT_KEY}:${householdId}`);
+    if (!raw) return { name: "Партнёр", calorieTarget: 2000 };
+    const parsed = JSON.parse(raw) as { name?: string; calorieTarget?: number };
+    return {
+      name: parsed.name?.trim() || "Партнёр",
+      calorieTarget: Math.max(1200, Number(parsed.calorieTarget) || 2000),
+    };
+  } catch {
+    return { name: "Партнёр", calorieTarget: 2000 };
+  }
+}
 
 export function PlanPage() {
   const { household, members, cashback, profile, fridge, refresh } = useApp();
@@ -31,11 +55,35 @@ export function PlanPage() {
   const [stores, setStores] = useState<string[]>(household?.preferred_stores ?? ["pyaterochka", "magnit"]);
   const [eatingOut, setEatingOut] = useState<Set<string>>(new Set());
   const [quickLunches, setQuickLunches] = useState(false);
+  const [partnerName, setPartnerName] = useState("Партнёр");
+  const [partnerCalories, setPartnerCalories] = useState(2000);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const draft = loadPartnerDraft(household?.id);
+    setPartnerName(draft.name);
+    setPartnerCalories(draft.calorieTarget);
+  }, [household?.id]);
+
+  useEffect(() => {
+    if (!household?.id || members.length >= 2) return;
+    localStorage.setItem(
+      `${PARTNER_DRAFT_KEY}:${household.id}`,
+      JSON.stringify({ name: partnerName, calorieTarget: partnerCalories }),
+    );
+  }, [household?.id, members.length, partnerName, partnerCalories]);
+
   const selectedStores = useMemo(() => new Set(stores), [stores]);
-  const names = members.map((member) => member.name).join(" и ");
+  const partnerDraft = useMemo(
+    () => ({ id: "partner-draft", name: partnerName, calorieTarget: partnerCalories }),
+    [partnerName, partnerCalories],
+  );
+  const planners = useMemo(
+    () => couplePlannerSlots(members, partnerDraft),
+    [members, partnerDraft],
+  );
+  const names = planners.map((person) => person.name).join(" и ");
   const mealTypes = useMemo(() => {
     const types: Array<"breakfast" | "lunch" | "dinner" | "snack"> = ["breakfast", "lunch", "dinner"].slice(
       0,
@@ -75,9 +123,10 @@ export function PlanPage() {
           mealType: mealType as EatingOutSlot["mealType"],
         };
       });
+      const people = couplePeopleForPlan(members, partnerDraft);
       const constraints = constraintsFromProfiles(members, household);
       const result = await generateWeek({
-        people: peopleFromProfiles(members),
+        people,
         days: Number(days),
         budget: Number(budget),
         cashback: cashbackInput(cashback),
@@ -118,9 +167,8 @@ export function PlanPage() {
     <Screen title="Меню на пару">
       <Card className="mb-4">
         <p className="text-sm">
-          Нажмите «Рассчитать» — блюда общие, а граммовки на тарелке у каждого свои (по калориям профиля
-          {members.length >= 2 ? `: ${names}` : ""}).
-          Второй человек подключается кодом в Профиле.
+          Один человек может заполнить всё за двоих: ниже два отдельных блока «ем не дома» для {names}. Блюдо общее,
+          граммовки на тарелке — свои.
         </p>
         <p className="mt-2 text-sm text-muted">
           Цены берутся из расширенного каталога в стиле Магнит/Пятёрочка (типичные ценники на 1 августа 2026) плюс ваш
@@ -203,16 +251,44 @@ export function PlanPage() {
         </div>
       </Card>
 
+      {members.length < 2 && (
+        <Card className="mt-4 space-y-3">
+          <h2 className="font-display text-xl">Партнёр пока без аккаунта</h2>
+          <p className="text-sm text-muted">
+            Можно всё равно считать на двоих: укажите имя и калории партнёра. Точные цели появятся, когда он подключится
+            кодом из Профиля.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Имя партнёра</Label>
+              <Input value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
+            </div>
+            <div>
+              <Label>Калории партнёра</Label>
+              <Input
+                type="number"
+                min={1200}
+                value={partnerCalories}
+                onChange={(e) => setPartnerCalories(Number(e.target.value))}
+              />
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Card className="mt-4">
         <h2 className="font-display text-xl">Ем не дома</h2>
         <p className="mt-1 text-sm text-muted">
-          У каждого своё расписание. Отмеченный приём не входит в корзину только для этого человека; если оба вне дома —
-          блюдо целиком пропускается.
+          Два отдельных расписания — можно заполнить за обоих. Отмеченный приём не входит в корзину только для этого
+          человека; если оба вне дома — блюдо целиком пропускается.
         </p>
         <div className="mt-4 space-y-5">
-          {(members.length > 0 ? members : [{ id: "solo", name: "Я" }]).map((member) => (
+          {planners.map((member) => (
             <div key={member.id}>
-              <h3 className="mb-2 text-sm font-semibold">{member.name}</h3>
+              <h3 className="mb-2 text-sm font-semibold">
+                {member.name}
+                {member.isDraft ? " (черновик)" : ""}
+              </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>

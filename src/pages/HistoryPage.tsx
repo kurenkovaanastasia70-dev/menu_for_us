@@ -4,12 +4,16 @@ import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatDateRange, formatRub } from "@/lib/cn";
 import type { OptimizationResult } from "@/lib/optimizer";
-import { saveMealPlan } from "@/lib/supabase/api";
+import { clearMealPlanHistory, deleteMealPlan, saveMealPlan } from "@/lib/supabase/api";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function HistoryPage() {
   const { plans, household, refresh } = useApp();
   const navigate = useNavigate();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [error, setError] = useState("");
 
   async function repeat(planId: string, mutate?: "budget" | "menu") {
     const plan = plans.find((item) => item.id === planId);
@@ -33,8 +37,45 @@ export function HistoryPage() {
     navigate(`/menu/${id}`);
   }
 
+  async function removeOne(planId: string) {
+    if (!window.confirm("Удалить эту неделю из истории?")) return;
+    setPendingId(planId);
+    setError("");
+    try {
+      await deleteMealPlan(planId);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  async function clearAll() {
+    if (!household) return;
+    if (!window.confirm("Очистить всю историю меню? Это нельзя отменить.")) return;
+    setClearing(true);
+    setError("");
+    try {
+      await clearMealPlanHistory(household.id);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось очистить историю");
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <Screen title="История">
+      {plans.length > 0 && (
+        <div className="mb-4">
+          <Button variant="ghost" className="w-full" disabled={clearing} onClick={clearAll}>
+            {clearing ? "Очищаем…" : "Очистить всю историю"}
+          </Button>
+        </div>
+      )}
+      {error && <p className="mb-3 text-sm text-clay">{error}</p>}
       {plans.length === 0 ? (
         <p className="text-muted">Пока нет сохранённых недель.</p>
       ) : (
@@ -48,9 +89,18 @@ export function HistoryPage() {
                   <div className="text-sm text-muted">{plan.days} дней</div>
                 </div>
               </button>
-              <Button className="mt-3 w-full" variant="secondary" onClick={() => repeat(plan.id)}>
-                Повторить неделю
-              </Button>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button variant="secondary" onClick={() => repeat(plan.id)}>
+                  Повторить неделю
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={pendingId === plan.id}
+                  onClick={() => removeOne(plan.id)}
+                >
+                  {pendingId === plan.id ? "Удаляем…" : "Удалить"}
+                </Button>
+              </div>
             </Card>
           ))}
         </div>

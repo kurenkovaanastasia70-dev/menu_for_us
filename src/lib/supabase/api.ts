@@ -185,6 +185,16 @@ export async function saveMealPlan(args: {
   return planId;
 }
 
+export async function deleteMealPlan(planId: string): Promise<void> {
+  const { error } = await requireClient().from("meal_plans").delete().eq("id", planId);
+  if (error) throw error;
+}
+
+export async function clearMealPlanHistory(householdId: string): Promise<void> {
+  const { error } = await requireClient().from("meal_plans").delete().eq("household_id", householdId);
+  if (error) throw error;
+}
+
 export async function updateMealPlanResult(id: string, result: OptimizationResult) {
   const { error } = await requireClient()
     .from("meal_plans")

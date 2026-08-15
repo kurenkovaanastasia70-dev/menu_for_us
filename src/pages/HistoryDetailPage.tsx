@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatDateRange, formatRub } from "@/lib/cn";
 import type { OptimizationResult } from "@/lib/optimizer";
-import { fetchMealPlan, saveMealPlan } from "@/lib/supabase/api";
+import { deleteMealPlan, fetchMealPlan, saveMealPlan } from "@/lib/supabase/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -14,6 +14,7 @@ export function HistoryDetailPage() {
   const navigate = useNavigate();
   const existing = plans.find((item) => item.id === planId);
   const [plan, setPlan] = useState(existing);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!planId || existing) return;
@@ -43,6 +44,18 @@ export function HistoryDetailPage() {
     navigate(`/menu/${id}`);
   }
 
+  async function remove() {
+    if (!window.confirm("Удалить эту неделю из истории?")) return;
+    setDeleting(true);
+    try {
+      await deleteMealPlan(current.id);
+      await refresh();
+      navigate("/history");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <Screen title={formatDateRange(plan.start_date, plan.end_date)}>
       <Card>
@@ -61,6 +74,9 @@ export function HistoryDetailPage() {
         </Button>
         <Button variant="ghost" onClick={() => navigate("/plan")}>
           Изменить бюджет / калории / блюда
+        </Button>
+        <Button variant="ghost" disabled={deleting} onClick={remove}>
+          {deleting ? "Удаляем…" : "Удалить из истории"}
         </Button>
       </div>
     </Screen>
