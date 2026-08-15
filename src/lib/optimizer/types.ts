@@ -199,6 +199,7 @@ export interface CartLine {
   leftoverGrams: number;
   fromFridgeGrams: number;
   toBuyGrams: number;
+  haveAtHome?: boolean;
 }
 
 export interface NutritionSummary {

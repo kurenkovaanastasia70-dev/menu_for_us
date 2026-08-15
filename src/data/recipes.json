@@ -1823,14 +1823,18 @@
       {
         "product_id": "eggs",
         "grams": 50
+      },
+      {
+        "product_id": "semolina",
+        "grams": 30
       }
     ],
-    "calories": 296.3,
-    "protein": 37.1,
-    "fat": 14.5,
-    "carbs": 3.7,
-    "fiber": 0,
-    "iron": 1.6
+    "calories": 396.2,
+    "protein": 40.1,
+    "fat": 14.8,
+    "carbs": 25.6,
+    "fiber": 0.8,
+    "iron": 2
   },
   {
     "id": "fish_cutlets",

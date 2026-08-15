@@ -1,6 +1,6 @@
 import type { LLMMenu } from "@/lib/llm/schema";
 import type { RecipeGuide } from "@/lib/llm/recipe-guide";
-import { materializeFromMenu, type OptimizationInput, type PlannedMeal } from "@/lib/optimizer";
+import { type OptimizationInput, type PlannedMeal } from "@/lib/optimizer";
 import {
   attachSideSalad,
   attachSnackFruit,
@@ -11,6 +11,7 @@ import {
   pickSnackFruit,
   scalePlannedMeal,
 } from "@/lib/optimizer/meals";
+import { fitMenuToBudget as fitMenuToBudgetSmart } from "./budget-fit";
 
 const MEAL_TYPES: Array<PlannedMeal["mealType"]> = ["breakfast", "lunch", "dinner", "snack"];
 
@@ -121,10 +122,7 @@ export function scaleMenuToMacroTargets(menu: PlannedMeal[], input: Optimization
 }
 
 export function fitMenuToBudget(menu: PlannedMeal[], input: OptimizationInput): PlannedMeal[] {
-  const first = materializeFromMenu(menu, input);
-  if (first.effectiveCost <= input.budget || first.effectiveCost <= 0) return menu;
-  const factor = clamp(input.budget / first.effectiveCost, 0.7, 0.95);
-  return menu.map((meal) => (meal.eatingOut ? meal : scalePlannedMeal(meal, factor, input.products)));
+  return fitMenuToBudgetSmart(menu, input);
 }
 
 export function fillMissingSlots(llmMenu: PlannedMeal[], fallback: PlannedMeal[]): PlannedMeal[] {

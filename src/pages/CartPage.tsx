@@ -2,6 +2,7 @@ import { Screen } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
+import { fridgeStockAfterToggle, lineAlreadyHave } from "@/lib/cart/already-have";
 import { formatGrams, formatRub } from "@/lib/cn";
 import { catalog } from "@/lib/catalog/repository";
 import { materializeFromMenu, type CartLine, type OptimizationResult } from "@/lib/optimizer";
@@ -10,7 +11,6 @@ import { replaceProduct } from "@/lib/planning/alternatives";
 import {
   deleteFridgeItem,
   fetchCartItems,
-  fetchFridge,
   fetchMealPlan,
   replaceCartItems,
   togglePurchased,
@@ -19,10 +19,6 @@ import {
 } from "@/lib/supabase/api";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-function alreadyHave(line: CartLine): boolean {
-  return (line.toBuyGrams ?? line.quantityGrams) <= 0 && (line.fromFridgeGrams ?? 0) > 0;
-}
 
 export function CartPage() {
   const { planId } = useParams();
@@ -33,6 +29,7 @@ export function CartPage() {
   const [itemIds, setItemIds] = useState<Record<string, string>>({});
   const [swapFrom, setSwapFrom] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const id = planId ?? latestPlan?.id;
 
@@ -65,16 +62,17 @@ export function CartPage() {
   }, [result]);
 
   const input = useMemo(() => {
-    if (!household || !members.length || !latestPlan) return null;
+    if (!household || !members.length || (!latestPlan && !result)) return null;
+    const days = latestPlan?.days ?? (result ? Math.max(0, ...result.menu.map((meal) => meal.dayIndex)) + 1 : 7);
     return makeOptimizationInput({
       profiles: members,
       household,
       cashback,
-      days: latestPlan.days,
-      budget: Number(latestPlan.budget),
+      days,
+      budget: Number(latestPlan?.budget ?? household.default_budget),
       fridge,
     });
-  }, [household, members, cashback, latestPlan, fridge]);
+  }, [household, members, cashback, latestPlan, fridge, result]);
 
   async function persistCart(next: OptimizationResult) {
     setResult(next);
@@ -91,28 +89,62 @@ export function CartPage() {
   }
 
   async function toggleHave(line: CartLine) {
-    if (!household || !result || !input || !id) return;
+    if (!household || !result || !id) return;
+    const markHave = !lineAlreadyHave(line);
     setSaving(true);
+    setError("");
     try {
-      if (alreadyHave(line)) {
-        await deleteFridgeItem(household.id, line.productId);
-      } else {
-        await upsertFridgeItem({
-          household_id: household.id,
-          product_id: line.productId,
-          grams: line.quantityGrams,
-        });
-      }
-      const nextFridge = await fetchFridge(household.id);
-      const next = materializeFromMenu(
-        result.menu,
-        {
-          ...input,
-          fridge: nextFridge.map((item) => ({ productId: item.product_id, grams: item.grams })),
-        },
-        { trainingPlans: result.trainingPlans },
+      const nextFridge = markHave
+        ? await upsertFridgeItem({
+            household_id: household.id,
+            product_id: line.productId,
+            grams: line.quantityGrams,
+          })
+        : await deleteFridgeItem(household.id, line.productId);
+      const stock = fridgeStockAfterToggle(
+        nextFridge.map((item) => ({ productId: item.product_id, grams: Number(item.grams) })),
+        line,
+        markHave,
       );
+      let next: OptimizationResult;
+      if (input) {
+        next = materializeFromMenu(
+          result.menu,
+          { ...input, fridge: stock },
+          { trainingPlans: result.trainingPlans },
+        );
+      } else {
+        next = {
+          ...result,
+          cart: result.cart.map((item) =>
+            item.productId === line.productId
+              ? {
+                  ...item,
+                  haveAtHome: markHave,
+                  fromFridgeGrams: markHave ? item.quantityGrams : 0,
+                  toBuyGrams: markHave ? 0 : item.quantityGrams,
+                  packageCount: markHave ? 0 : item.packageCount,
+                  price: markHave ? 0 : item.price,
+                  cashback: markHave ? 0 : item.cashback,
+                  effectivePrice: markHave ? 0 : item.effectivePrice,
+                }
+              : item,
+          ),
+        };
+        next.totalCost = next.cart.reduce((sum, item) => sum + item.price, 0);
+        next.cashback = next.cart.reduce((sum, item) => sum + item.cashback, 0);
+        next.effectiveCost = next.cart.reduce((sum, item) => sum + item.effectivePrice, 0);
+      }
+      next = {
+        ...next,
+        cart: next.cart.map((item) => ({
+          ...item,
+          haveAtHome: item.productId === line.productId ? markHave : lineAlreadyHave(item),
+        })),
+      };
       await persistCart(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось отметить продукт");
     } finally {
       setSaving(false);
     }
@@ -155,10 +187,11 @@ export function CartPage() {
           ))}
         </div>
       </Card>
+      {error && <p className="mt-4 text-sm text-clay">{error}</p>}
 
       <div className="mt-4 space-y-3">
         {result.cart.map((line) => {
-          const have = alreadyHave(line);
+          const have = lineAlreadyHave(line);
           return (
             <Card key={line.productId} className={have ? "opacity-70" : ""}>
               <div className="font-semibold">{line.productName}</div>
@@ -173,27 +206,17 @@ export function CartPage() {
                   {formatRub(line.price)} · cashback {line.cashbackPercent}% · итого {formatRub(line.effectivePrice)}
                 </div>
               )}
-              <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                <label className="flex items-center gap-2 font-semibold">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5"
-                    checked={have}
-                    disabled={saving}
-                    onChange={() => toggleHave(line)}
-                  />
-                  уже есть
-                </label>
-                <label className="flex items-center gap-2 text-muted">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5"
-                    checked={Boolean(purchased[line.productId])}
-                    onChange={() => toggleBought(line.productId)}
-                    disabled={have}
-                  />
-                  купили
-                </label>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button variant={have ? "primary" : "secondary"} disabled={saving} onClick={() => toggleHave(line)}>
+                  {have ? "Уже есть ✓" : "Уже есть"}
+                </Button>
+                <Button
+                  variant={purchased[line.productId] ? "primary" : "secondary"}
+                  disabled={have || saving}
+                  onClick={() => toggleBought(line.productId)}
+                >
+                  {purchased[line.productId] ? "Купили ✓" : "Купили"}
+                </Button>
               </div>
               <button className="mt-2 text-sm font-semibold text-sage" onClick={() => setSwapFrom(line.productId)}>
                 Заменить продукт

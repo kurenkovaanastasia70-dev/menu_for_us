@@ -53,11 +53,7 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     quickLunches: Boolean(params.constraints.quickLunches),
     dietType: params.constraints.dietType,
     eatingOutSlots: params.constraints.eatingOutSlots ?? [],
-    products: catalog.getProducts().map((product) => ({
-      id: product.id,
-      name: product.canonical_name,
-      category: product.category,
-    })),
+    products: pricedCatalogForLlm(input),
   });
 
   if (!worker.ok || !worker.data.menu) {
@@ -83,4 +79,23 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
 
 export function localFallbackProvider() {
   return new FallbackLLMProvider(catalog.getRecipes());
+}
+
+/** Компактный прайс для модели: id, имя, упаковка и минимальная цена среди выбранных магазинов. */
+export function pricedCatalogForLlm(input: OptimizationInput) {
+  const preferred = new Set(input.constraints.preferredStoreIds);
+  return input.products.map((product) => {
+    const offers = input.prices.filter((item) => item.canonical_product_id === product.id && item.available);
+    const scoped = preferred.size > 0 ? offers.filter((item) => preferred.has(item.store_id)) : offers;
+    const pool = scoped.length > 0 ? scoped : offers;
+    const best = pool.slice().sort((a, b) => a.price / a.package_weight - b.price / b.package_weight)[0];
+    return {
+      id: product.id,
+      name: product.canonical_name,
+      category: product.category,
+      pack_g: best?.package_weight ?? product.package_weight,
+      price_rub: best?.price ?? null,
+      rub_per_100g: best ? Math.round((best.price / best.package_weight) * 1000) / 10 : null,
+    };
+  });
 }

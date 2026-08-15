@@ -254,6 +254,7 @@ export async function replaceCartItems(planId: string, householdId: string, resu
 }
 
 const FRIDGE_KEY = (id: string) => `menu-for-us-fridge-${id}`;
+const FRIDGE_INIT_KEY = (id: string) => `menu-for-us-fridge-init-${id}`;
 
 function readLocalFridge(householdId: string): FridgeItem[] {
   try {
@@ -266,14 +267,21 @@ function readLocalFridge(householdId: string): FridgeItem[] {
 
 function writeLocalFridge(householdId: string, items: FridgeItem[]) {
   localStorage.setItem(FRIDGE_KEY(householdId), JSON.stringify(items));
+  localStorage.setItem(FRIDGE_INIT_KEY(householdId), "1");
+}
+
+function fridgeInitialized(householdId: string): boolean {
+  return localStorage.getItem(FRIDGE_INIT_KEY(householdId)) === "1";
 }
 
 export async function fetchFridge(householdId: string): Promise<FridgeItem[]> {
   const local = readLocalFridge(householdId);
+  if (fridgeInitialized(householdId)) return local;
   try {
     const { data, error } = await requireClient().from("fridge_items").select("*").eq("household_id", householdId);
     if (error) return local;
     const rows = (data ?? []) as FridgeItem[];
+    if (rows.length === 0) return local;
     writeLocalFridge(householdId, rows);
     return rows;
   } catch {
@@ -282,25 +290,24 @@ export async function fetchFridge(householdId: string): Promise<FridgeItem[]> {
 }
 
 export async function upsertFridgeItem(item: FridgeItem): Promise<FridgeItem[]> {
-  const current = await fetchFridge(item.household_id);
+  const current = readLocalFridge(item.household_id);
   const next = [...current.filter((row) => row.product_id !== item.product_id), item];
   writeLocalFridge(item.household_id, next);
   try {
-    const { error } = await requireClient()
+    await requireClient()
       .from("fridge_items")
       .upsert(
         { household_id: item.household_id, product_id: item.product_id, grams: item.grams },
         { onConflict: "household_id,product_id" },
       );
-    if (error) return next;
-    return fetchFridge(item.household_id);
   } catch {
-    return next;
+    // local copy is enough until SQL is applied
   }
+  return next;
 }
 
 export async function deleteFridgeItem(householdId: string, productId: string): Promise<FridgeItem[]> {
-  const next = (await fetchFridge(householdId)).filter((row) => row.product_id !== productId);
+  const next = readLocalFridge(householdId).filter((row) => row.product_id !== productId);
   writeLocalFridge(householdId, next);
   try {
     await requireClient().from("fridge_items").delete().eq("household_id", householdId).eq("product_id", productId);

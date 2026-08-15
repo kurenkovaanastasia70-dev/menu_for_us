@@ -375,7 +375,7 @@ function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {
       gramsByProduct.set(ing.product_id, (gramsByProduct.get(ing.product_id) ?? 0) + ing.grams);
     }
   }
-  const fridge = new Map((input.fridge ?? []).map((item) => [item.productId, item.grams]));
+  const fridge = new Map((input.fridge ?? []).map((item) => [item.productId, Number(item.grams) || 0]));
 
   const lines: CartLine[] = [];
   for (const [productId, grams] of gramsByProduct) {

@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { EXTRA_PRODUCTS } from "./magnit-style-catalog.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "src", "data");
@@ -136,7 +137,15 @@ rawProducts.push(
   ["chicken_liver", "Куриная печень", "protein", 136, 20, 6, 1, 500, "g", ["chicken", "meat"], 149, "Петруха"],
   ["cabbage_savoy", "Капуста пекинская", "vegetable", 16, 1.2, 0.2, 3.2, 500, "g", ["vegetable"], 79, "Своя грядка"],
   ["radish", "Редис", "vegetable", 16, 0.7, 0.1, 3.4, 300, "g", ["vegetable"], 69, "Своя грядка"],
+  ...EXTRA_PRODUCTS,
 );
+
+const seenIds = new Set();
+for (let i = rawProducts.length - 1; i >= 0; i -= 1) {
+  const id = rawProducts[i][0];
+  if (seenIds.has(id)) rawProducts.splice(i, 1);
+  else seenIds.add(id);
+}
 
 const CAT_MICRO = {
   protein: [0, 1.1],
@@ -311,7 +320,7 @@ const rawRecipes = [
   { id: "baked_potato_cottage", name: "Картофель с творогом", cuisine: "russian", meal_type: "dinner", cooking_time: 35, difficulty: "easy", servings: 1, protein_source: "dairy", tags: ["dinner"], instructions: ["Запечь картофель, подать с творогом и зеленью."], ingredients: [n("potato", 250), n("cottage_cheese", 120), n("dill", 5), n("sour_cream", 20)] },
   { id: "stuffed_zucchini", name: "Кабачки с фаршем", cuisine: "russian", meal_type: "dinner", cooking_time: 40, difficulty: "medium", servings: 1, protein_source: "turkey", tags: ["dinner", "vegetables"], instructions: ["Нафаршировать кабачки, запечь."], ingredients: [n("zucchini", 200), n("ground_turkey", 130), n("rice", 30), n("tomato_paste", 20)] },
   { id: "stuffed_pepper", name: "Перец фаршированный", cuisine: "russian", meal_type: "dinner", cooking_time: 40, difficulty: "medium", servings: 1, protein_source: "chicken", tags: ["dinner", "vegetables"], instructions: ["Нафаршировать перцы рисом и фаршем, тушить."], ingredients: [n("bell_pepper", 180), n("ground_chicken", 130), n("rice", 40), n("tomato_paste", 20)] },
-  { id: "cottage_casserole", name: "Творожная запеканка", cuisine: "russian", meal_type: "breakfast", cooking_time: 35, difficulty: "easy", servings: 1, protein_source: "dairy", tags: ["breakfast"], instructions: ["Смешать творог с яйцом, запечь."], ingredients: [n("cottage_cheese", 180), n("eggs", 50), n("semolina_skip", 0)] },
+  { id: "cottage_casserole", name: "Творожная запеканка", cuisine: "russian", meal_type: "breakfast", cooking_time: 35, difficulty: "easy", servings: 1, protein_source: "dairy", tags: ["breakfast"], instructions: ["Смешать творог с яйцом, запечь."], ingredients: [n("cottage_cheese", 180), n("eggs", 50), n("semolina", 30)] },
   { id: "fish_cutlets", name: "Рыбные котлеты", cuisine: "russian", meal_type: "dinner", cooking_time: 30, difficulty: "medium", servings: 1, protein_source: "fish", tags: ["dinner"], instructions: ["Измельчить рыбу, сформировать котлеты, обжарить."], ingredients: [n("pollock", 180), n("eggs", 30), n("onion", 30), n("bread", 20), n("sunflower_oil", 8)] },
   { id: "beans_veg", name: "Фасоль с овощами", cuisine: "mediterranean", meal_type: "dinner", cooking_time: 30, difficulty: "easy", servings: 1, protein_source: "beans", tags: ["dinner", "vegetarian", "vegetables"], instructions: ["Тушить фасоль с овощами."], ingredients: [n("beans", 90), n("tomato", 80), n("onion", 40), n("carrot", 50), n("olive_oil", 8)] },
   { id: "hummus_veg", name: "Хумус с овощами и питой", cuisine: "mediterranean", meal_type: "snack", cooking_time: 10, difficulty: "easy", servings: 1, protein_source: "chickpeas", tags: ["snack", "vegetarian"], instructions: ["Подать хумус с питой и овощами."], ingredients: [n("hummus", 80), n("pita", 70), n("cucumber", 60), n("carrot", 40)] },
