@@ -148,6 +148,7 @@ export function scaleMenuToMacroTargets(menu: PlannedMeal[], input: Optimization
       factor,
       input.products,
     );
+    if (!input.people?.length) return scaled;
     return withHomePresence(scaled, input.people, input.constraints);
   });
 }

@@ -50,7 +50,7 @@ export function homeScaleFactor(
   dayIndex: number,
   mealType: string,
 ): number {
-  if (people.length === 0) return 1;
+  if (!people?.length) return 1;
   const home = peopleEatingHome(people, constraints, dayIndex, mealType);
   if (home.length === 0) return 0;
   if (home.length === people.length) return 1;
@@ -132,6 +132,7 @@ export function withHomePresence(
   people: PersonTargets[],
   constraints: OptimizationConstraints,
 ): PlannedMeal {
+  if (!people?.length) return meal;
   const full = (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing }));
   const factor = homeScaleFactor(people, constraints, meal.dayIndex, meal.mealType);
   const outIds = eatingOutPersonIds(people, constraints, meal.dayIndex, meal.mealType);
