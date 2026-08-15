@@ -41,7 +41,7 @@ export class FallbackLLMProvider implements LLMProvider {
   }
 }
 
-export async function requestWorker<T>(
+export async function requestWorker<T extends { ok?: boolean; error?: string; menu?: unknown }>(
   path: string,
   body: unknown,
 ): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
@@ -50,17 +50,27 @@ export async function requestWorker<T>(
     return { ok: false, error: "LLM API не настроен" };
   }
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 150_000);
     const response = await fetch(`${base.replace(/\/$/, "")}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
-    const json = (await response.json()) as T & { error?: string };
+    clearTimeout(timer);
+    const json = (await response.json()) as T;
     if (!response.ok) {
       return { ok: false, error: json.error || "Ошибка LLM" };
     }
+    if (json && typeof json === "object" && json.ok === false) {
+      return { ok: false, error: json.error || "LLM недоступна" };
+    }
     return { ok: true, data: json };
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return { ok: false, error: "LLM слишком долго отвечает (таймаут)" };
+    }
     return { ok: false, error: "LLM временно недоступна" };
   }
 }

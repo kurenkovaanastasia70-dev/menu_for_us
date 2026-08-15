@@ -64,7 +64,9 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
 
   if (!worker.ok || !worker.data.menu) {
     fallback.warnings.push(
-      "Модель недоступна — меню из каталога. Ключ Gemini кладётся в Cloudflare Worker, в GitHub только VITE_API_URL.",
+      worker.ok === false && worker.error
+        ? `Модель недоступна (${worker.error}). Показано меню из каталога.`
+        : "Модель недоступна — меню из каталога. Ключ Gemini в Cloudflare Worker, в GitHub только VITE_API_URL.",
     );
     return validateMenuNutrition(fallback, input);
   }
@@ -87,10 +89,10 @@ export function localFallbackProvider() {
   return new FallbackLLMProvider(catalog.getRecipes());
 }
 
-/** Компактный прайс для модели: id, имя, упаковка и минимальная цена среди выбранных магазинов. */
+/** Компактный прайс для модели: только нужный минимум, иначе воркер/Gemini рвут длинный запрос. */
 export function pricedCatalogForLlm(input: OptimizationInput) {
   const preferred = new Set(input.constraints.preferredStoreIds);
-  return input.products.map((product) => {
+  const priced = input.products.map((product) => {
     const offers = input.prices.filter((item) => item.canonical_product_id === product.id && item.available);
     const scoped = preferred.size > 0 ? offers.filter((item) => preferred.has(item.store_id)) : offers;
     const pool = scoped.length > 0 ? scoped : offers;
@@ -104,4 +106,23 @@ export function pricedCatalogForLlm(input: OptimizationInput) {
       rub_per_100g: best ? Math.round((best.price / best.package_weight) * 1000) / 10 : null,
     };
   });
+
+  const MAX = 64;
+  const PER_CATEGORY = 10;
+  const byCategory = new Map<string, typeof priced>();
+  for (const item of priced) {
+    const list = byCategory.get(item.category) ?? [];
+    list.push(item);
+    byCategory.set(item.category, list);
+  }
+  const picked: typeof priced = [];
+  for (const list of byCategory.values()) {
+    const sorted = list
+      .slice()
+      .sort((a, b) => (a.rub_per_100g ?? 999) - (b.rub_per_100g ?? 999));
+    picked.push(...sorted.slice(0, PER_CATEGORY));
+  }
+  return picked
+    .sort((a, b) => (a.rub_per_100g ?? 999) - (b.rub_per_100g ?? 999))
+    .slice(0, MAX);
 }
