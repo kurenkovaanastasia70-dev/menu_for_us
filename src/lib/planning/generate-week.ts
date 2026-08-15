@@ -89,7 +89,7 @@ export function localFallbackProvider() {
   return new FallbackLLMProvider(catalog.getRecipes());
 }
 
-/** Компактный прайс для модели: только нужный минимум, иначе воркер/Gemini рвут длинный запрос. */
+/** Прайс для модели: широкий, но компактный срез полного каталога (не «только самые дешёвые»). */
 export function pricedCatalogForLlm(input: OptimizationInput) {
   const preferred = new Set(input.constraints.preferredStoreIds);
   const priced = input.products.map((product) => {
@@ -107,22 +107,102 @@ export function pricedCatalogForLlm(input: OptimizationInput) {
     };
   });
 
-  const MAX = 64;
-  const PER_CATEGORY = 10;
+  // Квоты по категориям: белок/овощи шире, жиры/снеки уже.
+  const quota: Record<string, number> = {
+    protein: 32,
+    vegetable: 24,
+    grain: 20,
+    dairy: 18,
+    fruit: 16,
+    pantry: 16,
+    fat: 10,
+    snack: 8,
+  };
+  const MAX = input.constraints.varietyPreference === "high" ? 150 : input.constraints.varietyPreference === "low" ? 100 : 130;
+  const seed = hashSeed(
+    `${input.constraints.varietyPreference}:${input.people.map((person) => person.id).join(",")}:${input.days}:${input.budget}`,
+  );
+
   const byCategory = new Map<string, typeof priced>();
   for (const item of priced) {
     const list = byCategory.get(item.category) ?? [];
     list.push(item);
     byCategory.set(item.category, list);
   }
+
+  const staples = new Set([
+    "chicken_breast",
+    "egg",
+    "cottage_cheese",
+    "milk",
+    "oats",
+    "rice",
+    "buckwheat",
+    "potato",
+    "onion",
+    "carrot",
+    "tomato",
+    "cucumber",
+    "apple",
+    "banana",
+    "sunflower_oil",
+    "yogurt",
+    "tuna_can",
+    "beans",
+    "lentils",
+  ]);
+
   const picked: typeof priced = [];
-  for (const list of byCategory.values()) {
-    const sorted = list
-      .slice()
-      .sort((a, b) => (a.rub_per_100g ?? 999) - (b.rub_per_100g ?? 999));
-    picked.push(...sorted.slice(0, PER_CATEGORY));
+  const seen = new Set<string>();
+
+  function add(item: (typeof priced)[number]) {
+    if (seen.has(item.id)) return;
+    seen.add(item.id);
+    picked.push(item);
   }
-  return picked
-    .sort((a, b) => (a.rub_per_100g ?? 999) - (b.rub_per_100g ?? 999))
-    .slice(0, MAX);
+
+  for (const item of priced) {
+    if (staples.has(item.id)) add(item);
+  }
+
+  for (const [category, list] of byCategory) {
+    const limit = quota[category] ?? 10;
+    const sorted = list.slice().sort((a, b) => (a.rub_per_100g ?? 999) - (b.rub_per_100g ?? 999));
+    const cheapCount = Math.ceil(limit * 0.55);
+    const varietyCount = Math.max(0, limit - cheapCount);
+    for (const item of sorted.slice(0, cheapCount)) add(item);
+
+    // Середина/хвост прайса — ротация по seed, чтобы недели не были клонами.
+    const rest = sorted.slice(cheapCount);
+    const rotated = rotate(rest, seed + category.charCodeAt(0));
+    for (const item of rotated.slice(0, varietyCount)) add(item);
+  }
+
+  // Если ещё есть место — добираем оставшиеся по ротации (не только дешёвые).
+  if (picked.length < MAX) {
+    const rest = rotate(
+      priced.filter((item) => !seen.has(item.id)),
+      seed,
+    );
+    for (const item of rest) {
+      if (picked.length >= MAX) break;
+      add(item);
+    }
+  }
+
+  return picked.slice(0, MAX);
+}
+
+function rotate<T>(items: T[], seed: number): T[] {
+  if (items.length <= 1) return items.slice();
+  const offset = Math.abs(seed) % items.length;
+  return items.slice(offset).concat(items.slice(0, offset));
+}
+
+function hashSeed(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
 }

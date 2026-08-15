@@ -129,7 +129,7 @@ async function generateMenuChunk(
     days: dayCount,
     fromDay,
     toDay,
-    products: Array.isArray(input.products) ? input.products.slice(0, 64) : input.products,
+    products: Array.isArray(input.products) ? input.products.slice(0, 160) : input.products,
   };
   const prompt = `Ты шеф-повар. Меню на дни ${fromDay}–${toDay} (всего ${dayCount} дня). Верни ТОЛЬКО JSON.
 
@@ -139,7 +139,8 @@ async function generateMenuChunk(
 Правила:
 - day номера строго ${fromDay}..${toDay}.
 - Каждый день: breakfast, lunch, dinner, snack.
-- product_id только из products. grams на семью.
+- product_id только из products. Не выдумывай id. Если нужен продукт «из головы» — замени ближайшим из списка.
+- Разнообразие: не повторяй одно и то же блюдо каждый день; чередуй белок и гарниры из разных позиций products.
 - 2–5 ingredients, ровно 3 коротких steps.
 - Бюджет всей недели budget ₽ — не раздувай порции.
 - quickLunches: на нечётных day lunch leftover:true если day>${fromDay}.
