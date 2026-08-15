@@ -95,26 +95,36 @@ async function handleMenu(body: unknown, env: Env): Promise<Response> {
     ranges.push([start, Math.min(totalDays, start + chunkSize - 1)]);
   }
 
-  const parts = await Promise.all(
-    ranges.map(([fromDay, toDay]) => generateMenuChunk(input, fromDay, toDay, env)),
-  );
-  const failed = parts.find((part) => !part.data);
-  if (failed) {
-    return json({ ok: false, source: "fallback", error: failed.error || "LLM недоступна" }, 200);
+  // Последовательно: параллель часто ловит 429/таймаут и валит всю неделю.
+  const days: any[] = [];
+  let lastError = "";
+  for (const [fromDay, toDay] of ranges) {
+    let part = await generateMenuChunk(input, fromDay, toDay, env);
+    if (!part.data) {
+      part = await generateMenuChunk(input, fromDay, toDay, env);
+    }
+    if (part.data?.days && Array.isArray(part.data.days)) {
+      days.push(...part.data.days.filter((day: any) => day && Array.isArray(day.meals)));
+    } else {
+      lastError = part.error || lastError;
+    }
   }
 
-  const days = parts
-    .flatMap((part) => part.data?.days ?? [])
-    .filter((day: any) => day && Array.isArray(day.meals))
-    .sort((a: any, b: any) => Number(a.day) - Number(b.day));
-
+  days.sort((a, b) => Number(a.day) - Number(b.day));
   if (days.length === 0) {
-    return json({ ok: false, source: "fallback", error: "Пустое меню модели" }, 200);
+    return json({ ok: false, source: "fallback", error: lastError || "LLM недоступна" }, 200);
   }
 
   const menu = { days };
   if (!isMenu(menu)) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
-  return json({ ok: true, source: "llm", menu, guides: [] });
+  return json({
+    ok: true,
+    source: "llm",
+    menu,
+    guides: [],
+    partial: days.length < totalDays,
+    error: days.length < totalDays ? `Собрано ${days.length} из ${totalDays} дней` : undefined,
+  });
 }
 
 async function generateMenuChunk(
@@ -129,7 +139,7 @@ async function generateMenuChunk(
     days: dayCount,
     fromDay,
     toDay,
-    products: Array.isArray(input.products) ? input.products.slice(0, 160) : input.products,
+    products: Array.isArray(input.products) ? input.products.slice(0, 90) : input.products,
   };
   const prompt = `Ты шеф-повар. Меню на дни ${fromDay}–${toDay} (всего ${dayCount} дня). Верни ТОЛЬКО JSON.
 
@@ -142,7 +152,7 @@ async function generateMenuChunk(
 - product_id только из products. Не выдумывай id. Если нужен продукт «из головы» — замени ближайшим из списка.
 - Разнообразие: не повторяй одно и то же блюдо каждый день; чередуй белок и гарниры из разных позиций products.
 - 2–5 ingredients, ровно 3 коротких steps.
-- Бюджет всей недели budget ₽ — не раздувай порции.
+- Бюджет недели budget ₽ критичен: бери дешёвые product_id (низкий rub_per_100g), повторяй одни продукты, 2–4 ingredient на блюдо, без дорогой рыбы/сыра/масел.
 - quickLunches: на нечётных day lunch leftover:true если day>${fromDay}.
 - Язык русский.
 

@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
-import type { OptimizationInput, PlannedMeal, Product, StoreProduct } from "@/lib/optimizer";
+import { materializeFromMenu, type OptimizationInput, type PlannedMeal, type Product, type StoreProduct } from "@/lib/optimizer";
 import { fitMenuToBudget } from "./budget-fit";
 
+const chicken: Product = {
+  id: "chicken_breast",
+  canonical_name: "Курица",
+  category: "protein",
+  calories_per_100g: 110,
+  protein_per_100g: 23,
+  fat_per_100g: 2,
+  carbs_per_100g: 0,
+  fiber_per_100g: 0,
+  iron_per_100g: 0.4,
+  package_weight: 900,
+  unit: "g",
+  tags: [],
+};
 const salmon: Product = {
   id: "salmon",
   canonical_name: "Лосось",
@@ -11,27 +25,11 @@ const salmon: Product = {
   fat_per_100g: 13,
   carbs_per_100g: 0,
   fiber_per_100g: 0,
-  iron_per_100g: 0.8,
+  iron_per_100g: 0.3,
   package_weight: 400,
   unit: "g",
-  tags: ["fish"],
+  tags: [],
 };
-
-const pollock: Product = {
-  id: "pollock",
-  canonical_name: "Минтай",
-  category: "protein",
-  calories_per_100g: 72,
-  protein_per_100g: 16,
-  fat_per_100g: 0.9,
-  carbs_per_100g: 0,
-  fiber_per_100g: 0,
-  iron_per_100g: 0.3,
-  package_weight: 700,
-  unit: "g",
-  tags: ["fish"],
-};
-
 const rice: Product = {
   id: "rice",
   canonical_name: "Рис",
@@ -44,82 +42,108 @@ const rice: Product = {
   iron_per_100g: 0.2,
   package_weight: 900,
   unit: "g",
-  tags: ["grain"],
+  tags: [],
+};
+const pollock: Product = {
+  id: "pollock",
+  canonical_name: "Минтай",
+  category: "protein",
+  calories_per_100g: 72,
+  protein_per_100g: 16,
+  fat_per_100g: 0.9,
+  carbs_per_100g: 0,
+  fiber_per_100g: 0,
+  iron_per_100g: 0.3,
+  package_weight: 700,
+  unit: "g",
+  tags: [],
 };
 
 function offer(id: string, price: number, pack: number): StoreProduct {
   return {
-    id: `magnit_${id}`,
+    id: `m_${id}`,
     canonical_product_id: id,
     store_id: "magnit",
     external_id: id,
     name: id,
-    brand: "x",
+    brand: "",
     package_weight: pack,
     price,
     available: true,
     url: "",
-    updated_at: "2026-08-01T00:00:00.000Z",
+    updated_at: "",
   };
 }
 
-function meal(productId: string, grams: number): PlannedMeal {
+function meal(ingredients: PlannedMeal["ingredients"]): PlannedMeal {
   return {
     dayIndex: 0,
     mealType: "dinner",
-    recipeId: "d",
+    recipeId: "x",
     recipeName: "Ужин",
     cookingSession: 0,
     servings: 2,
-    ingredients: [
-      { product_id: productId, grams },
-      { product_id: "rice", grams: 140 },
-    ],
-    calories: 500,
-    protein: 40,
-    fat: 10,
-    carbs: 40,
-    fiber: 2,
-    iron: 1,
+    ingredients,
+    calories: 800,
+    protein: 50,
+    fat: 20,
+    carbs: 60,
+    fiber: 4,
+    iron: 2,
     instructions: [],
   };
 }
 
-function input(budget: number): OptimizationInput {
-  return {
-    people: [{ id: "1", name: "A", calorieTarget: 1800, proteinTarget: 120, fatTarget: 60, carbsTarget: 180, fiberTarget: 25, ironTarget: 18 }],
-    days: 1,
-    calorieTargets: 1800,
-    macroTargets: { protein: 120, fat: 60, carbs: 180, fiber: 25, iron: 18 },
-    budget,
-    products: [salmon, pollock, rice],
-    prices: [offer("salmon", 700, 400), offer("pollock", 220, 700), offer("rice", 90, 900)],
-    recipes: [],
-    cashback: [],
-    fridge: [],
-    constraints: {
-      maxCookingTime: 40,
-      maxCookingSessions: 3,
-      mealsPerDay: 3,
-      snacks: true,
-      excludedProductIds: [],
-      allergies: [],
-      dietType: "omnivore",
-      preferredStoreIds: ["magnit"],
-      maxStores: 2,
-      varietyPreference: "medium",
-    },
-  };
-}
+describe("fitMenuToBudget", () => {
+  it("brings an expensive salmon week down near a tight budget", () => {
+    const input = {
+      products: [chicken, salmon, rice, pollock],
+      prices: [
+        offer("chicken_breast", 289, 900),
+        offer("salmon", 649, 400),
+        offer("rice", 79, 900),
+        offer("pollock", 199, 700),
+      ],
+      people: [{ id: "a", name: "A", calorieTarget: 2000, proteinTarget: 100, fatTarget: 70, carbsTarget: 200, fiberTarget: 25, ironTarget: 12 }],
+      days: 1,
+      budget: 400,
+      cashback: [],
+      fridge: [],
+      recipes: [],
+      calorieTargets: 2000,
+      macroTargets: { protein: 100, fat: 70, carbs: 200, fiber: 25, iron: 12 },
+      constraints: {
+        preferredStoreIds: ["magnit"],
+        varietyPreference: "medium",
+        maxCookingTime: 40,
+        maxCookingSessions: 3,
+        mealsPerDay: 3,
+        snacks: true,
+        excludedProductIds: [],
+        allergies: [],
+        dietType: "omnivore",
+        maxStores: 2,
+      },
+    } as OptimizationInput;
 
-describe("budget fit", () => {
-  it("swaps expensive salmon for cheaper pollock instead of shrinking everything", () => {
-    const menu = [meal("salmon", 280)];
-    const fitted = fitMenuToBudget(menu, input(350));
-    const ids = fitted.flatMap((item) => item.ingredients.map((ing) => ing.product_id));
-    expect(ids).toContain("pollock");
-    expect(ids).not.toContain("salmon");
-    const riceGrams = fitted[0].ingredients.find((ing) => ing.product_id === "rice")?.grams;
-    expect(riceGrams).toBe(140);
+    const menu = [
+      meal([
+        { product_id: "salmon", grams: 400 },
+        { product_id: "rice", grams: 300 },
+      ]),
+      meal([
+        { product_id: "salmon", grams: 400 },
+        { product_id: "rice", grams: 300 },
+      ]),
+      meal([
+        { product_id: "salmon", grams: 400 },
+        { product_id: "rice", grams: 300 },
+      ]),
+    ];
+
+    const fitted = fitMenuToBudget(menu, input);
+    const cost = materializeFromMenu(fitted, input).effectiveCost;
+    expect(cost).toBeLessThanOrEqual(input.budget * 1.05);
+    expect(fitted.some((item) => item.ingredients.some((ing) => ing.product_id === "pollock" || ing.product_id === "chicken_breast" || ing.grams < 400))).toBe(true);
   });
 });

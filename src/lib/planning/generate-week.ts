@@ -78,6 +78,12 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   menu = fitMenuToBudget(menu, input);
 
   const result = materializeFromMenu(menu, input);
+  if (result.effectiveCost > input.budget) {
+    result.warnings = [
+      ...result.warnings,
+      `Корзина ${Math.round(result.effectiveCost)} ₽ при бюджете ${Math.round(input.budget)} ₽ — порции уже ужаты по максимуму. Поднимите бюджет или отметьте больше «ем не дома».`,
+    ];
+  }
   result.warnings = [
     ...result.warnings,
     "Рецепты и примерное КБЖУ предложила модель. Граммы, корзина и итоговое КБЖУ подогнаны кодом под цель и бюджет.",
@@ -118,7 +124,7 @@ export function pricedCatalogForLlm(input: OptimizationInput) {
     fat: 10,
     snack: 8,
   };
-  const MAX = input.constraints.varietyPreference === "high" ? 150 : input.constraints.varietyPreference === "low" ? 100 : 130;
+  const MAX = input.constraints.varietyPreference === "high" ? 90 : input.constraints.varietyPreference === "low" ? 70 : 80;
   const seed = hashSeed(
     `${input.constraints.varietyPreference}:${input.people.map((person) => person.id).join(",")}:${input.days}:${input.budget}`,
   );
