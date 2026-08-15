@@ -1,6 +1,7 @@
 import { catalog } from "@/lib/catalog/repository";
 import { materializeFromMenu, type OptimizationInput, type OptimizationResult, type PlannedMeal, type Recipe } from "@/lib/optimizer";
 import { attachSideSalad, attachSnackFruit, fallbackGuide, isSideSalad, pickSnackFruit, plannedMealFromRecipe } from "@/lib/optimizer/meals";
+import { withHomePresence } from "./portions";
 import { recipeUsesCart } from "./recipe-score";
 
 export function suggestMealAlternatives(
@@ -20,7 +21,7 @@ export function suggestMealAlternatives(
 
   const scored = candidates.map((recipe) => {
     const nextMenu = result.menu.map((item) =>
-      item === meal ? mealFromRecipe(recipe, item, input.people.length, input.recipes) : item,
+      item === meal ? mealFromRecipe(recipe, item, input) : item,
     );
     const next = materializeFromMenu(nextMenu, input);
     const extraCost = next.effectiveCost - result.effectiveCost;
@@ -60,7 +61,7 @@ export function replaceMeal(
 ): OptimizationResult {
   const nextMenu = result.menu.map((item) =>
     item.dayIndex === meal.dayIndex && item.mealType === meal.mealType
-      ? mealFromRecipe(recipe, item, input.people.length, input.recipes)
+      ? mealFromRecipe(recipe, item, input)
       : item,
   );
   return materializeFromMenu(nextMenu, input, { trainingPlans: result.trainingPlans });
@@ -75,6 +76,9 @@ export function replaceProduct(
   const nextMenu = result.menu.map((meal) => ({
     ...meal,
     ingredients: meal.ingredients.map((ing) =>
+      ing.product_id === fromProductId ? { ...ing, product_id: toProductId } : ing,
+    ),
+    fullIngredients: (meal.fullIngredients ?? meal.ingredients).map((ing) =>
       ing.product_id === fromProductId ? { ...ing, product_id: toProductId } : ing,
     ),
   }));
@@ -109,12 +113,13 @@ export function replaceProduct(
   return materializeFromMenu(recalculated, input, { trainingPlans: result.trainingPlans });
 }
 
-function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, peopleCount: number, recipes?: Recipe[]): PlannedMeal {
+function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, input: OptimizationInput): PlannedMeal {
+  const peopleCount = Math.max(1, input.people.length);
   let next = plannedMealFromRecipe(recipe, meal, peopleCount);
   if (meal.mealType === "dinner" && !isSideSalad(recipe)) {
     const salad =
-      recipes?.find((item) => item.id === meal.sideSalad?.recipeId) ??
-      recipes?.find((item) => isSideSalad(item));
+      input.recipes.find((item) => item.id === meal.sideSalad?.recipeId) ??
+      input.recipes.find((item) => isSideSalad(item));
     if (salad) next = attachSideSalad(next, salad, peopleCount);
   }
   if (meal.mealType === "snack") {
@@ -123,5 +128,24 @@ function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, peopleCount: number, 
       products.find((item) => item.id === meal.sideFruit?.productId) ?? pickSnackFruit(products, []);
     if (fruit) next = attachSnackFruit(next, fruit, peopleCount);
   }
-  return { ...next, eatingOut: meal.eatingOut, guide: fallbackGuide(recipe, next) };
+  next = {
+    ...next,
+    fullIngredients: next.ingredients.map((ing) => ({ ...ing })),
+    eatingOutPersonIds: meal.eatingOutPersonIds,
+    guide: fallbackGuide(recipe, next),
+  };
+  const constraints = {
+    ...input.constraints,
+    eatingOutSlots: [
+      ...(input.constraints.eatingOutSlots ?? []).filter(
+        (slot) => !(slot.dayIndex === meal.dayIndex && slot.mealType === meal.mealType),
+      ),
+      ...(meal.eatingOutPersonIds ?? []).map((personId) => ({
+        personId,
+        dayIndex: meal.dayIndex,
+        mealType: meal.mealType,
+      })),
+    ],
+  };
+  return withHomePresence(next, input.people, constraints);
 }

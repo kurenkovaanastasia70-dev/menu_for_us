@@ -48,6 +48,7 @@ function rebuildMeal(meal: PlannedMeal, ingredients: PlannedMeal["ingredients"],
   return {
     ...meal,
     ingredients,
+    fullIngredients: ingredients.map((ing) => ({ ...ing })),
     calories: nutrition.calories,
     protein: nutrition.protein,
     fat: nutrition.fat,

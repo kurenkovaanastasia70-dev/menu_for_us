@@ -1,5 +1,15 @@
+import { isEveryoneEatingOut } from "../planning/portions";
 import { macrosFromGrams } from "../nutrition/calculator";
-import type { OptimizationConstraints, PlannedMeal, Product, Recipe, RecipeGuide, SideFruit, SideSalad } from "./types";
+import type {
+  OptimizationConstraints,
+  PersonTargets,
+  PlannedMeal,
+  Product,
+  Recipe,
+  RecipeGuide,
+  SideFruit,
+  SideSalad,
+} from "./types";
 
 const MEAT_SOURCES = new Set(["chicken", "beef", "pork", "turkey", "fish"]);
 export const QUICK_LUNCH_MINUTES = 20;
@@ -12,14 +22,23 @@ export function slotKey(dayIndex: number, mealType: string): string {
   return `${dayIndex}:${mealType}`;
 }
 
+/** true, если никто из пары не ест дома этот приём (корзину пропускаем целиком). */
 export function isEatingOutSlot(
   constraints: OptimizationConstraints,
   dayIndex: number,
   mealType: Recipe["meal_type"],
+  people?: PersonTargets[],
 ): boolean {
-  return (constraints.eatingOutSlots ?? []).some(
-    (slot) => slot.dayIndex === dayIndex && slot.mealType === mealType,
-  );
+  if (people && people.length > 0) {
+    return isEveryoneEatingOut(people, constraints, dayIndex, mealType);
+  }
+  const slots = constraints.eatingOutSlots ?? [];
+  const matching = slots.filter((slot) => slot.dayIndex === dayIndex && slot.mealType === mealType);
+  if (matching.length === 0) return false;
+  // legacy: слот без personId = вся семья вне дома
+  if (matching.some((slot) => !(slot as { personId?: string }).personId)) return true;
+  // без списка людей не знаем «всех» — считаем out только если слотов ≥ 2
+  return matching.length >= 2;
 }
 
 export function isSideSalad(recipe: Recipe): boolean {
@@ -299,13 +318,29 @@ export function scalePlannedMeal(meal: PlannedMeal, factor: number, products: Pr
     ...ing,
     grams: Math.max(1, Math.round(ing.grams * factor)),
   }));
+  const fullIngredients = (meal.fullIngredients ?? meal.ingredients).map((ing) => ({
+    ...ing,
+    grams: Math.max(1, Math.round(ing.grams * factor)),
+  }));
   const nutrition = nutritionFromIngredients(ingredients, products);
   return {
     ...meal,
     ingredients,
+    fullIngredients,
     ...nutrition,
     sideFruit: meal.sideFruit
       ? { ...meal.sideFruit, grams: Math.max(1, Math.round(meal.sideFruit.grams * factor)) }
       : meal.sideFruit,
+    portions: meal.portions?.map((portion) => ({
+      ...portion,
+      calories: Math.round(portion.calories * factor * 10) / 10,
+      protein: Math.round(portion.protein * factor * 10) / 10,
+      fat: Math.round(portion.fat * factor * 10) / 10,
+      carbs: Math.round(portion.carbs * factor * 10) / 10,
+      ingredients: portion.ingredients.map((ing) => ({
+        ...ing,
+        grams: Math.max(0, Math.round(ing.grams * factor)),
+      })),
+    })),
   };
 }

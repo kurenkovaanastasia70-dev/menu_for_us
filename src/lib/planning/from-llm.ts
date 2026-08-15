@@ -11,6 +11,7 @@ import {
   pickSnackFruit,
   scalePlannedMeal,
 } from "@/lib/optimizer/meals";
+import { withHomePresence } from "./portions";
 import { fitMenuToBudget as fitMenuToBudgetSmart } from "./budget-fit";
 
 const MEAL_TYPES: Array<PlannedMeal["mealType"]> = ["breakfast", "lunch", "dinner", "snack"];
@@ -31,12 +32,25 @@ export function mealsFromLlmMenu(
     for (const raw of day.meals) {
       const mealType = (raw.meal_type ?? inferMealType(day.meals.indexOf(raw))) as PlannedMeal["mealType"];
       if (!MEAL_TYPES.includes(mealType)) continue;
-      const eatingOut = isEatingOutSlot(input.constraints, dayIndex, mealType);
+      const everyoneOut = isEatingOutSlot(input.constraints, dayIndex, mealType, input.people);
 
       if (mealType === "lunch" && (raw.leftover || (input.constraints.quickLunches && dayIndex % 2 === 1))) {
         const prev = menu.find((item) => item.dayIndex === dayIndex - 1 && item.mealType === "dinner" && !item.eatingOut);
         if (prev) {
-          menu.push(leftoverFromDinner(prev, dayIndex, eatingOut));
+          const fullIngredients = (prev.fullIngredients ?? prev.ingredients).map((ing) => ({ ...ing }));
+          const nutrition = nutritionFromIngredients(fullIngredients, input.products);
+          const leftover = leftoverFromDinner(
+            { ...prev, ...nutrition, ingredients: fullIngredients, fullIngredients },
+            dayIndex,
+            everyoneOut,
+          );
+          menu.push(
+            withHomePresence(
+              { ...leftover, fullIngredients, ingredients: fullIngredients, ...nutrition },
+              input.people,
+              input.constraints,
+            ),
+          );
           continue;
         }
       }
@@ -76,6 +90,7 @@ export function mealsFromLlmMenu(
         cookingSession: Math.floor(dayIndex / 3),
         servings: peopleCount,
         ingredients,
+        fullIngredients: ingredients.map((ing) => ({ ...ing })),
         calories: nutrition.calories,
         protein: nutrition.protein,
         fat: nutrition.fat,
@@ -83,7 +98,7 @@ export function mealsFromLlmMenu(
         fiber: nutrition.fiber,
         iron: nutrition.iron,
         instructions: (raw.steps ?? []).map((step) => step.text).filter(Boolean),
-        eatingOut,
+        eatingOut: everyoneOut,
         llmEstimate:
           raw.calories || raw.protein
             ? {
@@ -104,7 +119,11 @@ export function mealsFromLlmMenu(
         const fruit = pickSnackFruit(input.products, menu);
         if (fruit) meal = attachSnackFruit(meal, fruit, peopleCount);
       }
-      menu.push(meal);
+      meal = {
+        ...meal,
+        fullIngredients: meal.ingredients.map((ing) => ({ ...ing })),
+      };
+      menu.push(withHomePresence(meal, input.people, input.constraints));
     }
   }
   return menu;
@@ -118,7 +137,19 @@ export function scaleMenuToMacroTargets(menu: PlannedMeal[], input: Optimization
   if (calories <= 0) return menu;
   const factor = clamp(input.calorieTargets / calories, 0.8, 1.3);
   if (Math.abs(factor - 1) < 0.05) return menu;
-  return menu.map((meal) => (meal.eatingOut ? meal : scalePlannedMeal(meal, factor, input.products)));
+  return menu.map((meal) => {
+    if (meal.eatingOut) return meal;
+    const scaled = scalePlannedMeal(
+      {
+        ...meal,
+        ingredients: (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing })),
+        fullIngredients: (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing })),
+      },
+      factor,
+      input.products,
+    );
+    return withHomePresence(scaled, input.people, input.constraints);
+  });
 }
 
 export function fitMenuToBudget(menu: PlannedMeal[], input: OptimizationInput): PlannedMeal[] {

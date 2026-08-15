@@ -85,8 +85,21 @@ export interface PersonTargets {
 }
 
 export interface EatingOutSlot {
+  personId: string;
   dayIndex: number;
   mealType: Recipe["meal_type"];
+}
+
+export interface MealPersonPortion {
+  personId: string;
+  name: string;
+  share: number;
+  eatingOut: boolean;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  ingredients: RecipeIngredient[];
 }
 
 export interface OptimizationConstraints {
@@ -168,6 +181,8 @@ export interface PlannedMeal {
   cookingSession: number;
   servings: number;
   ingredients: RecipeIngredient[];
+  /** Полные граммы на всю семью до учёта «ем не дома». */
+  fullIngredients?: RecipeIngredient[];
   calories: number;
   protein: number;
   fat: number;
@@ -176,6 +191,8 @@ export interface PlannedMeal {
   iron: number;
   instructions: string[];
   eatingOut?: boolean;
+  eatingOutPersonIds?: string[];
+  portions?: MealPersonPortion[];
   leftover?: boolean;
   leftoverFrom?: string;
   sideSalad?: SideSalad;

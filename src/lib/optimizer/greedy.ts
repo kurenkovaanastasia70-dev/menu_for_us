@@ -17,6 +17,7 @@ import {
   type PlannedMeal,
   type Recipe,
 } from "./types";
+import { withHomePresence } from "../planning/portions";
 import {
   attachSideSalad,
   attachSnackFruit,
@@ -26,6 +27,7 @@ import {
   isQuickLunch,
   isSideSalad,
   leftoverFromDinner,
+  nutritionFromIngredients,
   pickSnackFruit,
   plannedMealFromRecipe,
 } from "./meals";
@@ -62,9 +64,9 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
       const mealTypes = mealTypesForDay(mealsPerDay, input.constraints.snacks);
 
       for (const mealType of mealTypes) {
-        const eatingOut = isEatingOutSlot(input.constraints, dayIndex, mealType);
+        const everyoneOut = isEatingOutSlot(input.constraints, dayIndex, mealType, input.people);
         if (mealType === "lunch" && input.constraints.quickLunches) {
-          const leftover = tryLeftoverLunch(selected, dayIndex, eatingOut);
+          const leftover = tryLeftoverLunch(selected, dayIndex, input);
           if (leftover) {
             selected.push(leftover);
             continue;
@@ -88,7 +90,7 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
 
         let meal = plannedMealFromRecipe(
           candidate,
-          { dayIndex, mealType, cookingSession: session, eatingOut },
+          { dayIndex, mealType, cookingSession: session, eatingOut: everyoneOut },
           peopleCount,
         );
 
@@ -108,7 +110,8 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
           }
         }
 
-        meal = { ...meal, guide: fallbackGuide(candidate, meal) };
+        meal = { ...meal, fullIngredients: meal.ingredients.map((ing) => ({ ...ing })), guide: fallbackGuide(candidate, meal) };
+        meal = withHomePresence(meal, input.people, input.constraints);
         selected.push(meal);
 
         const list = usedInSession.get(session) ?? [];
@@ -163,9 +166,10 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
       warnings.push("Железа меньше нормы. Полезны печень, бобовые, гречка, шпинат.");
     }
     const eatingOutCount = selected.filter((meal) => meal.eatingOut).length;
-    if (eatingOutCount > 0) {
+    const partialOut = selected.filter((meal) => !meal.eatingOut && (meal.eatingOutPersonIds?.length ?? 0) > 0).length;
+    if (eatingOutCount > 0 || partialOut > 0) {
       warnings.push(
-        `${eatingOutCount} приём(а) отмечены «ем не дома»: они не входят в корзину и в калории домашней недели.`,
+        `${eatingOutCount + partialOut} приём(а) с «ем не дома» (целиком или у части пары): корзина только на тех, кто дома.`,
       );
     }
     if (input.constraints.quickLunches) {
@@ -351,10 +355,32 @@ function cashbackFor(storeId: string, input: OptimizationInput): number {
   return input.cashback.find((rule) => rule.store_id === storeId)?.percent ?? 0;
 }
 
-function tryLeftoverLunch(selected: PlannedMeal[], dayIndex: number, eatingOut: boolean): PlannedMeal | null {
+function tryLeftoverLunch(selected: PlannedMeal[], dayIndex: number, input: OptimizationInput): PlannedMeal | null {
   if (dayIndex <= 0 || dayIndex % 2 === 0) return null;
   const prevDinner = selected.find((meal) => meal.dayIndex === dayIndex - 1 && meal.mealType === "dinner" && !meal.eatingOut);
-  return prevDinner ? leftoverFromDinner(prevDinner, dayIndex, eatingOut) : null;
+  if (!prevDinner) return null;
+  const fullIngredients = (prevDinner.fullIngredients ?? prevDinner.ingredients).map((ing) => ({ ...ing }));
+  const nutrition = nutritionFromIngredients(fullIngredients, input.products);
+  const leftover = leftoverFromDinner(
+    {
+      ...prevDinner,
+      ...nutrition,
+      ingredients: fullIngredients,
+      fullIngredients,
+    },
+    dayIndex,
+    false,
+  );
+  return withHomePresence(
+    {
+      ...leftover,
+      fullIngredients,
+      ingredients: fullIngredients,
+      ...nutrition,
+    },
+    input.people,
+    input.constraints,
+  );
 }
 
 function pickSideSalad(recipes: Recipe[], selected: PlannedMeal[]): Recipe | null {
@@ -478,7 +504,13 @@ function tryCheaperMenu(
       const fruit = pickSnackFruit(input.products, clone.filter((item) => item !== meal));
       if (fruit) nextMeal = attachSnackFruit(nextMeal, fruit, peopleCount);
     }
-    Object.assign(meal, { ...nextMeal, guide: fallbackGuide(cheaper, nextMeal), cookingSession: sessions[meal.dayIndex] ?? 0 });
+    nextMeal = {
+      ...nextMeal,
+      fullIngredients: nextMeal.ingredients.map((ing) => ({ ...ing })),
+      guide: fallbackGuide(cheaper, nextMeal),
+      cookingSession: sessions[meal.dayIndex] ?? 0,
+    };
+    Object.assign(meal, withHomePresence(nextMeal, input.people, input.constraints));
   }
   const cart = buildCart(clone, input);
   const effective = cart.reduce((sum, line) => sum + line.effectivePrice, 0);
@@ -590,10 +622,11 @@ export function materializeFromMenu(
   }, 0);
   const nutrition = summarizeNutrition(menu, input, days);
   const eatingOutCount = menu.filter((meal) => meal.eatingOut).length;
+  const partialOut = menu.filter((meal) => !meal.eatingOut && (meal.eatingOutPersonIds?.length ?? 0) > 0).length;
   const warnings = [
     ...(effectiveCost > input.budget ? ["После замены стоимость превышает бюджет."] : []),
-    ...(eatingOutCount > 0
-      ? [`${eatingOutCount} приём(а) отмечены «ем не дома»: они не входят в корзину.`]
+    ...(eatingOutCount > 0 || partialOut > 0
+      ? [`${eatingOutCount + partialOut} приём(а) с «ем не дома»: корзина только на тех, кто дома.`]
       : []),
   ];
   return {

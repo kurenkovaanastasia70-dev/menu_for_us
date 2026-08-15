@@ -132,8 +132,23 @@ export function RecipePage() {
         <p className="text-sm text-muted">{guide.subtitle}</p>
         <p className="mt-2 text-sm">
           {guide.time_minutes} мин · {guide.servings} порц.
-          {meal.eatingOut ? " · ем не дома" : ""}
+          {meal.eatingOut ? " · оба не дома" : ""}
         </p>
+        {meal.portions && meal.portions.length > 0 && (
+          <ul className="mt-2 space-y-1 text-sm text-muted">
+            {meal.portions.map((portion) => (
+              <li key={portion.personId}>
+                {portion.name}:{" "}
+                {portion.eatingOut
+                  ? "ем не дома"
+                  : `${Math.round(portion.calories)} kcal · ${portion.ingredients
+                      .slice(0, 4)
+                      .map((ing) => `${ing.product_id} ${ing.grams} г`)
+                      .join(", ")}${portion.ingredients.length > 4 ? "…" : ""}`}
+              </li>
+            ))}
+          </ul>
+        )}
         {meal.sideSalad && <p className="mt-2 text-sm">Салат: {meal.sideSalad.name}</p>}
       </Card>
 

@@ -39,7 +39,24 @@ export default {
 
     const url = new URL(request.url);
     if (request.method === "GET" && (url.pathname === "/api/health" || url.pathname === "/")) {
-      return json({ ok: true, provider: env.LLM_PROVIDER || "auto" });
+      const detail = url.searchParams.get("probe") === "1";
+      if (!detail) {
+        return json({ ok: true, provider: env.LLM_PROVIDER || "auto", hasGemini: Boolean(env.GEMINI_API_KEY) });
+      }
+      if (!env.GEMINI_API_KEY) {
+        return json({ ok: false, provider: "gemini", error: "GEMINI_API_KEY отсутствует на воркере" });
+      }
+      try {
+        const models = await resolveGeminiModels(env.GEMINI_API_KEY);
+        const probe = await callProvider("gemini", 'Верни JSON {"ping":true}', env);
+        return json({ ok: true, provider: "gemini", models: models.slice(0, 8), probe: probe.slice(0, 200) });
+      } catch (error) {
+        return json({
+          ok: false,
+          provider: "gemini",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
 
     if (request.method !== "POST") {
@@ -105,21 +122,22 @@ async function handleMenu(body: unknown, env: Env): Promise<Response> {
 - Думай упаковками: если нужно 200 г курицы при pack_g=900, в корзине всё равно будет целая пачка ~price_rub.
 - На tight budget предпочитай дешёвый белок: яйца, курица, фарш куриный, творог, минтай/хек, бобовые. Дорогой лосось/креветки/говядина/оливковое масло — редко или никогда.
 - Повторяй одни и те же базовые продукты в разные дни, чтобы доедать пачки, а не покупать по одной новой каждый день.
-- grams — на всю семью (peopleCount порций).
-- calories/protein/fat/carbs — твоя ПРИМЕРНАЯ оценка на эти порции. Код потом слегка подгонит КБЖУ и бюджет.
+- grams — на всю семью для тех, кто ест дома. Если в eatingOutSlots человек отмечен — его порцию не готовьте в граммах (код потом урежет).
+- В people[] у каждого свои calorieTarget/proteinTarget — учитывай оба, но корзина одна на пару.
+- calories/protein/fat/carbs — твоя ПРИМЕРНАЯ оценка на домашние порции. Код потом подгонит.
 - Каждый день: breakfast, lunch, dinner, snack.
 - Ужин: горячее мясо/рыба (если не vegetarian) + овощи. Салат код может добавить.
 - Перекус: белок/молочка плюс можно фрукт. Код всё равно добавит доп. фрукт.
 - Если quickLunches=true: нечётные дни lunch leftover:true (остатки вчерашнего ужина), чётные — быстрый обед.
 - Минимум 4 шага, если leftover=false.
-- Цель примерно calorieTarget ккал и proteinTarget г белка на день на семью.
+- Цель примерно calorieTarget ккал и proteinTarget г белка на день на семью (сумма people).
 - Язык русский.
 
 Вход: ${JSON.stringify(body)}`;
-  const parsed = await completeJson(prompt, env);
-  if (!parsed) return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
-  if (!isMenu(parsed)) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
-  return json({ ok: true, source: "llm", menu: parsed, guides: parsed.guides ?? [] });
+  const result = await completeJson(prompt, env);
+  if (!result.data) return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
+  if (!isMenu(result.data)) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
+  return json({ ok: true, source: "llm", menu: result.data, guides: result.data.guides ?? [] });
 }
 
 async function handleRecipe(body: unknown, env: Env): Promise<Response> {
@@ -134,9 +152,9 @@ async function handleRecipe(body: unknown, env: Env): Promise<Response> {
 - Язык русский.
 
 Вход: ${JSON.stringify(body)}`;
-  const parsed = await completeJson(prompt, env);
-  if (!parsed) return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
-  const guides = Array.isArray(parsed.guides) ? parsed.guides : parsed.recipe_id ? [parsed] : [];
+  const result = await completeJson(prompt, env);
+  if (!result.data) return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
+  const guides = Array.isArray(result.data.guides) ? result.data.guides : result.data.recipe_id ? [result.data] : [];
   if (guides.length === 0) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
   return json({ ok: true, source: "llm", guides });
 }
@@ -176,37 +194,42 @@ async function handleTraining(body: unknown, env: Env): Promise<Response> {
 - Учитывай цель, вес, активность из входа. Язык русский. Без медицины и добавок.
 
 Вход: ${JSON.stringify(body)}`;
-  const parsed = await completeJson(prompt, env);
-  if (!parsed || !Array.isArray(parsed.plans)) {
-    return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
+  const result = await completeJson(prompt, env);
+  if (!result.data || !Array.isArray(result.data.plans)) {
+    return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
   }
-  return json({ ok: true, source: "llm", plans: parsed.plans });
+  return json({ ok: true, source: "llm", plans: result.data.plans });
 }
 
 async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
   const prompt = `Верни ТОЛЬКО JSON {"alternatives":[{"name":"...","recipe_id":"...","reason":"..."}]} максимум 3 варианта.
 Только recipe_id из candidates. Вход: ${JSON.stringify(body)}`;
-  const parsed = await completeJson(prompt, env);
-  if (!parsed || !parsed.alternatives) {
-    return json({ ok: false, source: "fallback", error: "LLM недоступна" }, 200);
+  const result = await completeJson(prompt, env);
+  if (!result.data || !result.data.alternatives) {
+    return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
   }
-  return json({ ok: true, source: "llm", alternatives: parsed.alternatives });
+  return json({ ok: true, source: "llm", alternatives: result.data.alternatives });
 }
 
-async function completeJson(prompt: string, env: Env): Promise<any | null> {
+async function completeJson(prompt: string, env: Env): Promise<{ data: any | null; error?: string }> {
   const order = providerOrder(env);
+  if (order.length === 0) {
+    return { data: null, error: "Нет LLM-ключа на воркере (GEMINI_API_KEY)" };
+  }
+  let lastError = "";
   for (const provider of order) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         const text = await callProvider(provider, prompt, env);
         const parsed = extractJson(text);
-        if (parsed) return parsed;
-      } catch {
-        // try next
+        if (parsed) return { data: parsed };
+        lastError = `${provider}: пустой или не-JSON ответ`;
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
       }
     }
   }
-  return null;
+  return { data: null, error: lastError || "LLM недоступна" };
 }
 
 function providerOrder(env: Env): Array<"gemini" | "groq" | "openrouter"> {
@@ -221,19 +244,28 @@ function providerOrder(env: Env): Array<"gemini" | "groq" | "openrouter"> {
 
 async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: string, env: Env): Promise<string> {
   if (provider === "gemini") {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
-        }),
-      },
-    );
-    const json = (await response.json()) as any;
-    return json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const models = await resolveGeminiModels(env.GEMINI_API_KEY!);
+    let lastError = "";
+    for (const model of models) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
+          }),
+        },
+      );
+      const payload = (await response.json()) as any;
+      const text = payload.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      if (text) return text;
+      lastError = payload.error?.message || `HTTP ${response.status}`;
+      if (response.status === 404 || /not found|no longer available/i.test(lastError)) continue;
+      if (response.status === 429) continue;
+    }
+    throw new Error(lastError || "Gemini empty response");
   }
 
   const url =
@@ -259,6 +291,37 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
   });
   const json = (await response.json()) as any;
   return json.choices?.[0]?.message?.content ?? "";
+}
+
+const GEMINI_FALLBACK_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-001",
+  "gemini-2.0-flash-lite",
+  "gemini-flash-latest",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-flash-002",
+];
+
+async function resolveGeminiModels(apiKey: string): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    );
+    const payload = (await response.json()) as any;
+    const listed = (payload.models ?? [])
+      .filter((model: any) => (model.supportedGenerationMethods ?? []).includes("generateContent"))
+      .map((model: any) => String(model.name ?? "").replace(/^models\//, ""))
+      .filter(Boolean);
+    const preferred = listed.filter((name: string) => /flash/i.test(name) && !/embed|tts|image|robotics/i.test(name));
+    const ordered = [...preferred, ...listed.filter((name: string) => !preferred.includes(name))];
+    if (ordered.length > 0) return [...new Set([...ordered.slice(0, 8), ...GEMINI_FALLBACK_MODELS])];
+  } catch {
+    // ignore and use static list
+  }
+  return GEMINI_FALLBACK_MODELS;
 }
 
 function extractJson(text: string): any | null {

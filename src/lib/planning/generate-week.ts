@@ -45,6 +45,12 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
     days: params.days,
     peopleCount: params.people.length,
+    people: params.people.map((person) => ({
+      id: person.id,
+      name: person.name,
+      calorieTarget: person.calorieTarget,
+      proteinTarget: person.proteinTarget,
+    })),
     calorieTarget: input.calorieTargets,
     proteinTarget: input.macroTargets.protein,
     fatTarget: input.macroTargets.fat,

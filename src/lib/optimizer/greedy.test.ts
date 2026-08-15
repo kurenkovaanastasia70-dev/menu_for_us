@@ -304,11 +304,16 @@ describe("optimizer", () => {
   });
 
   it("pairs dinner with a side salad and marks eating-out meals", () => {
+    const people = input().people;
     const result = engine.optimize(
       input({
         constraints: {
           ...input().constraints,
-          eatingOutSlots: [{ dayIndex: 0, mealType: "breakfast" }],
+          eatingOutSlots: people.map((person) => ({
+            personId: person.id,
+            dayIndex: 0,
+            mealType: "breakfast" as const,
+          })),
         },
       }),
     );
@@ -319,6 +324,25 @@ describe("optimizer", () => {
     const skipped = result.menu.find((meal) => meal.dayIndex === 0 && meal.mealType === "breakfast");
     expect(skipped?.eatingOut).toBe(true);
     expect(result.warnings.some((warning) => warning.includes("не дома"))).toBe(true);
+  });
+
+  it("keeps partial home cooking when only one person eats out", () => {
+    const base = input();
+    const personId = base.people[0]?.id;
+    expect(personId).toBeTruthy();
+    const result = engine.optimize(
+      input({
+        constraints: {
+          ...base.constraints,
+          eatingOutSlots: [{ personId: personId!, dayIndex: 0, mealType: "breakfast" }],
+        },
+      }),
+    );
+    const breakfast = result.menu.find((meal) => meal.dayIndex === 0 && meal.mealType === "breakfast");
+    expect(breakfast?.eatingOut).toBe(false);
+    expect(breakfast?.eatingOutPersonIds).toContain(personId);
+    expect(breakfast?.portions?.length).toBe(base.people.length);
+    expect(breakfast?.ingredients.some((ing) => ing.grams > 0)).toBe(true);
   });
 
   it("uses leftover dinner or a quick recipe when lunches must be fast", () => {

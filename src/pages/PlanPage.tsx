@@ -45,8 +45,12 @@ export function PlanPage() {
     return types;
   }, [meals]);
 
-  function toggleSlot(dayIndex: number, mealType: string) {
-    const key = `${dayIndex}:${mealType}`;
+  function slotKey(personId: string, dayIndex: number, mealType: string) {
+    return `${personId}:${dayIndex}:${mealType}`;
+  }
+
+  function toggleSlot(personId: string, dayIndex: number, mealType: string) {
+    const key = slotKey(personId, dayIndex, mealType);
     setEatingOut((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -64,8 +68,12 @@ export function PlanPage() {
     setError("");
     try {
       const eatingOutSlots: EatingOutSlot[] = [...eatingOut].map((key) => {
-        const [day, mealType] = key.split(":");
-        return { dayIndex: Number(day), mealType: mealType as EatingOutSlot["mealType"] };
+        const [personId, day, mealType] = key.split(":");
+        return {
+          personId,
+          dayIndex: Number(day),
+          mealType: mealType as EatingOutSlot["mealType"],
+        };
       });
       const constraints = constraintsFromProfiles(members, household);
       const result = await generateWeek({
@@ -110,7 +118,8 @@ export function PlanPage() {
     <Screen title="Меню на пару">
       <Card className="mb-4">
         <p className="text-sm">
-          Нажмите «Рассчитать» — блюда и граммовки будут на {members.length < 2 ? "одного человека" : `двоих: ${names}`}.
+          Нажмите «Рассчитать» — блюда общие, а граммовки на тарелке у каждого свои (по калориям профиля
+          {members.length >= 2 ? `: ${names}` : ""}).
           Второй человек подключается кодом в Профиле.
         </p>
         <p className="mt-2 text-sm text-muted">
@@ -196,40 +205,50 @@ export function PlanPage() {
 
       <Card className="mt-4">
         <h2 className="font-display text-xl">Ем не дома</h2>
-        <p className="mt-1 text-sm text-muted">Отметьте приём — его не будет в корзине и в домашней готовке.</p>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr>
-                <th className="py-1 pr-2">День</th>
-                {mealTypes.map((type) => (
-                  <th key={type} className="px-1 py-1 text-center">
-                    {mealLabels[type]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: Number(days) }).map((_, dayIndex) => (
-                <tr key={dayIndex}>
-                  <td className="py-2 pr-2 font-semibold">{dayNames[dayIndex % 7]}</td>
-                  {mealTypes.map((type) => {
-                    const key = `${dayIndex}:${type}`;
-                    return (
-                      <td key={key} className="px-1 py-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={eatingOut.has(key)}
-                          onChange={() => toggleSlot(dayIndex, type)}
-                          aria-label={`${dayNames[dayIndex % 7]} ${mealLabels[type]} не дома`}
-                        />
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <p className="mt-1 text-sm text-muted">
+          У каждого своё расписание. Отмеченный приём не входит в корзину только для этого человека; если оба вне дома —
+          блюдо целиком пропускается.
+        </p>
+        <div className="mt-4 space-y-5">
+          {(members.length > 0 ? members : [{ id: "solo", name: "Я" }]).map((member) => (
+            <div key={member.id}>
+              <h3 className="mb-2 text-sm font-semibold">{member.name}</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr>
+                      <th className="py-1 pr-2">День</th>
+                      {mealTypes.map((type) => (
+                        <th key={type} className="px-1 py-1 text-center">
+                          {mealLabels[type]}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: Number(days) }).map((_, dayIndex) => (
+                      <tr key={dayIndex}>
+                        <td className="py-2 pr-2 font-semibold">{dayNames[dayIndex % 7]}</td>
+                        {mealTypes.map((type) => {
+                          const key = slotKey(member.id, dayIndex, type);
+                          return (
+                            <td key={key} className="px-1 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={eatingOut.has(key)}
+                                onChange={() => toggleSlot(member.id, dayIndex, type)}
+                                aria-label={`${member.name}: ${dayNames[dayIndex % 7]} ${mealLabels[type]} не дома`}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
       {error && <p className="mt-4 text-sm text-clay">{error}</p>}

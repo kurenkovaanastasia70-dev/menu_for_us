@@ -7,6 +7,7 @@ import type { OptimizationResult, PlannedMeal } from "@/lib/optimizer";
 import { materializeFromMenu } from "@/lib/optimizer";
 import { replaceMeal, suggestMealAlternatives } from "@/lib/planning/alternatives";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
+import { withHomePresence } from "@/lib/planning/portions";
 import { fetchMealPlan, replaceCartItems, updateMealPlanResult } from "@/lib/supabase/api";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -76,18 +77,45 @@ export function MenuPage() {
     await persist(next);
   }
 
-  async function toggleEatingOut(meal: PlannedMeal) {
-    if (!result) return;
-    const nextMenu = result.menu.map((item) =>
-      item.dayIndex === meal.dayIndex && item.mealType === meal.mealType
-        ? { ...item, eatingOut: !item.eatingOut }
-        : item,
+  async function togglePersonEatingOut(meal: PlannedMeal, personId: string) {
+    if (!result || !input) return;
+    const out = new Set(meal.eatingOutPersonIds ?? []);
+    if (out.has(personId)) out.delete(personId);
+    else out.add(personId);
+    const constraints = {
+      ...input.constraints,
+      eatingOutSlots: [
+        ...(input.constraints.eatingOutSlots ?? []).filter(
+          (slot) => !(slot.dayIndex === meal.dayIndex && slot.mealType === meal.mealType),
+        ),
+        ...[...out].map((id) => ({
+          personId: id,
+          dayIndex: meal.dayIndex,
+          mealType: meal.mealType,
+        })),
+      ],
+    };
+    const fullIngredients = (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing }));
+    const nextMeal = withHomePresence(
+      {
+        ...meal,
+        fullIngredients,
+        ingredients: fullIngredients,
+        calories: estimateFullMacro(meal, "calories"),
+        protein: estimateFullMacro(meal, "protein"),
+        fat: estimateFullMacro(meal, "fat"),
+        carbs: estimateFullMacro(meal, "carbs"),
+        fiber: estimateFullMacro(meal, "fiber"),
+        iron: estimateFullMacro(meal, "iron"),
+        eatingOutPersonIds: [...out],
+      },
+      input.people,
+      constraints,
     );
-    if (input) {
-      await persist(materializeFromMenu(nextMenu, input, { trainingPlans: result.trainingPlans }));
-      return;
-    }
-    setResult({ ...result, menu: nextMenu });
+    const nextMenu = result.menu.map((item) =>
+      item.dayIndex === meal.dayIndex && item.mealType === meal.mealType ? nextMeal : item,
+    );
+    await persist(materializeFromMenu(nextMenu, { ...input, constraints }, { trainingPlans: result.trainingPlans }));
   }
 
   if (!result) {
@@ -123,7 +151,7 @@ export function MenuPage() {
           железо {Math.round((result.nutritionSummary.ironPerDay ?? 0) * 10) / 10} / {Math.round(result.nutritionSummary.ironTarget ?? 0)} мг
         </p>
         <p className="mt-1 text-xs text-muted">
-          Разнообразие {result.varietyScore} · остатки {result.wasteScore} · порции на пару
+          Разнообразие {result.varietyScore} · остатки {result.wasteScore} · порции по людям
         </p>
         {result.warnings.map((warning) => (
           <p key={warning} className="mt-2 text-sm text-clay">
@@ -183,11 +211,23 @@ export function MenuPage() {
                         <div className="font-semibold">{meal.recipeName}</div>
                         <div className="text-xs text-muted">
                           {meal.eatingOut
-                            ? "Ем не дома — не в корзине"
+                            ? "Оба не дома — не в корзине"
                             : meal.leftover
                               ? "Остатки ужина · 5–8 мин"
-                              : `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g белка`}
+                              : `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g белка (на дом)`}
                         </div>
+                        {meal.portions && meal.portions.length > 0 && !meal.eatingOut && (
+                          <ul className="mt-1 space-y-0.5 text-xs text-muted">
+                            {meal.portions.map((portion) => (
+                              <li key={portion.personId}>
+                                {portion.name}:{" "}
+                                {portion.eatingOut
+                                  ? "не дома"
+                                  : `${Math.round(portion.calories)} kcal · ${Math.round(portion.protein)} g белка`}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                         {meal.llmEstimate && !meal.eatingOut && (
                           <div className="text-xs text-muted">
                             оценка модели: {Math.round(meal.llmEstimate.calories)} kcal ·{" "}
@@ -208,15 +248,23 @@ export function MenuPage() {
                         🔄
                       </button>
                     </div>
-                    <label className="mt-3 flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(meal.eatingOut)}
-                        onChange={() => toggleEatingOut(meal)}
-                        disabled={saving}
-                      />
-                      Ем не дома
-                    </label>
+                    <div className="mt-3 space-y-2">
+                      {(meal.portions ?? input?.people.map((person) => ({
+                        personId: person.id,
+                        name: person.name,
+                        eatingOut: Boolean(meal.eatingOut),
+                      })) ?? []).map((portion) => (
+                        <label key={portion.personId} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(portion.eatingOut || meal.eatingOutPersonIds?.includes(portion.personId))}
+                            onChange={() => togglePersonEatingOut(meal, portion.personId)}
+                            disabled={saving || !input}
+                          />
+                          {portion.name}: ем не дома
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 ))}
             </div>
@@ -253,4 +301,22 @@ export function MenuPage() {
       )}
     </Screen>
   );
+}
+
+function estimateFullMacro(
+  meal: PlannedMeal,
+  key: "calories" | "protein" | "fat" | "carbs" | "fiber" | "iron",
+): number {
+  const value = Number(meal[key] ?? 0);
+  const fullG = (meal.fullIngredients ?? meal.ingredients).reduce((sum, ing) => sum + ing.grams, 0);
+  const curG = meal.ingredients.reduce((sum, ing) => sum + ing.grams, 0);
+  if (fullG > 0 && curG > 0 && Math.abs(fullG - curG) > 1) {
+    return Math.round(value * (fullG / curG) * 10) / 10;
+  }
+  if (meal.eatingOut && meal.fullIngredients) {
+    // macros were zeroed — cannot recover without nutrition calc; portions may help
+    const fromPortions = meal.portions?.reduce((sum, portion) => sum + Number(portion[key as "calories"] ?? 0), 0);
+    if (fromPortions && fromPortions > 0) return fromPortions;
+  }
+  return value;
 }
