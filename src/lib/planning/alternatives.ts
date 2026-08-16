@@ -6,6 +6,7 @@ import {
   attachSnackFruit,
   fallbackGuide,
   isSideSalad,
+  leftoverFromDinner,
   nutritionFromIngredients,
   pickSideSalad,
   pickSnackFruit,
@@ -43,10 +44,7 @@ export function suggestMealAlternatives(
   );
 
   const scored = candidates.map((recipe) => {
-    const nextMenu = result.menu.map((item) =>
-      item === meal ? mealFromRecipe(recipe, item, input) : item,
-    );
-    const next = materializeFromMenu(nextMenu, input);
+    const next = replaceMeal(result, meal, recipe, input);
     const extraCost = next.effectiveCost - result.effectiveCost;
     const overlap = recipeUsesCart(recipe, cartIds);
     const calorieDelta = Math.abs(recipe.calories * input.people.length - meal.calories);
@@ -162,10 +160,14 @@ export function replaceMeal(
   recipe: Recipe,
   input: OptimizationInput,
 ): OptimizationResult {
-  const nextMenu = result.menu.map((item) =>
-    item.dayIndex === meal.dayIndex && item.mealType === meal.mealType
-      ? mealFromRecipe(recipe, item, input)
-      : item,
+  const replaced = mealFromRecipe(recipe, meal, input);
+  const nextMenu = syncLeftoverLunches(
+    result.menu.map((item) =>
+      item.dayIndex === meal.dayIndex && item.mealType === meal.mealType ? replaced : item,
+    ),
+    meal,
+    replaced,
+    input,
   );
   return materializeFromMenu(nextMenu, input, { trainingPlans: result.trainingPlans });
 }
@@ -251,10 +253,120 @@ export function replaceMealWithLlmIdea(
     ],
   };
   next = withHomePresence(next, input.people, constraints);
-  const nextMenu = result.menu.map((item) =>
-    item.dayIndex === meal.dayIndex && item.mealType === meal.mealType ? next : item,
+  const nextMenu = syncLeftoverLunches(
+    result.menu.map((item) =>
+      item.dayIndex === meal.dayIndex && item.mealType === meal.mealType ? next : item,
+    ),
+    meal,
+    next,
+    input,
   );
   return materializeFromMenu(nextMenu, input, { trainingPlans: result.trainingPlans });
+}
+
+/** Связка ужин ↔ обед-остатки: при замене одного обновляем оба (и корзину/доплату тоже). */
+function syncLeftoverLunches(
+  menu: PlannedMeal[],
+  previous: PlannedMeal,
+  replaced: PlannedMeal,
+  input: OptimizationInput,
+): PlannedMeal[] {
+  if (previous.mealType === "dinner" && replaced.mealType === "dinner") {
+    return menu.map((item) => {
+      if (item.mealType !== "lunch" || !item.leftover || item.dayIndex !== previous.dayIndex + 1) {
+        return item;
+      }
+      return leftoverLunchFromDinner(replaced, item, input);
+    });
+  }
+
+  if (previous.mealType === "lunch" && previous.leftover && replaced.mealType === "lunch") {
+    const dinnerDay = previous.dayIndex - 1;
+    if (dinnerDay < 0) return menu;
+    const full = (replaced.fullIngredients ?? replaced.ingredients).map((ing) => ({ ...ing }));
+    const baseName = replaced.recipeName.replace(/^Остатки:\s*/, "");
+    let nextMenu = menu.map((item) => {
+      if (item.dayIndex !== dinnerDay || item.mealType !== "dinner") return item;
+      let dinner: PlannedMeal = {
+        ...replaced,
+        dayIndex: dinnerDay,
+        mealType: "dinner",
+        leftover: false,
+        leftoverFrom: undefined,
+        recipeName: baseName,
+        ingredients: full,
+        fullIngredients: full,
+        eatingOutPersonIds: item.eatingOutPersonIds,
+        guide: replaced.guide
+          ? {
+              ...replaced.guide,
+              title: baseName,
+              subtitle: replaced.fromLlm ? "Рецепт от модели" : replaced.guide.subtitle,
+            }
+          : item.guide,
+      };
+      const constraints = {
+        ...input.constraints,
+        eatingOutSlots: [
+          ...(input.constraints.eatingOutSlots ?? []).filter(
+            (slot) => !(slot.dayIndex === dinnerDay && slot.mealType === "dinner"),
+          ),
+          ...(item.eatingOutPersonIds ?? []).map((personId) => ({
+            personId,
+            dayIndex: dinnerDay,
+            mealType: "dinner" as const,
+          })),
+        ],
+      };
+      dinner = withHomePresence(dinner, input.people, constraints);
+      return dinner;
+    });
+    const newDinner = nextMenu.find((item) => item.dayIndex === dinnerDay && item.mealType === "dinner");
+    if (!newDinner) return nextMenu;
+    return nextMenu.map((item) => {
+      if (item.dayIndex !== previous.dayIndex || item.mealType !== "lunch") return item;
+      return leftoverLunchFromDinner(newDinner, item, input);
+    });
+  }
+
+  return menu;
+}
+
+function leftoverLunchFromDinner(
+  dinner: PlannedMeal,
+  lunchSlot: PlannedMeal,
+  input: OptimizationInput,
+): PlannedMeal {
+  const full = (dinner.fullIngredients ?? dinner.ingredients).map((ing) => ({ ...ing }));
+  const source: PlannedMeal = {
+    ...dinner,
+    leftover: false,
+    leftoverFrom: undefined,
+    recipeName: dinner.recipeName.replace(/^Остатки:\s*/, ""),
+    ingredients: full,
+    fullIngredients: full,
+  };
+  let leftover = leftoverFromDinner(source, lunchSlot.dayIndex, Boolean(lunchSlot.eatingOut));
+  leftover = {
+    ...leftover,
+    eatingOutPersonIds: lunchSlot.eatingOutPersonIds,
+    fullIngredients: full,
+    ingredients: full,
+  };
+  const constraints = {
+    ...input.constraints,
+    eatingOutSlots: [
+      ...(input.constraints.eatingOutSlots ?? []).filter(
+        (slot) => !(slot.dayIndex === lunchSlot.dayIndex && slot.mealType === "lunch"),
+      ),
+      ...(lunchSlot.eatingOutPersonIds ?? []).map((personId) => ({
+        personId,
+        dayIndex: lunchSlot.dayIndex,
+        mealType: "lunch" as const,
+      })),
+    ],
+  };
+  return withHomePresence(leftover, input.people, constraints);
 }
 
 export function replaceProduct(

@@ -8,6 +8,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { MenuPage } from "@/pages/MenuPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { PlanPage } from "@/pages/PlanPage";
+import { ProductsPage } from "@/pages/ProductsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { RecipePage } from "@/pages/RecipePage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="/fridge" element={<Navigate to="/cart" replace />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/history/:planId" element={<HistoryDetailPage />} />
+            <Route path="/products" element={<ProductsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

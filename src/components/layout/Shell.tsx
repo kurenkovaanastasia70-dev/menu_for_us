@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-import { History, Dumbbell, LayoutGrid, ShoppingBag, UserRound } from "lucide-react";
+import { History, LayoutGrid, Package, ShoppingBag, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const nav = [
   { to: "/", label: "Неделя", icon: LayoutGrid, end: true },
-  { to: "/training", label: "Зал", icon: Dumbbell },
+  { to: "/products", label: "Продукты", icon: Package },
   { to: "/cart", label: "Корзина", icon: ShoppingBag },
   { to: "/history", label: "История", icon: History },
   { to: "/profile", label: "Профиль", icon: UserRound },

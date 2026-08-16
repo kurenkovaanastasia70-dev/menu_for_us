@@ -110,6 +110,17 @@ export function MenuPage() {
     await persist(next);
   }
 
+  const linkedLeftoverHint = Boolean(
+    result &&
+      activeMeal &&
+      ((activeMeal.mealType === "dinner" &&
+        result.menu.some(
+          (meal) =>
+            meal.leftover && meal.mealType === "lunch" && meal.dayIndex === activeMeal.dayIndex + 1,
+        )) ||
+        (activeMeal.leftover && activeMeal.mealType === "lunch")),
+  );
+
   async function togglePersonEatingOut(meal: PlannedMeal, personId: string) {
     if (!result || !input) return;
     const out = new Set(meal.eatingOutPersonIds ?? []);
@@ -287,6 +298,11 @@ export function MenuPage() {
           <div className="mx-auto mt-20 max-w-lg rounded-3xl bg-paper p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-display text-2xl">Замена блюда</h3>
             <p className="mt-1 text-sm text-muted">{activeMeal.recipeName}</p>
+            {linkedLeftoverHint && (
+              <p className="mt-1 text-xs text-muted">
+                Доплата считается за ужин и обед-остатки вместе.
+              </p>
+            )}
             <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto">
               {loadingAlts && <p className="text-sm text-muted">Модель генерирует 5 вариантов…</p>}
               {!loadingAlts && alternatives.length === 0 && (
@@ -313,6 +329,7 @@ export function MenuPage() {
                         {item.extraCost !== 0
                           ? ` · ${item.extraCost > 0 ? "+" : ""}${Math.round(item.extraCost)} ₽`
                           : ""}
+                        {linkedLeftoverHint ? " · с остатком" : ""}
                       </div>
                     </button>
                   );

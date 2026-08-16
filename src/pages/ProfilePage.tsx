@@ -41,11 +41,10 @@ export function ProfilePage() {
     profile?.goal_weeks ??
       suggestedWeeks(Number(profile?.weight_kg ?? 62), Number(profile?.target_weight_kg ?? 58)),
   );
-  const [excludedIds, setExcludedIds] = useState<string[]>(() =>
-    [...new Set([...(profile?.excluded_products ?? []), ...DEFAULT_EXCLUDED_PRODUCT_IDS])],
+  const excludedIds = useMemo(
+    () => [...new Set([...(profile?.excluded_products ?? []), ...DEFAULT_EXCLUDED_PRODUCT_IDS])],
+    [profile?.excluded_products],
   );
-  const [excludeQuery, setExcludeQuery] = useState("");
-  const [excludePending, setExcludePending] = useState(false);
   const [customList, setCustomList] = useState<CustomProduct[]>(customProducts);
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState(199);
@@ -92,17 +91,6 @@ export function ProfilePage() {
         .filter(Boolean) as typeof products,
     [excludedIds, products],
   );
-  const excludeSearchHits = useMemo(() => {
-    const q = excludeQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
-    return products
-      .filter(
-        (product) =>
-          !excludedIds.includes(product.id) &&
-          (product.canonical_name.toLowerCase().includes(q) || product.id.toLowerCase().includes(q)),
-      )
-      .slice(0, 12);
-  }, [excludeQuery, excludedIds, products]);
 
   const nutrition = useMemo(() => {
     if (!profile) return null;
@@ -139,24 +127,6 @@ export function ProfilePage() {
       await saveCashback(household.id, store.id, Number(percents[store.id] ?? 0));
     }
     await refresh();
-  }
-
-  async function saveExcluded() {
-    if (!profile) return;
-    setExcludePending(true);
-    setMessage("");
-    try {
-      await upsertProfile({
-        ...profile,
-        excluded_products: [...new Set(excludedIds)],
-      });
-      await refresh();
-      setMessage("Исключённые продукты сохранены. Новое меню их не использует.");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Не удалось сохранить исключения");
-    } finally {
-      setExcludePending(false);
-    }
   }
 
   async function addCustomProduct() {
@@ -334,50 +304,24 @@ export function ProfilePage() {
       <Card className="mt-4 space-y-3">
         <h2 className="font-display text-xl">Не едим</h2>
         <p className="text-sm text-muted">
-          Эти продукты не попадают в меню и корзину. Чечевица уже исключена по умолчанию. Для пары суммируются
-          исключения обоих профилей.
+          Исключения ставятся крестиками на странице продуктов. Чечевица уже исключена по умолчанию. Для пары
+          суммируются исключения обоих профилей.
         </p>
         <div className="flex flex-wrap gap-2">
-          {excludedProducts.map((product) => (
-            <button
-              key={product.id}
-              type="button"
-              className="rounded-full border border-line bg-white px-3 py-1 text-sm"
-              onClick={() => setExcludedIds((prev) => prev.filter((id) => id !== product.id))}
-            >
-              {product.canonical_name} ×
-            </button>
+          {excludedProducts.slice(0, 12).map((product) => (
+            <span key={product.id} className="rounded-full border border-line bg-white px-3 py-1 text-sm text-muted">
+              {product.canonical_name}
+            </span>
           ))}
+          {excludedProducts.length > 12 && (
+            <span className="rounded-full border border-line bg-cream px-3 py-1 text-sm text-muted">
+              +{excludedProducts.length - 12}
+            </span>
+          )}
           {excludedProducts.length === 0 && <p className="text-sm text-muted">Пока ничего не исключено.</p>}
         </div>
-        <div>
-          <Label>Найти продукт</Label>
-          <Input
-            value={excludeQuery}
-            onChange={(e) => setExcludeQuery(e.target.value)}
-            placeholder="Например: лосось, творог"
-          />
-        </div>
-        {excludeSearchHits.length > 0 && (
-          <ul className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-line bg-white p-2">
-            {excludeSearchHits.map((product) => (
-              <li key={product.id}>
-                <button
-                  type="button"
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-paper"
-                  onClick={() => {
-                    setExcludedIds((prev) => [...new Set([...prev, product.id])]);
-                    setExcludeQuery("");
-                  }}
-                >
-                  {product.canonical_name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <Button className="w-full" disabled={excludePending || !profile} onClick={saveExcluded}>
-          {excludePending ? "Сохраняем…" : "Сохранить исключения"}
+        <Button className="w-full" variant="secondary" onClick={() => navigate("/products")}>
+          Открыть каталог и поставить крестики
         </Button>
       </Card>
 
