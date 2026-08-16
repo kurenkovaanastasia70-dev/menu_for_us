@@ -111,7 +111,8 @@ async function generateMenuChunk(
   env: Env,
 ): Promise<{ data: any | null; error?: string }> {
   const dayCount = toDay - fromDay + 1;
-  const rawProducts = Array.isArray(input.products) ? input.products.slice(0, 48) : [];
+  // Полный каталог (~270) в компактных полях; меню всё равно кусками по 2 дня на клиенте.
+  const rawProducts = Array.isArray(input.products) ? input.products.slice(0, 400) : [];
   // Компактный прайс: меньше токенов = быстрее и стабильнее.
   const products = rawProducts.map((item: any) => ({
     id: item.id,
@@ -132,15 +133,17 @@ async function generateMenuChunk(
     toDay,
     products,
   };
-  const prompt = `Ты шеф-повар. Меню на дни ${fromDay}–${toDay} (${dayCount} дн.). Только JSON.
+  const prompt = `Ты шеф-повар. Придумай ОРИГИНАЛЬНОЕ меню на дни ${fromDay}–${toDay} (${dayCount} дн.). Только JSON.
 
 {"days":[{"day":${fromDay},"meals":[{"meal_type":"breakfast","recipe_id":"d${fromDay}_b","name":"...","leftover":false,"calories":900,"protein":50,"fat":25,"carbs":100,"ingredients":[{"product_id":"oats","grams":80}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}]}
 
 Правила:
 - day = ${fromDay}..${toDay}. Каждый день: breakfast,lunch,dinner,snack.
-- product_id только из products[].id. Поля products: id,n=имя,r=₽/100г,p=цена упаковки,g=вес.
-- 2–4 ingredients, ровно 3 коротких steps.
-- Бюджет недели budget критичен: бери низкий r, повторяй продукты.
+- Придумывай НОВЫЕ названия блюд (не копируй столовое меню вроде «овсянка с бананом», «гречка с курицей»). Разные кухни и сочетания.
+- product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г,p=цена упаковки,g=вес. Не выдумывай id.
+- 2–5 ingredients, ровно 3 коротких steps на русском.
+- Бюджет недели budget важен: чаще бери средний/низкий r, но не только курица+рис. Можно морепродукты и заморозку, если они в products.
+- recipe_id уникальный вида d{день}_{b|l|d|s}. leftover=true только для lunch из вчерашнего ужина.
 - Язык русский.
 
 Вход:${JSON.stringify(compactInput)}`;
@@ -209,13 +212,33 @@ async function handleTraining(body: unknown, env: Env): Promise<Response> {
 }
 
 async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
-  const prompt = `Верни ТОЛЬКО JSON {"alternatives":[{"name":"...","recipe_id":"...","reason":"..."}]} максимум 3 варианта.
-Только recipe_id из candidates. Вход: ${JSON.stringify(body)}`;
+  const input = (body ?? {}) as Record<string, unknown>;
+  const products = Array.isArray(input.products)
+    ? input.products.slice(0, 400).map((item: any) => ({
+        id: item.id,
+        n: item.name ?? item.n,
+        r: item.rub_per_100g ?? item.r,
+      }))
+    : [];
+  const prompt = `Ты шеф-повар. Придумай ровно 6 АЛЬТЕРНАТИВНЫХ блюд вместо текущего. Только JSON.
+{"alternatives":[{"name":"...","recipe_id":"alt_1","reason":"...","meal_type":"lunch","ingredients":[{"product_id":"rice","grams":70}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}
+
+Правила:
+- Ровно 6 разных вариантов (не меньше 5).
+- Новые названия, не из столового шаблона, не повторять текущее блюдо.
+- product_id только из products[].id.
+- Тот же meal_type, что у текущего блюда.
+- 2–5 ingredients, ровно 3 steps, язык русский.
+- Учитывай бюджет и продукты уже в корзине, если они есть во входе.
+- Разнообразие: разные белки/гарниры (в т.ч. морепродукты/заморозка, если есть в products).
+
+Вход:${JSON.stringify({ ...input, products })}`;
   const result = await completeJson(prompt, env);
   if (!result.data || !result.data.alternatives) {
     return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
   }
-  return json({ ok: true, source: "llm", alternatives: result.data.alternatives });
+  const alternatives = Array.isArray(result.data.alternatives) ? result.data.alternatives.slice(0, 6) : [];
+  return json({ ok: true, source: "llm", alternatives });
 }
 
 async function completeJson(prompt: string, env: Env): Promise<{ data: any | null; error?: string }> {
@@ -263,7 +286,7 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              temperature: 0.5,
+              temperature: 0.7,
               responseMimeType: "application/json",
               maxOutputTokens: 8192,
             },
@@ -292,7 +315,7 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              temperature: 0.5,
+              temperature: 0.7,
               responseMimeType: "application/json",
               maxOutputTokens: 8192,
             },

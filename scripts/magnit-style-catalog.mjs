@@ -163,6 +163,9 @@ export const EXTRA_PRODUCTS = [
   ["water_still", "Вода питьевая", "pantry", 0, 0, 0, 0, 1500, "ml", ["pantry"], 39, "Святой источник"],
   // --- заморозка / готовое ---
   ["pelmeni", "Пельмени", "protein", 250, 12, 12, 25, 800, "g", ["meat"], 289, "Сибирская коллекция"],
+  ["cutlets_chicken_frozen", "Котлеты куриные с/м", "protein", 220, 14, 12, 10, 600, "g", ["chicken", "meat", "frozen"], 279, "Мираторг"],
+  ["cutlets_beef_frozen", "Котлеты говяжьи с/м", "protein", 250, 13, 16, 9, 600, "g", ["beef", "meat", "frozen"], 319, "Мираторг"],
+  ["nuggets_chicken", "Наггетсы куриные с/м", "protein", 260, 12, 14, 18, 500, "g", ["chicken", "meat", "frozen"], 249, "Мираторг"],
   ["vareniki_potato", "Вареники с картофелем", "grain", 180, 5, 4, 30, 800, "g", ["grain", "vegetarian"], 199, "Сибирская коллекция"],
   ["dumplings_chicken", "Хинкали куриные", "protein", 210, 12, 8, 22, 700, "g", ["chicken", "meat"], 329, "У Палыча"],
   ["pizza_frozen", "Пицца замороженная", "grain", 250, 10, 9, 30, 350, "g", ["grain"], 249, "Dr.Oetker"],

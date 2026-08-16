@@ -5,7 +5,12 @@ import { useApp } from "@/context/AppContext";
 import { formatRub } from "@/lib/cn";
 import type { OptimizationResult, PlannedMeal } from "@/lib/optimizer";
 import { materializeFromMenu } from "@/lib/optimizer";
-import { replaceMeal, suggestMealAlternatives } from "@/lib/planning/alternatives";
+import {
+  replaceMeal,
+  replaceMealWithLlmIdea,
+  suggestLlmMealAlternatives,
+  type MealAlternative,
+} from "@/lib/planning/alternatives";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
 import { withHomePresence } from "@/lib/planning/portions";
 import { fetchMealPlan, replaceCartItems, updateMealPlanResult } from "@/lib/supabase/api";
@@ -26,6 +31,9 @@ export function MenuPage() {
   const navigate = useNavigate();
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [activeMeal, setActiveMeal] = useState<PlannedMeal | null>(null);
+  const [alternatives, setAlternatives] = useState<MealAlternative[]>([]);
+  const [loadingAlts, setLoadingAlts] = useState(false);
+  const [altsNonce, setAltsNonce] = useState(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -52,10 +60,23 @@ export function MenuPage() {
     });
   }, [household, members, cashback, latestPlan, fridge]);
 
-  const alternatives = useMemo(() => {
-    if (!activeMeal || !result || !input) return [];
-    return suggestMealAlternatives(activeMeal, result, input);
-  }, [activeMeal, result, input]);
+  useEffect(() => {
+    if (!activeMeal || !result || !input) {
+      setAlternatives([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingAlts(true);
+    suggestLlmMealAlternatives(activeMeal, result, input, { refreshToken: altsNonce }).then((items) => {
+      if (!cancelled) {
+        setAlternatives(items);
+        setLoadingAlts(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMeal, result, input, altsNonce]);
 
   async function persist(next: OptimizationResult) {
     setResult(next);
@@ -68,11 +89,22 @@ export function MenuPage() {
     setSaving(false);
   }
 
-  async function applyReplace(recipeId: string) {
+  async function applyAlternative(item: MealAlternative) {
     if (!activeMeal || !result || !input) return;
-    const recipe = input.recipes.find((item) => item.id === recipeId);
-    if (!recipe) return;
-    const next = replaceMeal(result, activeMeal, recipe, input);
+    const next =
+      item.kind === "catalog"
+        ? replaceMeal(result, activeMeal, item.recipe, input)
+        : replaceMealWithLlmIdea(
+            result,
+            activeMeal,
+            {
+              recipeId: item.recipeId,
+              name: item.name,
+              ingredients: item.ingredients,
+              steps: item.steps,
+            },
+            input,
+          );
     setActiveMeal(null);
     await persist(next);
   }
@@ -160,43 +192,17 @@ export function MenuPage() {
         ))}
       </Card>
 
-      <Card className="mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="font-display text-xl">Тренировки</h2>
-            <p className="mt-1 text-sm text-muted">Отдельный раздел. Меню их не заполняет.</p>
-          </div>
-          <Button variant="secondary" onClick={() => navigate("/training")}>
-            Открыть
-          </Button>
-        </div>
-      </Card>
-
-      {result.cookingPlan.length > 0 && (
-        <Card className="mb-4">
-          <h2 className="font-display text-xl">Meal prep</h2>
-          <ul className="mt-3 space-y-3">
-            {result.cookingPlan.map((session) => (
-              <li key={session.index}>
-                <div className="text-sm font-semibold text-sage">{session.label}</div>
-                <div className="text-sm text-muted">{session.recipeNames.join(", ")}</div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
       <div className="space-y-4">
-        {Array.from({ length: days }).map((_, day) => (
-          <Card key={day}>
-            <h2 className="font-display text-2xl">{dayNames[day % 7]}</h2>
+        {Array.from({ length: days }, (_, dayIndex) => (
+          <Card key={dayIndex}>
+            <h2 className="font-display text-2xl">{dayNames[dayIndex] ?? `День ${dayIndex + 1}`}</h2>
             <div className="mt-3 space-y-3">
               {result.menu
-                .filter((meal) => meal.dayIndex === day)
+                .filter((meal) => meal.dayIndex === dayIndex)
                 .map((meal) => (
                   <div
                     key={`${meal.dayIndex}-${meal.mealType}`}
-                    className={`rounded-2xl bg-cream p-3 ${meal.eatingOut ? "opacity-60" : ""}`}
+                    className="rounded-2xl border border-line bg-white/70 p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <button
@@ -207,6 +213,7 @@ export function MenuPage() {
                       >
                         <div className="text-xs font-semibold tracking-wide text-muted uppercase">
                           {mealLabels[meal.mealType]}
+                          {meal.fromLlm ? " · модель" : ""}
                         </div>
                         <div className="font-semibold">{meal.recipeName}</div>
                         <div className="text-xs text-muted">
@@ -249,11 +256,13 @@ export function MenuPage() {
                       </button>
                     </div>
                     <div className="mt-3 space-y-2">
-                      {(meal.portions ?? input?.people.map((person) => ({
-                        personId: person.id,
-                        name: person.name,
-                        eatingOut: Boolean(meal.eatingOut),
-                      })) ?? []).map((portion) => (
+                      {(meal.portions ??
+                        input?.people.map((person) => ({
+                          personId: person.id,
+                          name: person.name,
+                          eatingOut: Boolean(meal.eatingOut),
+                        })) ??
+                        []).map((portion) => (
                         <label key={portion.personId} className="flex items-center gap-2 text-sm">
                           <input
                             type="checkbox"
@@ -277,25 +286,47 @@ export function MenuPage() {
           <div className="mx-auto mt-20 max-w-lg rounded-3xl bg-paper p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-display text-2xl">Замена блюда</h3>
             <p className="mt-1 text-sm text-muted">{activeMeal.recipeName}</p>
-            <div className="mt-4 space-y-2">
-              {alternatives.map((item) => (
-                <button
-                  key={item.recipe.id}
-                  className="w-full rounded-2xl border border-line bg-white p-3 text-left"
-                  onClick={() => applyReplace(item.recipe.id)}
-                  disabled={saving}
-                >
-                  <div className="font-semibold">{item.recipe.name}</div>
-                  <div className="text-sm text-muted">
-                    {item.reason}
-                    {item.extraCost !== 0 ? ` · ${item.extraCost > 0 ? "+" : ""}${Math.round(item.extraCost)} ₽` : ""}
-                  </div>
-                </button>
-              ))}
+            <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto">
+              {loadingAlts && <p className="text-sm text-muted">Модель подбирает 5–6 вариантов…</p>}
+              {!loadingAlts && alternatives.length === 0 && (
+                <p className="text-sm text-muted">Варианты не пришли — нажмите «Ещё варианты».</p>
+              )}
+              {!loadingAlts &&
+                alternatives.map((item) => {
+                  const key = item.kind === "catalog" ? item.recipe.id : item.recipeId;
+                  const name = item.kind === "catalog" ? item.recipe.name : item.name;
+                  return (
+                    <button
+                      key={key}
+                      className="w-full rounded-2xl border border-line bg-white p-3 text-left"
+                      onClick={() => applyAlternative(item)}
+                      disabled={saving}
+                    >
+                      <div className="font-semibold">{name}</div>
+                      <div className="text-sm text-muted">
+                        {item.kind === "llm" ? "От модели · " : "Из каталога · "}
+                        {item.reason}
+                        {item.extraCost !== 0
+                          ? ` · ${item.extraCost > 0 ? "+" : ""}${Math.round(item.extraCost)} ₽`
+                          : ""}
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
-            <Button className="mt-4 w-full" variant="secondary" onClick={() => setActiveMeal(null)}>
-              Закрыть
-            </Button>
+            <div className="mt-4 flex gap-2">
+              <Button
+                className="flex-1"
+                variant="secondary"
+                disabled={loadingAlts}
+                onClick={() => setAltsNonce((value) => value + 1)}
+              >
+                {loadingAlts ? "Генерируем…" : "Ещё варианты"}
+              </Button>
+              <Button className="flex-1" variant="secondary" onClick={() => setActiveMeal(null)}>
+                Закрыть
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -314,7 +345,6 @@ function estimateFullMacro(
     return Math.round(value * (fullG / curG) * 10) / 10;
   }
   if (meal.eatingOut && meal.fullIngredients) {
-    // macros were zeroed — cannot recover without nutrition calc; portions may help
     const fromPortions = meal.portions?.reduce((sum, portion) => sum + Number(portion[key as "calories"] ?? 0), 0);
     if (fromPortions && fromPortions > 0) return fromPortions;
   }

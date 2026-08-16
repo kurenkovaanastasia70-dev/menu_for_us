@@ -8,7 +8,7 @@ import { parseGuides } from "@/lib/llm/recipe-guide";
 import { buildSingleRecipePrompt } from "@/lib/llm/recipe-prompt";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
 import { fallbackGuide } from "@/lib/optimizer/meals";
-import type { OptimizationResult, RecipeGuide } from "@/lib/optimizer/types";
+import type { OptimizationResult, PlannedMeal, RecipeGuide } from "@/lib/optimizer/types";
 import { fetchMealPlan, updateMealPlanResult } from "@/lib/supabase/api";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -39,7 +39,7 @@ export function RecipePage() {
   }, [result, dayIndex, mealType]);
 
   const recipe = meal ? catalog.getRecipes().find((item) => item.id === meal.recipeId) : undefined;
-  const guide = meal?.guide ?? (recipe && meal ? fallbackGuide(recipe, meal) : null);
+  const guide = meal?.guide ?? (recipe && meal ? fallbackGuide(recipe, meal) : meal ? guideFromMeal(meal) : null);
 
   async function saveGuide(nextGuide: RecipeGuide) {
     if (!result || !meal) return;
@@ -61,42 +61,41 @@ export function RecipePage() {
   }
 
   async function regenerate() {
-    if (!meal || !recipe) return;
+    if (!meal) return;
     setPending(true);
     setError("");
     const peopleCount = members.length || meal.servings || 1;
+    const ingredients = (meal.fullIngredients ?? meal.ingredients).map((ing) => ({
+      name: catalog.getProducts().find((product) => product.id === ing.product_id)?.canonical_name ?? ing.product_id,
+      grams: ing.grams,
+    }));
     const payload = {
       peopleCount,
       recipe: {
-        id: recipe.id,
-        name: recipe.name,
-        meal_type: recipe.meal_type,
-        cooking_time: recipe.cooking_time,
-        ingredients: recipe.ingredients.map((ing) => ({
-          name: catalog.getProducts().find((product) => product.id === ing.product_id)?.canonical_name ?? ing.product_id,
-          grams: ing.grams,
-        })),
-        instructions: recipe.instructions,
+        id: meal.recipeId,
+        name: meal.recipeName,
+        meal_type: meal.mealType,
+        cooking_time: guide?.time_minutes ?? 25,
+        ingredients,
+        instructions: meal.instructions,
         peopleCount,
       },
       prompt: buildSingleRecipePrompt({
-        id: recipe.id,
-        name: recipe.name,
-        meal_type: recipe.meal_type,
-        cooking_time: recipe.cooking_time,
-        ingredients: recipe.ingredients.map((ing) => ({
-          name: catalog.getProducts().find((product) => product.id === ing.product_id)?.canonical_name ?? ing.product_id,
-          grams: ing.grams,
-        })),
-        instructions: recipe.instructions,
+        id: meal.recipeId,
+        name: meal.recipeName,
+        meal_type: meal.mealType,
+        cooking_time: guide?.time_minutes ?? 25,
+        ingredients,
+        instructions: meal.instructions,
         peopleCount,
       }),
     };
     const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-recipe", payload);
     setPending(false);
     if (!worker.ok) {
-      setError("Нет ключа LLM или воркер не отвечает. Ниже — гид из каталога. Как получить ключ — в профиле и README.");
+      setError("Нет ключа LLM или воркер не отвечает. Ниже — текущий гид.");
       if (recipe) await saveGuide(fallbackGuide(recipe, meal));
+      else if (!meal.guide) await saveGuide(guideFromMeal(meal));
       return;
     }
     const parsed = parseGuides(worker.data.guides ? { guides: worker.data.guides } : worker.data);
@@ -133,6 +132,7 @@ export function RecipePage() {
         <p className="mt-2 text-sm">
           {guide.time_minutes} мин · {guide.servings} порц.
           {meal.eatingOut ? " · оба не дома" : ""}
+          {meal.fromLlm ? " · от модели" : ""}
         </p>
         {meal.portions && meal.portions.length > 0 && (
           <ul className="mt-2 space-y-1 text-sm text-muted">
@@ -192,4 +192,34 @@ export function RecipePage() {
       </Button>
     </Screen>
   );
+}
+
+function guideFromMeal(meal: PlannedMeal): RecipeGuide {
+  const texts = meal.instructions.filter(Boolean);
+  const steps =
+    texts.length >= 3
+      ? texts.map((text, index) => ({
+          order: index + 1,
+          title: `Шаг ${index + 1}`,
+          text,
+          minutes: 5,
+        }))
+      : [
+          { order: 1, title: "Подготовка", text: texts[0] || "Подготовьте продукты.", minutes: 5 },
+          { order: 2, title: "Готовка", text: texts[1] || "Приготовьте блюдо.", minutes: 15 },
+          { order: 3, title: "Подача", text: texts[2] || "Подайте к столу.", minutes: 2 },
+        ];
+  return {
+    recipe_id: meal.recipeId,
+    title: meal.recipeName.replace(/\s+\+.+$/, ""),
+    subtitle: meal.fromLlm ? "Рецепт от модели" : "Гид приготовления",
+    time_minutes: Math.max(
+      5,
+      steps.reduce((sum, step) => sum + (step.minutes ?? 5), 0),
+    ),
+    servings: meal.servings,
+    steps,
+    tips: [],
+    plating: "",
+  };
 }

@@ -199,6 +199,8 @@ export interface PlannedMeal {
   sideFruit?: SideFruit;
   guide?: RecipeGuide;
   llmEstimate?: { calories: number; protein: number; fat: number; carbs: number };
+  /** Блюдо придумано моделью (не из фиксированного каталога рецептов). */
+  fromLlm?: boolean;
 }
 
 export interface CartLine {

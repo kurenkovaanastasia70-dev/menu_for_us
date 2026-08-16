@@ -36,16 +36,18 @@ function price(productId: string, priceRub: number): StoreProduct {
 }
 
 describe("pricedCatalogForLlm", () => {
-  it("keeps a wide mixed slice, not only the cheapest items", () => {
+  it("sends the full catalog, not a cheap slice", () => {
     const products: Product[] = [];
     const prices: StoreProduct[] = [];
-    for (let i = 0; i < 40; i += 1) {
+    for (let i = 0; i < 80; i += 1) {
       const id = `protein_${i}`;
       products.push(product(id, "protein", `Белок ${i}`));
       prices.push(price(id, 50 + i * 10));
     }
     products.push(product("chicken_breast", "protein", "Курица"));
     prices.push(price("chicken_breast", 300));
+    products.push(product("shrimp", "protein", "Креветки"));
+    prices.push(price("shrimp", 399));
 
     const input = {
       products,
@@ -55,12 +57,12 @@ describe("pricedCatalogForLlm", () => {
       budget: 6000,
       constraints: {
         preferredStoreIds: ["magnit"],
-        varietyPreference: "high",
+        varietyPreference: "low",
         maxCookingTime: 40,
         maxCookingSessions: 3,
         mealsPerDay: 3,
         snacks: true,
-        excludedProductIds: [],
+        excludedProductIds: ["protein_0"],
         allergies: [],
         dietType: "omnivore",
         maxStores: 2,
@@ -68,9 +70,9 @@ describe("pricedCatalogForLlm", () => {
     } as OptimizationInput;
 
     const catalog = pricedCatalogForLlm(input);
-    expect(catalog.length).toBeGreaterThan(15);
+    expect(catalog.length).toBe(products.length - 1);
     expect(catalog.some((item) => item.id === "chicken_breast")).toBe(true);
-    // не только топ дешёвых: в срез попадает и более дорогой белок
-    expect(catalog.some((item) => (item.rub_per_100g ?? 0) > 20)).toBe(true);
+    expect(catalog.some((item) => item.id === "shrimp")).toBe(true);
+    expect(catalog.some((item) => item.id === "protein_0")).toBe(false);
   });
 });

@@ -4232,6 +4232,60 @@
     ]
   },
   {
+    "id": "cutlets_chicken_frozen",
+    "canonical_name": "Котлеты куриные с/м",
+    "category": "protein",
+    "calories_per_100g": 220,
+    "protein_per_100g": 14,
+    "fat_per_100g": 12,
+    "carbs_per_100g": 10,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.1,
+    "package_weight": 600,
+    "unit": "g",
+    "tags": [
+      "chicken",
+      "meat",
+      "frozen"
+    ]
+  },
+  {
+    "id": "cutlets_beef_frozen",
+    "canonical_name": "Котлеты говяжьи с/м",
+    "category": "protein",
+    "calories_per_100g": 250,
+    "protein_per_100g": 13,
+    "fat_per_100g": 16,
+    "carbs_per_100g": 9,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.1,
+    "package_weight": 600,
+    "unit": "g",
+    "tags": [
+      "beef",
+      "meat",
+      "frozen"
+    ]
+  },
+  {
+    "id": "nuggets_chicken",
+    "canonical_name": "Наггетсы куриные с/м",
+    "category": "protein",
+    "calories_per_100g": 260,
+    "protein_per_100g": 12,
+    "fat_per_100g": 14,
+    "carbs_per_100g": 18,
+    "fiber_per_100g": 0,
+    "iron_per_100g": 1.1,
+    "package_weight": 500,
+    "unit": "g",
+    "tags": [
+      "chicken",
+      "meat",
+      "frozen"
+    ]
+  },
+  {
     "id": "vareniki_potato",
     "canonical_name": "Вареники с картофелем",
     "category": "grain",

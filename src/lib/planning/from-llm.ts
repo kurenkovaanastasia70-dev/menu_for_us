@@ -62,25 +62,36 @@ export function mealsFromLlmMenu(
 
       const nutrition = nutritionFromIngredients(ingredients, input.products);
       const recipeId = raw.recipe_id || `llm_${dayIndex}_${mealType}`;
+      const steps = (raw.steps ?? []).map((step, index) => ({
+        order: step.order || index + 1,
+        title: step.title || `Шаг ${index + 1}`,
+        text: step.text || "Приготовить по вкусу.",
+        minutes: step.minutes,
+      }));
+      while (steps.length < 3) {
+        const order = steps.length + 1;
+        steps.push({
+          order,
+          title: order === 1 ? "Подготовка" : order === 2 ? "Готовка" : "Подача",
+          text: order === 1 ? "Подготовьте продукты." : order === 2 ? "Приготовьте блюдо." : "Подайте к столу.",
+          minutes: 5,
+        });
+      }
       const guide =
         guideById.get(recipeId) ??
-        (raw.steps && raw.steps.length >= 3
-          ? {
-              recipe_id: recipeId,
-              title: raw.name,
-              subtitle: mealType === "dinner" ? "Горячее, оценка КБЖУ от модели" : "Рецепт модели",
-              time_minutes: Math.max(5, raw.steps.reduce((sum, step) => sum + (step.minutes ?? 5), 0)),
-              servings: peopleCount,
-              steps: raw.steps.map((step, index) => ({
-                order: step.order || index + 1,
-                title: step.title,
-                text: step.text,
-                minutes: step.minutes,
-              })),
-              tips: [],
-              plating: "",
-            }
-          : undefined);
+        {
+          recipe_id: recipeId,
+          title: raw.name,
+          subtitle: "Рецепт от модели",
+          time_minutes: Math.max(
+            5,
+            steps.reduce((sum, step) => sum + (step.minutes ?? 5), 0),
+          ),
+          servings: peopleCount,
+          steps,
+          tips: [],
+          plating: "",
+        };
 
       let meal: PlannedMeal = {
         dayIndex,
@@ -97,8 +108,9 @@ export function mealsFromLlmMenu(
         carbs: nutrition.carbs,
         fiber: nutrition.fiber,
         iron: nutrition.iron,
-        instructions: (raw.steps ?? []).map((step) => step.text).filter(Boolean),
+        instructions: steps.map((step) => step.text).filter(Boolean),
         eatingOut: everyoneOut,
+        fromLlm: true,
         llmEstimate:
           raw.calories || raw.protein
             ? {

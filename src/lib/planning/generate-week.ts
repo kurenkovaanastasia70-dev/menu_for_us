@@ -62,24 +62,48 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     products,
   };
 
-  // Куски по 2 дня на клиенте: длинный один запрос обрезается прокси/таймаутом → «модель недоступна».
-  const chunkSize = 2;
-  const mergedDays: NonNullable<WorkerGenerateResponse["menu"]>["days"] = [];
-  let lastError = "";
-  for (let fromDay = 1; fromDay <= params.days; fromDay += chunkSize) {
-    const toDay = Math.min(params.days, fromDay + chunkSize - 1);
+  // Куски по 2 дня: длинный один запрос обрезается. Падающие куски ретраим и дробим до 1 дня.
+  const mergedByDay = new Map<number, NonNullable<WorkerGenerateResponse["menu"]>["days"][number]>();
+  const errors: string[] = [];
+
+  async function fetchChunk(fromDay: number, toDay: number, attempt: number) {
     const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
       ...basePayload,
       days: toDay - fromDay + 1,
       fromDay,
       toDay,
+      attempt,
     });
     if (!worker.ok || !worker.data.menu?.days?.length) {
-      lastError = worker.ok === false ? worker.error : "пустой кусок меню";
-      continue;
+      errors.push(worker.ok === false ? worker.error : `пустой кусок ${fromDay}–${toDay}`);
+      return false;
     }
-    mergedDays.push(...worker.data.menu.days);
+    for (const day of worker.data.menu.days) {
+      if (day.day >= fromDay && day.day <= toDay) mergedByDay.set(day.day, day);
+    }
+    return true;
   }
+
+  const pending: Array<[number, number]> = [];
+  for (let fromDay = 1; fromDay <= params.days; fromDay += 2) {
+    pending.push([fromDay, Math.min(params.days, fromDay + 1)]);
+  }
+
+  for (const [fromDay, toDay] of pending) {
+    const ok = await fetchChunk(fromDay, toDay, 1);
+    if (ok) continue;
+    // повтор того же куска
+    if (await fetchChunk(fromDay, toDay, 2)) continue;
+    // дробим на одиночные дни
+    for (let day = fromDay; day <= toDay; day += 1) {
+      if (mergedByDay.has(day)) continue;
+      if (await fetchChunk(day, day, 3)) continue;
+      await fetchChunk(day, day, 4);
+    }
+  }
+
+  const mergedDays = [...mergedByDay.values()].sort((a, b) => a.day - b.day);
+  const lastError = errors[errors.length - 1] ?? "";
 
   if (mergedDays.length === 0) {
     fallback.warnings.push(
@@ -93,7 +117,9 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   const llmMenu = { days: mergedDays.sort((a, b) => a.day - b.day) };
   const guides = parseGuides({ guides: [] });
   let menu = mealsFromLlmMenu(llmMenu, input, guides);
+  const llmSlots = menu.length;
   menu = fillMissingSlots(menu, fallback.menu);
+  const filledFromCatalog = menu.length - llmSlots;
   menu = scaleMenuToMacroTargets(menu, input);
   menu = fitMenuToBudget(menu, input);
 
@@ -105,11 +131,21 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     ];
   }
   if (mergedDays.length < params.days) {
-    result.warnings.push(`Модель вернула ${mergedDays.length} из ${params.days} дней — остальное дополнено из каталога.`);
+    const missing = Array.from({ length: params.days }, (_, i) => i + 1).filter((day) => !mergedByDay.has(day));
+    result.warnings.push(
+      `Модель вернула ${mergedDays.length} из ${params.days} дней (не хватило: ${missing.join(", ")})${
+        lastError ? ` — ${lastError}` : ""
+      }. Остальное дополнено из каталога.`,
+    );
+  }
+  if (filledFromCatalog > 0) {
+    result.warnings.push(
+      `${filledFromCatalog} слот(ов) добрано из каталога — у модели не хватило валидных блюд на эти приёмы.`,
+    );
   }
   result.warnings = [
     ...result.warnings,
-    "Рецепты и примерное КБЖУ предложила модель. Граммы, корзина и итоговое КБЖУ подогнаны кодом под цель и бюджет.",
+    "Блюда придумала модель из продуктов каталога. Граммы, корзина и КБЖУ подогнаны кодом под цель и бюджет.",
   ];
   return validateMenuNutrition(result, input);
 }
@@ -118,120 +154,24 @@ export function localFallbackProvider() {
   return new FallbackLLMProvider(catalog.getRecipes());
 }
 
-/** Прайс для модели: широкий, но компактный срез полного каталога (не «только самые дешёвые»). */
+/** Полный канонический каталог с лучшей ценой из выбранных магазинов (без среза). */
 export function pricedCatalogForLlm(input: OptimizationInput) {
   const preferred = new Set(input.constraints.preferredStoreIds);
-  const priced = input.products.map((product) => {
-    const offers = input.prices.filter((item) => item.canonical_product_id === product.id && item.available);
-    const scoped = preferred.size > 0 ? offers.filter((item) => preferred.has(item.store_id)) : offers;
-    const pool = scoped.length > 0 ? scoped : offers;
-    const best = pool.slice().sort((a, b) => a.price / a.package_weight - b.price / b.package_weight)[0];
-    return {
-      id: product.id,
-      name: product.canonical_name,
-      category: product.category,
-      pack_g: best?.package_weight ?? product.package_weight,
-      price_rub: best?.price ?? null,
-      rub_per_100g: best ? Math.round((best.price / best.package_weight) * 1000) / 10 : null,
-    };
-  });
-
-  // Квоты по категориям: белок/овощи шире, жиры/снеки уже.
-  const quota: Record<string, number> = {
-    protein: 32,
-    vegetable: 24,
-    grain: 20,
-    dairy: 18,
-    fruit: 16,
-    pantry: 16,
-    fat: 10,
-    snack: 8,
-  };
-  const MAX = input.constraints.varietyPreference === "high" ? 48 : input.constraints.varietyPreference === "low" ? 36 : 42;
-  const seed = hashSeed(
-    `${input.constraints.varietyPreference}:${input.people.map((person) => person.id).join(",")}:${input.days}:${input.budget}`,
-  );
-
-  const byCategory = new Map<string, typeof priced>();
-  for (const item of priced) {
-    const list = byCategory.get(item.category) ?? [];
-    list.push(item);
-    byCategory.set(item.category, list);
-  }
-
-  const staples = new Set([
-    "chicken_breast",
-    "egg",
-    "cottage_cheese",
-    "milk",
-    "oats",
-    "rice",
-    "buckwheat",
-    "potato",
-    "onion",
-    "carrot",
-    "tomato",
-    "cucumber",
-    "apple",
-    "banana",
-    "sunflower_oil",
-    "yogurt",
-    "tuna_can",
-    "beans",
-    "lentils",
-  ]);
-
-  const picked: typeof priced = [];
-  const seen = new Set<string>();
-
-  function add(item: (typeof priced)[number]) {
-    if (seen.has(item.id)) return;
-    seen.add(item.id);
-    picked.push(item);
-  }
-
-  for (const item of priced) {
-    if (staples.has(item.id)) add(item);
-  }
-
-  for (const [category, list] of byCategory) {
-    const limit = quota[category] ?? 10;
-    const sorted = list.slice().sort((a, b) => (a.rub_per_100g ?? 999) - (b.rub_per_100g ?? 999));
-    const cheapCount = Math.ceil(limit * 0.55);
-    const varietyCount = Math.max(0, limit - cheapCount);
-    for (const item of sorted.slice(0, cheapCount)) add(item);
-
-    // Середина/хвост прайса — ротация по seed, чтобы недели не были клонами.
-    const rest = sorted.slice(cheapCount);
-    const rotated = rotate(rest, seed + category.charCodeAt(0));
-    for (const item of rotated.slice(0, varietyCount)) add(item);
-  }
-
-  // Если ещё есть место — добираем оставшиеся по ротации (не только дешёвые).
-  if (picked.length < MAX) {
-    const rest = rotate(
-      priced.filter((item) => !seen.has(item.id)),
-      seed,
-    );
-    for (const item of rest) {
-      if (picked.length >= MAX) break;
-      add(item);
-    }
-  }
-
-  return picked.slice(0, MAX);
-}
-
-function rotate<T>(items: T[], seed: number): T[] {
-  if (items.length <= 1) return items.slice();
-  const offset = Math.abs(seed) % items.length;
-  return items.slice(offset).concat(items.slice(0, offset));
-}
-
-function hashSeed(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
+  const excluded = new Set(input.constraints.excludedProductIds ?? []);
+  return input.products
+    .filter((product) => !excluded.has(product.id))
+    .map((product) => {
+      const offers = input.prices.filter((item) => item.canonical_product_id === product.id && item.available);
+      const scoped = preferred.size > 0 ? offers.filter((item) => preferred.has(item.store_id)) : offers;
+      const pool = scoped.length > 0 ? scoped : offers;
+      const best = pool.slice().sort((a, b) => a.price / a.package_weight - b.price / b.package_weight)[0];
+      return {
+        id: product.id,
+        name: product.canonical_name,
+        category: product.category,
+        pack_g: best?.package_weight ?? product.package_weight,
+        price_rub: best?.price ?? null,
+        rub_per_100g: best ? Math.round((best.price / best.package_weight) * 1000) / 10 : null,
+      };
+    });
 }
