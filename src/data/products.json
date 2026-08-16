@@ -958,7 +958,7 @@
   },
   {
     "id": "corn",
-    "canonical_name": "Кукуруза",
+    "canonical_name": "Кукуруза сладкая",
     "category": "vegetable",
     "calories_per_100g": 96,
     "protein_per_100g": 3.3,
@@ -969,7 +969,8 @@
     "package_weight": 340,
     "unit": "g",
     "tags": [
-      "vegetable"
+      "vegetable",
+      "corn"
     ]
   },
   {
@@ -3135,6 +3136,40 @@
     "unit": "g",
     "tags": [
       "vegetable"
+    ]
+  },
+  {
+    "id": "corn_cob",
+    "canonical_name": "Кукуруза в початках",
+    "category": "vegetable",
+    "calories_per_100g": 96,
+    "protein_per_100g": 3.4,
+    "fat_per_100g": 1.5,
+    "carbs_per_100g": 21,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
+    "package_weight": 600,
+    "unit": "g",
+    "tags": [
+      "vegetable",
+      "corn"
+    ]
+  },
+  {
+    "id": "frozen_corn",
+    "canonical_name": "Кукуруза с/м",
+    "category": "vegetable",
+    "calories_per_100g": 96,
+    "protein_per_100g": 3.3,
+    "fat_per_100g": 1.4,
+    "carbs_per_100g": 19,
+    "fiber_per_100g": 2.4,
+    "iron_per_100g": 0.8,
+    "package_weight": 400,
+    "unit": "g",
+    "tags": [
+      "vegetable",
+      "corn"
     ]
   },
   {

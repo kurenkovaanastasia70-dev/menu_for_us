@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { fridgeStockAfterToggle, lineAlreadyHave } from "@/lib/cart/already-have";
 import { formatGrams, formatRub } from "@/lib/cn";
 import { catalog } from "@/lib/catalog/repository";
-import { materializeFromMenu, type CartLine, type OptimizationResult } from "@/lib/optimizer";
+import { materializeFromMenu, syncCartWithMenu, type CartLine, type OptimizationResult } from "@/lib/optimizer";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
 import { replaceProduct } from "@/lib/planning/alternatives";
 import {
@@ -22,7 +22,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export function CartPage() {
   const { planId } = useParams();
-  const { latestPlan, household, members, cashback, fridge, refresh } = useApp();
+  const { latestPlan, household, members, cashback, fridge, customProducts, refresh } = useApp();
   const navigate = useNavigate();
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [purchased, setPurchased] = useState<Record<string, boolean>>({});
@@ -33,14 +33,48 @@ export function CartPage() {
 
   const id = planId ?? latestPlan?.id;
 
+  const input = useMemo(() => {
+    if (!household || !members.length || (!latestPlan && !result && !id)) return null;
+    const days = latestPlan?.days ?? (result ? Math.max(0, ...result.menu.map((meal) => meal.dayIndex)) + 1 : 7);
+    return makeOptimizationInput({
+      profiles: members,
+      household,
+      cashback,
+      days,
+      budget: Number(latestPlan?.budget ?? household.default_budget),
+      fridge,
+      customProducts,
+    });
+  }, [household, members, cashback, latestPlan, fridge, result, id, customProducts]);
+
   useEffect(() => {
-    if (!id) return;
+    if (!id || !household || members.length === 0) return;
     const row = latestPlan && latestPlan.id === id ? latestPlan : null;
     const load = row ? Promise.resolve(row) : fetchMealPlan(id);
+    let cancelled = false;
     load.then(async (plan) => {
-      if (!plan) return;
-      setResult(plan.result_json as OptimizationResult);
+      if (!plan || cancelled) return;
+      const raw = plan.result_json as OptimizationResult;
+      const planInput = makeOptimizationInput({
+        profiles: members,
+        household,
+        cashback,
+        days: plan.days,
+        budget: Number(plan.budget),
+        fridge,
+        customProducts,
+      });
+      const synced = syncCartWithMenu(raw, planInput);
+      const before = raw.cart.map((line) => line.productId).sort().join(",");
+      const after = synced.cart.map((line) => line.productId).sort().join(",");
+      setResult(synced);
+      if (before !== after) {
+        await updateMealPlanResult(plan.id, synced);
+        await replaceCartItems(plan.id, household.id, synced);
+        await refresh();
+      }
       const items = await fetchCartItems(plan.id);
+      if (cancelled) return;
       const map: Record<string, boolean> = {};
       const ids: Record<string, string> = {};
       for (const item of items as Array<{ id: string; product_id: string; purchased: boolean }>) {
@@ -50,7 +84,11 @@ export function CartPage() {
       setPurchased(map);
       setItemIds(ids);
     });
-  }, [id, latestPlan]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync when plan/fridge/catalog context changes
+  }, [id, latestPlan?.id, household?.id, members, cashback, fridge, customProducts]);
 
   const byStore = useMemo(() => {
     const groups = new Map<string, number>();
@@ -60,19 +98,6 @@ export function CartPage() {
     }
     return [...groups.entries()];
   }, [result]);
-
-  const input = useMemo(() => {
-    if (!household || !members.length || (!latestPlan && !result)) return null;
-    const days = latestPlan?.days ?? (result ? Math.max(0, ...result.menu.map((meal) => meal.dayIndex)) + 1 : 7);
-    return makeOptimizationInput({
-      profiles: members,
-      household,
-      cashback,
-      days,
-      budget: Number(latestPlan?.budget ?? household.default_budget),
-      fridge,
-    });
-  }, [household, members, cashback, latestPlan, fridge, result]);
 
   async function persistCart(next: OptimizationResult) {
     setResult(next);

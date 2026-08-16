@@ -141,14 +141,26 @@ export function RecipePage() {
                 {portion.name}:{" "}
                 {portion.eatingOut
                   ? "ем не дома"
-                  : `${Math.round(portion.calories)} kcal · ${portion.ingredients
-                      .slice(0, 4)
-                      .map((ing) => `${ing.product_id} ${ing.grams} г`)
-                      .join(", ")}${portion.ingredients.length > 4 ? "…" : ""}`}
+                  : `${Math.round(portion.calories)} kcal · ${Math.round(portion.protein)} g белка`}
               </li>
             ))}
           </ul>
         )}
+        <div className="mt-3 text-sm">
+          <p className="font-semibold">В корзину из этого блюда</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
+            {(meal.fullIngredients ?? meal.ingredients).map((ing) => {
+              const name =
+                catalog.getProducts().find((product) => product.id === ing.product_id)?.canonical_name ??
+                ing.product_id;
+              return (
+                <li key={`${ing.product_id}-${ing.grams}`}>
+                  {name} · {ing.grams} г
+                </li>
+              );
+            })}
+          </ul>
+        </div>
         {meal.sideSalad && <p className="mt-2 text-sm">Салат: {meal.sideSalad.name}</p>}
       </Card>
 

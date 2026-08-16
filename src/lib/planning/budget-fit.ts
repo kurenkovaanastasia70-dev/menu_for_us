@@ -1,6 +1,7 @@
 import { packagesNeeded } from "@/lib/money/cashback";
 import { materializeFromMenu, type OptimizationInput, type PlannedMeal, type Product } from "@/lib/optimizer";
 import { nutritionFromIngredients, scalePlannedMeal } from "@/lib/optimizer/meals";
+import { withHomePresence } from "./portions";
 
 /** Дешёвые замены дорогих продуктов той же роли. */
 const CHEAP_SWAPS: Record<string, string[]> = {
@@ -15,7 +16,6 @@ const CHEAP_SWAPS: Record<string, string[]> = {
   pork_tenderloin: ["chicken_breast", "pork_mince", "chicken_thigh"],
   pork_chop: ["chicken_thigh", "pork_mince"],
   turkey_fillet: ["chicken_breast", "ground_chicken"],
-  turkey_steak: ["chicken_breast", "turkey_fillet"],
   olive_oil: ["sunflower_oil", "rapeseed_oil"],
   olive_oil_extra: ["sunflower_oil", "olive_oil", "rapeseed_oil"],
   butter: ["sunflower_oil", "spread_butter"],
@@ -60,26 +60,74 @@ function cartCost(menu: PlannedMeal[], input: OptimizationInput): number {
   return materializeFromMenu(menu, input).effectiveCost;
 }
 
-function rebuildMeal(meal: PlannedMeal, ingredients: PlannedMeal["ingredients"], products: Product[]): PlannedMeal {
-  const nutrition = nutritionFromIngredients(ingredients, products);
-  return {
+/** Пересобирает блюдо из полных граммов семьи и заново считает порции «кто дома». */
+function rebuildMeal(
+  meal: PlannedMeal,
+  nextFullIngredients: PlannedMeal["ingredients"],
+  input: OptimizationInput,
+): PlannedMeal {
+  const full = nextFullIngredients.map((ing) => ({ ...ing }));
+  const nutrition = nutritionFromIngredients(full, input.products);
+  const base: PlannedMeal = {
     ...meal,
-    ingredients,
-    fullIngredients: ingredients.map((ing) => ({ ...ing })),
+    ingredients: full,
+    fullIngredients: full,
     calories: nutrition.calories,
     protein: nutrition.protein,
     fat: nutrition.fat,
     carbs: nutrition.carbs,
     fiber: nutrition.fiber,
     iron: nutrition.iron,
+    portions: undefined,
   };
+  if (!input.people?.length) return base;
+  return withHomePresence(base, input.people, {
+    ...input.constraints,
+    eatingOutSlots: [
+      ...(input.constraints.eatingOutSlots ?? []).filter(
+        (slot) => !(slot.dayIndex === meal.dayIndex && slot.mealType === meal.mealType),
+      ),
+      ...(meal.eatingOutPersonIds ?? []).map((personId) => ({
+        personId,
+        dayIndex: meal.dayIndex,
+        mealType: meal.mealType,
+      })),
+    ],
+  });
+}
+
+function renameAfterSwaps(
+  meal: PlannedMeal,
+  swaps: Array<{ from: string; to: string }>,
+  products: Product[],
+): PlannedMeal {
+  if (swaps.length === 0) return meal;
+  let recipeName = meal.recipeName;
+  let guideTitle = meal.guide?.title ?? meal.recipeName;
+  for (const { from, to } of swaps) {
+    const fromName = products.find((item) => item.id === from)?.canonical_name;
+    const toName = products.find((item) => item.id === to)?.canonical_name;
+    if (!fromName || !toName) continue;
+    recipeName = recipeName.split(fromName).join(toName);
+    guideTitle = guideTitle.split(fromName).join(toName);
+  }
+  return {
+    ...meal,
+    recipeName,
+    guide: meal.guide ? { ...meal.guide, title: guideTitle } : meal.guide,
+  };
+}
+
+function fullSource(meal: PlannedMeal): PlannedMeal["ingredients"] {
+  return (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing }));
 }
 
 function swapExpensiveProducts(menu: PlannedMeal[], input: OptimizationInput): PlannedMeal[] {
   const ids = new Set(input.products.map((item) => item.id));
   return menu.map((meal) => {
     if (meal.eatingOut) return meal;
-    const ingredients = meal.ingredients.map((ing) => {
+    const swaps: Array<{ from: string; to: string }> = [];
+    const ingredients = fullSource(meal).map((ing) => {
       const options = CHEAP_SWAPS[ing.product_id];
       if (!options) return ing;
       const current = cheapestUnitPrice(ing.product_id, input);
@@ -93,9 +141,10 @@ function swapExpensiveProducts(menu: PlannedMeal[], input: OptimizationInput): P
           bestId = alt;
         }
       }
+      if (bestId !== ing.product_id) swaps.push({ from: ing.product_id, to: bestId });
       return bestId === ing.product_id ? ing : { ...ing, product_id: bestId };
     });
-    return rebuildMeal(meal, ingredients, input.products);
+    return renameAfterSwaps(rebuildMeal(meal, ingredients, input), swaps, input.products);
   });
 }
 
@@ -104,7 +153,7 @@ function trimPackageSpill(menu: PlannedMeal[], input: OptimizationInput, spillRa
   const totals = new Map<string, number>();
   for (const meal of menu) {
     if (meal.eatingOut) continue;
-    for (const ing of meal.ingredients) {
+    for (const ing of fullSource(meal)) {
       totals.set(ing.product_id, (totals.get(ing.product_id) ?? 0) + ing.grams);
     }
   }
@@ -125,13 +174,13 @@ function trimPackageSpill(menu: PlannedMeal[], input: OptimizationInput, spillRa
 
   return menu.map((meal) => {
     if (meal.eatingOut) return meal;
-    const ingredients = meal.ingredients.map((ing) => {
+    const ingredients = fullSource(meal).map((ing) => {
       const target = targets.get(ing.product_id);
       const total = totals.get(ing.product_id) ?? 0;
       if (target == null || total <= 0) return ing;
       return { ...ing, grams: Math.max(10, Math.round((ing.grams / total) * target)) };
     });
-    return rebuildMeal(meal, ingredients, input.products);
+    return rebuildMeal(meal, ingredients, input);
   });
 }
 
@@ -148,11 +197,11 @@ function reduceCostliestIngredients(menu: PlannedMeal[], input: OptimizationInpu
     const cut = result.effectiveCost > budget * 1.35 ? 0.7 : 0.82;
     current = current.map((meal) => {
       if (meal.eatingOut) return meal;
-      const ingredients = meal.ingredients.map((ing) => {
+      const ingredients = fullSource(meal).map((ing) => {
         if (ing.product_id !== target.productId) return ing;
         return { ...ing, grams: Math.max(15, Math.round(ing.grams * cut)) };
       });
-      return rebuildMeal(meal, ingredients, input.products);
+      return rebuildMeal(meal, ingredients, input);
     });
   }
   return current;
@@ -161,27 +210,25 @@ function reduceCostliestIngredients(menu: PlannedMeal[], input: OptimizationInpu
 function stripOptionalExtras(menu: PlannedMeal[], input: OptimizationInput): PlannedMeal[] {
   return menu.map((meal) => {
     if (meal.eatingOut) return meal;
-    let ingredients = meal.ingredients;
+    let ingredients = fullSource(meal);
     if (meal.sideFruit) {
       ingredients = ingredients.filter((ing) => ing.product_id !== meal.sideFruit?.productId);
     }
-    // ужимаем масла/орехи
     ingredients = ingredients.map((ing) => {
       if (["olive_oil", "olive_oil_extra", "butter", "butter_82", "nuts", "almonds", "cashew"].includes(ing.product_id)) {
         return { ...ing, grams: Math.max(5, Math.round(ing.grams * 0.5)) };
       }
       return ing;
     });
-    const next = rebuildMeal(
+    return rebuildMeal(
       {
         ...meal,
         sideFruit: undefined,
         recipeName: meal.sideFruit ? meal.recipeName.replace(` + ${meal.sideFruit.name}`, "") : meal.recipeName,
       },
       ingredients,
-      input.products,
+      input,
     );
-    return next;
   });
 }
 
@@ -192,7 +239,19 @@ function forceScaleToBudget(menu: PlannedMeal[], input: OptimizationInput): Plan
     if (cost <= input.budget) return current;
     if (cost <= 0) return current;
     const factor = Math.max(0.55, Math.min(0.92, (input.budget / cost) * 0.98));
-    current = current.map((meal) => (meal.eatingOut ? meal : scalePlannedMeal(meal, factor, input.products)));
+    current = current.map((meal) => {
+      if (meal.eatingOut) return meal;
+      const scaled = scalePlannedMeal(
+        {
+          ...meal,
+          ingredients: fullSource(meal),
+          fullIngredients: fullSource(meal),
+        },
+        factor,
+        input.products,
+      );
+      return rebuildMeal(meal, scaled.fullIngredients ?? scaled.ingredients, input);
+    });
   }
   return current;
 }

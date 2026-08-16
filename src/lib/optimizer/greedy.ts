@@ -396,7 +396,12 @@ function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {
   const gramsByProduct = new Map<string, number>();
   for (const meal of menu) {
     if (meal.eatingOut) continue;
-    for (const ing of meal.ingredients) {
+    // Корзина = то, что реально в ингредиентах (уже с учётом «ем не дома»).
+    // Если ingredients пустые, а fullIngredients есть — не теряем продукты.
+    const ings =
+      meal.ingredients.length > 0 ? meal.ingredients : (meal.fullIngredients ?? []);
+    for (const ing of ings) {
+      if (!ing.product_id || !(ing.grams > 0)) continue;
       gramsByProduct.set(ing.product_id, (gramsByProduct.get(ing.product_id) ?? 0) + ing.grams);
     }
   }
@@ -646,6 +651,26 @@ export function materializeFromMenu(
       (eatingOutCount > 0 || nutrition.proteinPerDay >= input.macroTargets.protein * 0.85),
     warnings,
     trainingPlans: extras?.trainingPlans,
+  };
+}
+
+/** Пересчитать корзину/суммы из текущего меню (без смены блюд). */
+export function syncCartWithMenu(
+  result: OptimizationResult,
+  input: OptimizationInput,
+): OptimizationResult {
+  const next = materializeFromMenu(result.menu, input, { trainingPlans: result.trainingPlans });
+  return {
+    ...result,
+    cart: next.cart,
+    totalCost: next.totalCost,
+    cashback: next.cashback,
+    effectiveCost: next.effectiveCost,
+    nutritionSummary: next.nutritionSummary,
+    wasteScore: next.wasteScore,
+    feasible: next.feasible,
+    warnings: [...new Set([...(result.warnings ?? []), ...next.warnings])],
+    cookingPlan: next.cookingPlan,
   };
 }
 

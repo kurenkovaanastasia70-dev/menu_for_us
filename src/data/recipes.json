@@ -2840,6 +2840,54 @@
     "iron": 1.7
   },
   {
+    "id": "side_corn",
+    "name": "Салат с кукурузой",
+    "cuisine": "european",
+    "meal_type": "dinner",
+    "cooking_time": 10,
+    "difficulty": "easy",
+    "servings": 1,
+    "protein_source": "vegetables",
+    "tags": [
+      "salad",
+      "side",
+      "vegetables"
+    ],
+    "instructions": [
+      "Смешайте кукурузу с огурцом и помидором.",
+      "Добавьте зелень и заправьте маслом.",
+      "Посолите и сразу подайте."
+    ],
+    "ingredients": [
+      {
+        "product_id": "canned_corn",
+        "grams": 80
+      },
+      {
+        "product_id": "cucumber",
+        "grams": 70
+      },
+      {
+        "product_id": "tomato",
+        "grams": 70
+      },
+      {
+        "product_id": "dill",
+        "grams": 5
+      },
+      {
+        "product_id": "sunflower_oil",
+        "grams": 8
+      }
+    ],
+    "calories": 143.6,
+    "protein": 3.1,
+    "fat": 8.6,
+    "carbs": 14.4,
+    "fiber": 5.4,
+    "iron": 1.8
+  },
+  {
     "id": "quick_tuna_toast",
     "name": "Тосты с тунцом",
     "cuisine": "european",

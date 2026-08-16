@@ -146,4 +146,125 @@ describe("fitMenuToBudget", () => {
     expect(cost).toBeLessThanOrEqual(input.budget * 1.05);
     expect(fitted.some((item) => item.ingredients.some((ing) => ing.product_id === "pollock" || ing.product_id === "chicken_breast" || ing.grams < 400))).toBe(true);
   });
+
+  it("keeps turkey_steak in the cart when the week fits the budget", () => {
+    const turkey: Product = {
+      ...chicken,
+      id: "turkey_steak",
+      canonical_name: "Стейк индейки",
+      package_weight: 500,
+    };
+    const input = {
+      products: [chicken, turkey, rice],
+      prices: [offer("chicken_breast", 280, 900), offer("turkey_steak", 275, 500), offer("rice", 79, 900)],
+      people: [
+        { id: "a", name: "A", calorieTarget: 2000, proteinTarget: 100, fatTarget: 70, carbsTarget: 200, fiberTarget: 25, ironTarget: 12 },
+      ],
+      days: 1,
+      budget: 5000,
+      cashback: [],
+      fridge: [],
+      recipes: [],
+      calorieTargets: 2000,
+      macroTargets: { protein: 100, fat: 70, carbs: 200, fiber: 25, iron: 12 },
+      constraints: {
+        preferredStoreIds: ["magnit"],
+        varietyPreference: "medium",
+        maxCookingTime: 40,
+        maxCookingSessions: 3,
+        mealsPerDay: 3,
+        snacks: true,
+        excludedProductIds: [],
+        allergies: [],
+        dietType: "omnivore",
+        maxStores: 2,
+      },
+    } as OptimizationInput;
+
+    const menu = [
+      {
+        ...meal([
+          { product_id: "turkey_steak", grams: 400 },
+          { product_id: "rice", grams: 200 },
+        ]),
+        recipeName: "Стейк индейки с рисом",
+        fullIngredients: [
+          { product_id: "turkey_steak", grams: 400 },
+          { product_id: "rice", grams: 200 },
+        ],
+      },
+    ];
+    const fitted = fitMenuToBudget(menu, input);
+    const cart = materializeFromMenu(fitted, input).cart;
+    expect(cart.some((line) => line.productId === "turkey_steak")).toBe(true);
+    expect(fitted[0].ingredients.some((ing) => ing.product_id === "turkey_steak")).toBe(true);
+  });
+
+  it("renames the meal and syncs portions when salmon is swapped for budget", () => {
+    const input = {
+      products: [chicken, salmon, rice, pollock],
+      prices: [
+        offer("chicken_breast", 280, 900),
+        offer("salmon", 649, 400),
+        offer("rice", 79, 900),
+        offer("pollock", 199, 700),
+      ],
+      people: [
+        { id: "a", name: "A", calorieTarget: 2000, proteinTarget: 100, fatTarget: 70, carbsTarget: 200, fiberTarget: 25, ironTarget: 12 },
+      ],
+      days: 1,
+      budget: 200,
+      cashback: [],
+      fridge: [],
+      recipes: [],
+      calorieTargets: 2000,
+      macroTargets: { protein: 100, fat: 70, carbs: 200, fiber: 25, iron: 12 },
+      constraints: {
+        preferredStoreIds: ["magnit"],
+        varietyPreference: "medium",
+        maxCookingTime: 40,
+        maxCookingSessions: 3,
+        mealsPerDay: 3,
+        snacks: true,
+        excludedProductIds: [],
+        allergies: [],
+        dietType: "omnivore",
+        maxStores: 2,
+      },
+    } as OptimizationInput;
+
+    const menu = [
+      {
+        ...meal([
+          { product_id: "salmon", grams: 400 },
+          { product_id: "rice", grams: 300 },
+        ]),
+        recipeName: "Лосось с рисом",
+        fullIngredients: [
+          { product_id: "salmon", grams: 400 },
+          { product_id: "rice", grams: 300 },
+        ],
+        portions: [
+          {
+            personId: "a",
+            name: "A",
+            share: 1,
+            eatingOut: false,
+            calories: 800,
+            protein: 50,
+            fat: 20,
+            carbs: 60,
+            ingredients: [{ product_id: "salmon", grams: 400 }],
+          },
+        ],
+      },
+    ];
+
+    const fitted = fitMenuToBudget(menu, input);
+    const cart = materializeFromMenu(fitted, input).cart;
+    expect(fitted[0].ingredients.some((ing) => ing.product_id === "salmon")).toBe(false);
+    expect(fitted[0].recipeName.includes("Лосось")).toBe(false);
+    expect(fitted[0].portions?.some((p) => p.ingredients.some((ing) => ing.product_id === "salmon"))).toBeFalsy();
+    expect(cart.some((line) => line.productId === "salmon")).toBe(false);
+  });
 });

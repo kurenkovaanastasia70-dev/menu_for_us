@@ -91,6 +91,8 @@ export const EXTRA_PRODUCTS = [
   ["cabbage_red", "Капуста краснокочанная", "vegetable", 31, 1.4, 0.2, 7, 1000, "g", ["vegetable"], 79, "Магнит Свежесть"],
   ["broccoli_frozen", "Брокколи с/м", "vegetable", 34, 2.8, 0.4, 7, 400, "g", ["vegetable"], 129, "4 сезона"],
   ["veg_mix_frozen", "Овощная смесь с/м", "vegetable", 40, 2, 0.4, 7, 400, "g", ["vegetable"], 109, "4 сезона"],
+  ["corn_cob", "Кукуруза в початках", "vegetable", 96, 3.4, 1.5, 21, 600, "g", ["vegetable", "corn"], 89, "Магнит Свежесть"],
+  ["frozen_corn", "Кукуруза с/м", "vegetable", 96, 3.3, 1.4, 19, 400, "g", ["vegetable", "corn"], 99, "4 сезона"],
   ["spinach_frozen", "Шпинат с/м", "vegetable", 23, 2.9, 0.4, 3.6, 400, "g", ["vegetable"], 119, "4 сезона"],
   ["mushroom_oyster", "Вёшенки", "vegetable", 33, 3.3, 0.4, 6, 400, "g", ["vegetable"], 129, "Грибной рай"],
   ["arugula", "Руккола", "vegetable", 25, 2.6, 0.7, 3.7, 125, "g", ["vegetable", "salad"], 99, "Белая дача"],
