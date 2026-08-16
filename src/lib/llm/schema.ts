@@ -17,6 +17,20 @@ export const llmMealSchema = z.object({
       }),
     )
     .optional(),
+  side_salad: z
+    .object({
+      name: z.string().min(2),
+      ingredients: z
+        .array(
+          z.object({
+            product_id: z.string(),
+            grams: z.number().positive(),
+          }),
+        )
+        .min(1),
+      steps: z.array(z.string()).optional(),
+    })
+    .optional(),
   steps: z
     .array(
       z.object({

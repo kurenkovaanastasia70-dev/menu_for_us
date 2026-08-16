@@ -2,12 +2,13 @@ import type { LLMMenu } from "@/lib/llm/schema";
 import type { RecipeGuide } from "@/lib/llm/recipe-guide";
 import { type OptimizationInput, type PlannedMeal } from "@/lib/optimizer";
 import {
+  attachLlmSideSalad,
   attachSideSalad,
   attachSnackFruit,
   isEatingOutSlot,
-  isSideSalad,
   leftoverFromDinner,
   nutritionFromIngredients,
+  pickSideSalad,
   pickSnackFruit,
   scalePlannedMeal,
 } from "@/lib/optimizer/meals";
@@ -125,8 +126,22 @@ export function mealsFromLlmMenu(
       };
 
       if (mealType === "dinner") {
-        const salad = input.recipes.find((item) => isSideSalad(item));
-        if (salad) meal = attachSideSalad(meal, salad, peopleCount);
+        const rawSalad = (raw as { side_salad?: { name?: string; ingredients?: Array<{ product_id: string; grams: number }>; steps?: string[] } })
+          .side_salad;
+        const saladIngredients = (rawSalad?.ingredients ?? [])
+          .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
+          .filter((ing) => !(input.constraints.excludedProductIds ?? []).includes(ing.product_id))
+          .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
+        if (rawSalad?.name && saladIngredients.length > 0) {
+          meal = attachLlmSideSalad(
+            meal,
+            { name: rawSalad.name, ingredients: saladIngredients, steps: rawSalad.steps },
+            input.products,
+          );
+        } else {
+          const salad = pickSideSalad(input.recipes, menu);
+          if (salad) meal = attachSideSalad(meal, salad, peopleCount);
+        }
       }
       if (mealType === "snack") {
         const fruit = pickSnackFruit(input.products, menu);

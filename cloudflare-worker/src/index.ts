@@ -138,6 +138,7 @@ async function generateMenuChunk(
 - Придумывай НОВЫЕ названия блюд. Разные кухни и сочетания.
 - product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г. Не выдумывай id.
 - 2–5 ingredients, ровно 3 коротких steps на русском.
+- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
 - Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products.
 - recipe_id уникальный вида d{день}_{b|l|d|s}. leftover=true только для lunch из вчерашнего ужина.
 - Язык русский.
@@ -211,30 +212,95 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
   const input = (body ?? {}) as Record<string, unknown>;
   const products = Array.isArray(input.products)
     ? input.products.slice(0, 400).map((item: any) => ({
-        id: item.id,
+        id: String(item.id ?? ""),
         n: item.name ?? item.n,
         r: item.rub_per_100g ?? item.r,
       }))
     : [];
-  const prompt = `Ты шеф-повар. Придумай ровно 6 АЛЬТЕРНАТИВНЫХ блюд вместо текущего. Только JSON.
-{"alternatives":[{"name":"...","recipe_id":"alt_1","reason":"...","meal_type":"lunch","ingredients":[{"product_id":"rice","grams":70}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}
+  const productIds = new Set(products.map((item) => item.id).filter(Boolean));
+  const mealType = String(input.mealType ?? "lunch");
+  const avoidNames = new Set(
+    [String(input.currentName ?? ""), ...((input.avoidNames as string[]) ?? [])]
+      .map((name) => name.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const NEED = 5;
+  const collected: any[] = [];
+
+  for (let attempt = 1; attempt <= 4 && collected.length < NEED; attempt += 1) {
+    const left = NEED - collected.length;
+    const prompt = `Ты шеф-повар. Придумай ровно ${left} АЛЬТЕРНАТИВНЫХ блюд. Только JSON.
+{"alternatives":[{"name":"...","recipe_id":"alt_1","reason":"...","meal_type":"${mealType}","ingredients":[{"product_id":"rice","grams":70}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}
 
 Правила:
-- Ровно 6 разных вариантов (не меньше 5).
-- Новые названия, не из столового шаблона, не повторять текущее блюдо.
-- product_id только из products[].id.
-- Тот же meal_type, что у текущего блюда.
-- 2–5 ingredients, ровно 3 steps, язык русский.
-- Учитывай бюджет и продукты уже в корзине, если они есть во входе.
-- Разнообразие: разные белки/гарниры (в т.ч. морепродукты/заморозка, если есть в products).
+- Ровно ${left} разных вариантов в массиве alternatives.
+- meal_type = ${mealType}.
+- Новые названия, не повторять: ${[...avoidNames].slice(0, 20).join(" | ") || "—"}.
+- product_id ТОЛЬКО из products[].id. 2–5 ingredients, ровно 3 steps, язык русский.
+- Разные белки/гарниры.
 
-Вход:${JSON.stringify({ ...input, products })}`;
-  const result = await completeJson(prompt, env);
-  if (!result.data || !result.data.alternatives) {
-    return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
+Вход:${JSON.stringify({
+      currentName: input.currentName,
+      mealType,
+      budget: input.budget,
+      cartProductIds: input.cartProductIds,
+      refreshToken: `${input.refreshToken ?? 0}-${attempt}`,
+      products,
+    })}`;
+
+    const result = await completeJson(prompt, env);
+    const raw = Array.isArray(result.data?.alternatives) ? result.data.alternatives : [];
+    for (const alt of raw) {
+      const name = String(alt?.name ?? "").trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (avoidNames.has(key)) continue;
+      if (collected.some((item) => String(item.name).toLowerCase() === key)) continue;
+      const ingredients = (Array.isArray(alt.ingredients) ? alt.ingredients : [])
+        .map((ing: any) => ({
+          product_id: String(ing?.product_id ?? ""),
+          grams: Math.round(Number(ing?.grams) || 0),
+        }))
+        .filter((ing: { product_id: string; grams: number }) => productIds.has(ing.product_id) && ing.grams > 0)
+        .slice(0, 5);
+      if (ingredients.length === 0) continue;
+      const stepsRaw = Array.isArray(alt.steps) ? alt.steps : [];
+      const steps = [0, 1, 2].map((index) => {
+        const step = stepsRaw[index] ?? {};
+        return {
+          order: index + 1,
+          title: String(step.title || `Шаг ${index + 1}`),
+          text: String(step.text || "Приготовить по вкусу."),
+          minutes: Number(step.minutes) || 5,
+        };
+      });
+      collected.push({
+        name,
+        recipe_id: String(alt.recipe_id || `alt_${collected.length + 1}`),
+        reason: String(alt.reason || "Вариант от модели"),
+        meal_type: mealType,
+        ingredients,
+        steps,
+      });
+      avoidNames.add(key);
+      if (collected.length >= NEED) break;
+    }
   }
-  const alternatives = Array.isArray(result.data.alternatives) ? result.data.alternatives.slice(0, 6) : [];
-  return json({ ok: true, source: "llm", alternatives });
+
+  if (collected.length === 0) {
+    return json({
+      ok: false,
+      source: "fallback",
+      error: "Модель не вернула ни одного валидного варианта",
+      alternatives: [],
+    }, 200);
+  }
+  return json({
+    ok: true,
+    source: "llm",
+    alternatives: collected.slice(0, NEED),
+    incomplete: collected.length < NEED,
+  });
 }
 
 async function completeJson(prompt: string, env: Env): Promise<{ data: any | null; error?: string }> {

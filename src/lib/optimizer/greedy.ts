@@ -28,6 +28,7 @@ import {
   isSideSalad,
   leftoverFromDinner,
   nutritionFromIngredients,
+  pickSideSalad,
   pickSnackFruit,
   plannedMealFromRecipe,
 } from "./meals";
@@ -381,16 +382,6 @@ function tryLeftoverLunch(selected: PlannedMeal[], dayIndex: number, input: Opti
     input.people,
     input.constraints,
   );
-}
-
-function pickSideSalad(recipes: Recipe[], selected: PlannedMeal[]): Recipe | null {
-  const salads = recipes.filter(isSideSalad);
-  if (salads.length === 0) return null;
-  const used = selected.map((meal) => meal.sideSalad?.recipeId).filter(Boolean);
-  const unused = salads.filter((recipe) => !used.includes(recipe.id));
-  const pool = unused.length > 0 ? unused : salads;
-  const dinners = selected.filter((meal) => meal.mealType === "dinner").length;
-  return pool[dinners % pool.length] ?? pool[0] ?? null;
 }
 
 function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {

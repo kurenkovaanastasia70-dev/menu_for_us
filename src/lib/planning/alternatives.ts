@@ -7,6 +7,7 @@ import {
   fallbackGuide,
   isSideSalad,
   nutritionFromIngredients,
+  pickSideSalad,
   pickSnackFruit,
   plannedMealFromRecipe,
 } from "@/lib/optimizer/meals";
@@ -81,82 +82,77 @@ export async function suggestLlmMealAlternatives(
   input: OptimizationInput,
   options?: { refreshToken?: number },
 ): Promise<MealAlternative[]> {
-  const products = pricedCatalogForLlm(input);
-  const worker = await requestWorker<{
-    ok?: boolean;
-    alternatives?: Array<{
-      name: string;
-      recipe_id?: string;
-      reason?: string;
-      meal_type?: string;
-      ingredients?: Array<{ product_id: string; grams: number }>;
-      steps?: Array<{ order?: number; title: string; text: string; minutes?: number }>;
-    }>;
-    error?: string;
-  }>("/api/generate-alternatives", {
-    currentName: meal.recipeName,
-    mealType: meal.mealType,
-    budget: input.budget,
-    cartProductIds: result.cart.map((line) => line.productId).slice(0, 40),
-    refreshToken: options?.refreshToken ?? 0,
-    avoidNames: [meal.recipeName],
-    products,
-  });
-
-  if (!worker.ok || !worker.data.alternatives?.length) {
-    return suggestMealAlternatives(meal, result, input).map((item) => ({
-      kind: "catalog" as const,
-      recipe: item.recipe,
-      extraCost: item.extraCost,
-      reason: item.reason,
-    }));
-  }
-
-  const productIds = new Set(input.products.map((item) => item.id));
+  const NEED = 5;
+  const products = pricedCatalogForLlm(input).filter(
+    (item) => !(input.constraints.excludedProductIds ?? []).includes(item.id),
+  );
+  const productIds = new Set(products.map((item) => item.id));
+  const avoidNames = new Set([meal.recipeName.trim().toLowerCase()].filter(Boolean));
   const out: MealAlternative[] = [];
-  for (const [index, alt] of worker.data.alternatives.slice(0, 6).entries()) {
-    const ingredients = (alt.ingredients ?? [])
-      .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
-      .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
-    if (ingredients.length === 0) continue;
-    const steps = (alt.steps ?? []).map((step, stepIndex) => ({
-      order: step.order || stepIndex + 1,
-      title: step.title,
-      text: step.text,
-      minutes: step.minutes,
-    }));
-    const recipeId = alt.recipe_id || `llm_alt_${meal.dayIndex}_${meal.mealType}_${index}`;
-    const draft = replaceMealWithLlmIdea(
-      result,
-      meal,
-      {
+
+  for (let attempt = 0; attempt < 3 && out.length < NEED; attempt += 1) {
+    const worker = await requestWorker<{
+      ok?: boolean;
+      incomplete?: boolean;
+      alternatives?: Array<{
+        name: string;
+        recipe_id?: string;
+        reason?: string;
+        meal_type?: string;
+        ingredients?: Array<{ product_id: string; grams: number }>;
+        steps?: Array<{ order?: number; title: string; text: string; minutes?: number }>;
+      }>;
+      error?: string;
+    }>("/api/generate-alternatives", {
+      currentName: meal.recipeName,
+      mealType: meal.mealType,
+      budget: input.budget,
+      cartProductIds: result.cart.map((line) => line.productId).slice(0, 40),
+      refreshToken: `${options?.refreshToken ?? 0}-${attempt}`,
+      avoidNames: [...avoidNames],
+      products,
+    });
+
+    if (!worker.ok || !worker.data.alternatives?.length) continue;
+
+    for (const alt of worker.data.alternatives) {
+      if (out.length >= NEED) break;
+      const name = String(alt.name ?? "").trim();
+      if (!name || avoidNames.has(name.toLowerCase())) continue;
+      const ingredients = (alt.ingredients ?? [])
+        .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
+        .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
+      if (ingredients.length === 0) continue;
+      const steps = (alt.steps ?? []).map((step, stepIndex) => ({
+        order: step.order || stepIndex + 1,
+        title: step.title || `Шаг ${stepIndex + 1}`,
+        text: step.text || "Приготовить по вкусу.",
+        minutes: step.minutes,
+      }));
+      while (steps.length < 3) {
+        steps.push({
+          order: steps.length + 1,
+          title: `Шаг ${steps.length + 1}`,
+          text: "Приготовить по вкусу.",
+          minutes: 5,
+        });
+      }
+      const recipeId = alt.recipe_id || `llm_alt_${meal.dayIndex}_${meal.mealType}_${out.length}_${attempt}`;
+      const draft = replaceMealWithLlmIdea(result, meal, { recipeId, name, ingredients, steps }, input);
+      out.push({
+        kind: "llm",
         recipeId,
-        name: alt.name,
+        name,
+        reason: alt.reason || "Вариант от модели",
         ingredients,
         steps,
-      },
-      input,
-    );
-    out.push({
-      kind: "llm",
-      recipeId,
-      name: alt.name,
-      reason: alt.reason || "Вариант от модели",
-      ingredients,
-      steps,
-      extraCost: draft.effectiveCost - result.effectiveCost,
-    });
+        extraCost: draft.effectiveCost - result.effectiveCost,
+      });
+      avoidNames.add(name.toLowerCase());
+    }
   }
 
-  if (out.length === 0) {
-    return suggestMealAlternatives(meal, result, input).map((item) => ({
-      kind: "catalog" as const,
-      recipe: item.recipe,
-      extraCost: item.extraCost,
-      reason: item.reason,
-    }));
-  }
-  return out;
+  return out.slice(0, NEED);
 }
 
 export function replaceMeal(
@@ -226,8 +222,8 @@ export function replaceMealWithLlmIdea(
   };
   if (meal.mealType === "dinner") {
     const salad =
-      input.recipes.find((item) => item.id === meal.sideSalad?.recipeId) ??
-      input.recipes.find((item) => isSideSalad(item));
+      input.recipes.find((item) => item.id === meal.sideSalad?.recipeId && isSideSalad(item)) ??
+      pickSideSalad(input.recipes, result.menu.filter((item) => item !== meal));
     if (salad) next = attachSideSalad(next, salad, peopleCount);
   }
   if (meal.mealType === "snack") {
@@ -311,8 +307,8 @@ function mealFromRecipe(recipe: Recipe, meal: PlannedMeal, input: OptimizationIn
   let next = plannedMealFromRecipe(recipe, meal, peopleCount);
   if (meal.mealType === "dinner" && !isSideSalad(recipe)) {
     const salad =
-      input.recipes.find((item) => item.id === meal.sideSalad?.recipeId) ??
-      input.recipes.find((item) => isSideSalad(item));
+      input.recipes.find((item) => item.id === meal.sideSalad?.recipeId && isSideSalad(item)) ??
+      pickSideSalad(input.recipes, []);
     if (salad) next = attachSideSalad(next, salad, peopleCount);
   }
   if (meal.mealType === "snack") {

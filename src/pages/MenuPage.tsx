@@ -287,9 +287,12 @@ export function MenuPage() {
             <h3 className="font-display text-2xl">Замена блюда</h3>
             <p className="mt-1 text-sm text-muted">{activeMeal.recipeName}</p>
             <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto">
-              {loadingAlts && <p className="text-sm text-muted">Модель подбирает 5–6 вариантов…</p>}
+              {loadingAlts && <p className="text-sm text-muted">Модель генерирует 5 вариантов…</p>}
               {!loadingAlts && alternatives.length === 0 && (
                 <p className="text-sm text-muted">Варианты не пришли — нажмите «Ещё варианты».</p>
+              )}
+              {!loadingAlts && alternatives.length > 0 && alternatives.length < 5 && (
+                <p className="text-sm text-clay">Пришло {alternatives.length} из 5 — нажмите «Ещё варианты».</p>
               )}
               {!loadingAlts &&
                 alternatives.map((item) => {

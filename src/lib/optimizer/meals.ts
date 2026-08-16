@@ -171,6 +171,53 @@ export function attachSideSalad(meal: PlannedMeal, salad: Recipe, peopleCount: n
   };
 }
 
+export function pickSideSalad(recipes: Recipe[], selected: PlannedMeal[]): Recipe | null {
+  const salads = recipes.filter(isSideSalad);
+  if (salads.length === 0) return null;
+  const used = selected.map((meal) => meal.sideSalad?.recipeId).filter(Boolean);
+  const unused = salads.filter((recipe) => !used.includes(recipe.id));
+  const pool = unused.length > 0 ? unused : salads;
+  const dinners = selected.filter((meal) => meal.mealType === "dinner").length;
+  return pool[dinners % pool.length] ?? pool[0] ?? null;
+}
+
+/** Салат от модели: name + ingredients с валидными product_id. */
+export function attachLlmSideSalad(
+  meal: PlannedMeal,
+  salad: { name: string; ingredients: Array<{ product_id: string; grams: number }>; steps?: string[] },
+  products: Product[],
+): PlannedMeal {
+  const name = salad.name.trim() || "Салат";
+  const ingredients = salad.ingredients
+    .filter((ing) => ing.grams > 0 && products.some((product) => product.id === ing.product_id))
+    .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
+  if (ingredients.length === 0) return meal;
+  const nutrition = nutritionFromIngredients(ingredients, products);
+  const instructions =
+    salad.steps && salad.steps.length > 0
+      ? salad.steps
+      : ["Нарежьте овощи.", "Заправьте маслом, посолите и перемешайте."];
+  const sideSalad: SideSalad = {
+    recipeId: `llm_salad_${meal.dayIndex}`,
+    name,
+    ingredients,
+    instructions,
+  };
+  return {
+    ...meal,
+    recipeName: `${meal.recipeName.replace(/\s+\+.+$/, "")} + ${name}`,
+    sideSalad,
+    ingredients: [...meal.ingredients, ...ingredients],
+    calories: round1(meal.calories + nutrition.calories),
+    protein: round1(meal.protein + nutrition.protein),
+    fat: round1(meal.fat + nutrition.fat),
+    carbs: round1(meal.carbs + nutrition.carbs),
+    fiber: round1(meal.fiber + nutrition.fiber),
+    iron: round1(meal.iron + nutrition.iron),
+    instructions: [...meal.instructions, `Салат «${name}»:`, ...instructions],
+  };
+}
+
 const SNACK_FRUIT_IDS = ["apple", "banana", "pear", "orange", "kiwi", "berries"] as const;
 const SNACK_FRUIT_GRAMS: Record<string, number> = {
   apple: 150,
