@@ -13,9 +13,14 @@ import type {
 
 const MEAT_SOURCES = new Set(["chicken", "beef", "pork", "turkey", "fish"]);
 export const QUICK_LUNCH_MINUTES = 20;
+export const QUICK_BREAKFAST_MINUTES = 10;
 
 export function isQuickLunch(recipe: Recipe): boolean {
   return recipe.meal_type === "lunch" && recipe.cooking_time <= QUICK_LUNCH_MINUTES && !isSideSalad(recipe);
+}
+
+export function isQuickBreakfast(recipe: Recipe): boolean {
+  return recipe.meal_type === "breakfast" && recipe.cooking_time <= QUICK_BREAKFAST_MINUTES;
 }
 
 export function slotKey(dayIndex: number, mealType: string): string {

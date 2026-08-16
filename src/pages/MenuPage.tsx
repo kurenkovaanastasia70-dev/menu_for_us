@@ -27,7 +27,7 @@ const mealLabels: Record<string, string> = {
 
 export function MenuPage() {
   const { planId } = useParams();
-  const { latestPlan, household, members, cashback, fridge, refresh } = useApp();
+  const { latestPlan, household, members, cashback, fridge, customProducts, refresh } = useApp();
   const navigate = useNavigate();
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [activeMeal, setActiveMeal] = useState<PlannedMeal | null>(null);
@@ -57,8 +57,9 @@ export function MenuPage() {
       days: latestPlan.days,
       budget: Number(latestPlan.budget),
       fridge,
+      customProducts,
     });
-  }, [household, members, cashback, latestPlan, fridge]);
+  }, [household, members, cashback, latestPlan, fridge, customProducts]);
 
   useEffect(() => {
     if (!activeMeal || !result || !input) {

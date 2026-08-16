@@ -1,6 +1,7 @@
 import type { OptimizationInput } from "@/lib/optimizer";
 import type { CashbackRuleRow, FridgeItem, Household, Profile } from "@/lib/supabase/types";
 import { catalog } from "@/lib/catalog/repository";
+import { catalogWithCustom, type CustomProduct } from "@/lib/catalog/custom-products";
 import { ageFromBirthDate } from "@/lib/nutrition/calculator";
 import { fiberTargetFor, ironTargetFor } from "@/lib/nutrition/weight-goal";
 
@@ -93,8 +94,10 @@ export function makeOptimizationInput(args: {
   days: number;
   budget: number;
   fridge?: FridgeItem[];
+  customProducts?: CustomProduct[];
 }): OptimizationInput {
   const people = peopleFromProfiles(args.profiles);
+  const { products, prices } = catalogWithCustom(args.customProducts ?? []);
   return {
     people,
     days: args.days,
@@ -107,8 +110,8 @@ export function makeOptimizationInput(args: {
       iron: people.reduce((sum, person) => sum + person.ironTarget, 0),
     },
     budget: args.budget,
-    products: catalog.getProducts(),
-    prices: catalog.getStoreProducts(),
+    products,
+    prices,
     recipes: catalog.getRecipes(),
     cashback: cashbackInput(args.cashback),
     fridge: (args.fridge ?? []).map((item) => ({ productId: item.product_id, grams: item.grams })),

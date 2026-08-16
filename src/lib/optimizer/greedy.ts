@@ -24,6 +24,7 @@ import {
   fallbackGuide,
   isEatingOutSlot,
   isHotDinnerMain,
+  isQuickBreakfast,
   isQuickLunch,
   isSideSalad,
   leftoverFromDinner,
@@ -176,6 +177,9 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
     if (input.constraints.quickLunches) {
       warnings.push("Обеды: быстрые блюда (до 20 мин) или остатки вчерашнего ужина.");
     }
+    if (input.constraints.quickBreakfasts) {
+      warnings.push("Завтраки: только быстрые (до 10 мин), без долгой готовки.");
+    }
 
     return {
       menu: selected,
@@ -244,6 +248,10 @@ function pickRecipe(args: {
   }
   if (mealType === "lunch" && input.constraints.quickLunches) {
     const quick = pool.filter(isQuickLunch);
+    if (quick.length > 0) pool = quick;
+  }
+  if (mealType === "breakfast" && input.constraints.quickBreakfasts) {
+    const quick = pool.filter(isQuickBreakfast);
     if (quick.length > 0) pool = quick;
   }
   if (pool.length === 0) return recipes.find((recipe) => !isSideSalad(recipe)) ?? recipes[0] ?? null;

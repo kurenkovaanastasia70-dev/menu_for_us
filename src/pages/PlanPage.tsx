@@ -44,7 +44,7 @@ function loadPartnerDraft(householdId?: string | null) {
 }
 
 export function PlanPage() {
-  const { household, members, cashback, profile, fridge, refresh } = useApp();
+  const { household, members, cashback, profile, fridge, customProducts, refresh } = useApp();
   const navigate = useNavigate();
   const [days, setDays] = useState(household?.default_days ?? 7);
   const [budget, setBudget] = useState(household?.default_budget ?? 6000);
@@ -55,6 +55,7 @@ export function PlanPage() {
   const [stores, setStores] = useState<string[]>(household?.preferred_stores ?? ["pyaterochka", "magnit"]);
   const [eatingOut, setEatingOut] = useState<Set<string>>(new Set());
   const [quickLunches, setQuickLunches] = useState(false);
+  const [quickBreakfasts, setQuickBreakfasts] = useState(true);
   const [partnerName, setPartnerName] = useState("Партнёр");
   const [partnerCalories, setPartnerCalories] = useState(2000);
   const [pending, setPending] = useState(false);
@@ -131,6 +132,7 @@ export function PlanPage() {
         budget: Number(budget),
         cashback: cashbackInput(cashback),
         fridge: fridge.map((item) => ({ productId: item.product_id, grams: item.grams })),
+        customProducts,
         useLlm: true,
         constraints: {
           ...constraints,
@@ -141,6 +143,7 @@ export function PlanPage() {
           varietyPreference: variety,
           eatingOutSlots,
           quickLunches,
+          quickBreakfasts,
         },
       });
       const start = new Date();
@@ -216,6 +219,20 @@ export function PlanPage() {
             <option value="high">Максимум разнообразия</option>
           </Select>
         </div>
+        <label className="flex items-start gap-3 rounded-2xl bg-cream px-3 py-3 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={quickBreakfasts}
+            onChange={(e) => setQuickBreakfasts(e.target.checked)}
+          />
+          <span>
+            <span className="font-semibold">Быстрые завтраки</span>
+            <span className="mt-1 block text-muted">
+              До 10 минут: творог, йогурт, овсянка без долгой варки — без сырников, каш на плите и омлетов.
+            </span>
+          </span>
+        </label>
         <label className="flex items-start gap-3 rounded-2xl bg-cream px-3 py-3 text-sm">
           <input
             type="checkbox"

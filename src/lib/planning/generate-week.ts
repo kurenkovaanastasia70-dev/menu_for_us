@@ -1,4 +1,5 @@
 import { catalog } from "@/lib/catalog/repository";
+import { catalogWithCustom } from "@/lib/catalog/custom-products";
 import { FallbackLLMProvider, requestWorker } from "@/lib/llm/client";
 import { parseGuides } from "@/lib/llm/recipe-guide";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
@@ -13,11 +14,13 @@ export interface GenerateWeekParams {
   constraints: OptimizationInput["constraints"];
   cashback: OptimizationInput["cashback"];
   fridge?: OptimizationInput["fridge"];
+  customProducts?: import("@/lib/catalog/custom-products").CustomProduct[];
   useLlm: boolean;
 }
 
 export async function generateWeek(params: GenerateWeekParams): Promise<OptimizationResult> {
   const engine = new GreedyOptimizationEngine();
+  const { products, prices } = catalogWithCustom(params.customProducts ?? []);
   const input: OptimizationInput = {
     people: params.people,
     days: params.days,
@@ -30,8 +33,8 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
       iron: params.people.reduce((sum, person) => sum + person.ironTarget, 0),
     },
     budget: params.budget,
-    products: catalog.getProducts(),
-    prices: catalog.getStoreProducts(),
+    products,
+    prices,
     recipes: catalog.getRecipes(),
     cashback: params.cashback,
     fridge: params.fridge ?? [],
@@ -42,7 +45,7 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
 
   if (!params.useLlm) return validateMenuNutrition(fallback, input);
 
-  const products = pricedCatalogForLlm(input).map((item) => ({
+  const llmProducts = pricedCatalogForLlm(input).map((item) => ({
     id: item.id,
     n: item.name,
     r: item.rub_per_100g,
@@ -61,9 +64,10 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     carbsTarget: input.macroTargets.carbs,
     budget: params.budget,
     quickLunches: Boolean(params.constraints.quickLunches),
+    quickBreakfasts: Boolean(params.constraints.quickBreakfasts),
     dietType: params.constraints.dietType,
     eatingOutSlots: params.constraints.eatingOutSlots ?? [],
-    products,
+    products: llmProducts,
   };
 
   // По 1 дню: полный каталог + 2 дня часто обрезает JSON → остаются 3–4 дня.

@@ -6,7 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/field";
 import { useApp } from "@/context/AppContext";
 import { catalog } from "@/lib/catalog/repository";
+import {
+  deleteCustomProduct,
+  slugifyProductName,
+  upsertCustomProduct,
+  withMacroDefaults,
+  type CustomProduct,
+} from "@/lib/catalog/custom-products";
 import { STORES } from "@/lib/optimizer";
+import type { ProductCategory } from "@/lib/optimizer/types";
 import {
   ageFromBirthDate,
   calculateNutritionTargets,
@@ -16,11 +24,11 @@ import { calculateWeightPlan, suggestedWeeks } from "@/lib/nutrition/weight-goal
 import { DEFAULT_EXCLUDED_PRODUCT_IDS } from "@/lib/planning/from-profiles";
 import { saveCashback, updateHousehold, upsertProfile, upsertWeightLog } from "@/lib/supabase/api";
 import { supabase } from "@/lib/supabase/client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function ProfilePage() {
-  const { profile, household, members, cashback, weightLogs, refresh, user } = useApp();
+  const { profile, household, members, cashback, weightLogs, customProducts, refresh, user } = useApp();
   const navigate = useNavigate();
   const [budget, setBudget] = useState(household?.default_budget ?? 6000);
   const [percents, setPercents] = useState<Record<string, number>>(
@@ -38,11 +46,45 @@ export function ProfilePage() {
   );
   const [excludeQuery, setExcludeQuery] = useState("");
   const [excludePending, setExcludePending] = useState(false);
+  const [customList, setCustomList] = useState<CustomProduct[]>(customProducts);
+  const [customName, setCustomName] = useState("");
+  const [customPrice, setCustomPrice] = useState(199);
+  const [customPack, setCustomPack] = useState(400);
+  const [customCategory, setCustomCategory] = useState<ProductCategory>("protein");
+  const [customStore, setCustomStore] = useState(household?.preferred_stores?.[0] ?? "magnit");
+  const [customCal, setCustomCal] = useState<number | "">("");
+  const [customProtein, setCustomProtein] = useState<number | "">("");
+  const [customPending, setCustomPending] = useState(false);
   const [pending, setPending] = useState(false);
   const [weightPending, setWeightPending] = useState(false);
   const [message, setMessage] = useState("");
 
-  const products = useMemo(() => catalog.getProducts(), []);
+  useEffect(() => {
+    setCustomList(customProducts);
+  }, [customProducts]);
+
+  useEffect(() => {
+    if (household?.preferred_stores?.[0]) setCustomStore(household.preferred_stores[0]);
+  }, [household?.id, household?.preferred_stores]);
+
+  const products = useMemo(() => {
+    const base = catalog.getProducts();
+    const extras = customList.map((item) => ({
+      id: item.id,
+      canonical_name: item.name,
+      category: item.category,
+      calories_per_100g: item.calories_per_100g,
+      protein_per_100g: item.protein_per_100g,
+      fat_per_100g: item.fat_per_100g,
+      carbs_per_100g: item.carbs_per_100g,
+      fiber_per_100g: item.fiber_per_100g ?? 0,
+      iron_per_100g: item.iron_per_100g ?? 0,
+      package_weight: item.package_weight,
+      unit: item.unit,
+      tags: ["custom"] as string[],
+    }));
+    return [...base, ...extras];
+  }, [customList]);
   const excludedProducts = useMemo(
     () =>
       excludedIds
@@ -115,6 +157,47 @@ export function ProfilePage() {
     } finally {
       setExcludePending(false);
     }
+  }
+
+  async function addCustomProduct() {
+    if (!household || !customName.trim()) return;
+    setCustomPending(true);
+    setMessage("");
+    try {
+      const macros = withMacroDefaults(customCategory, {
+        calories_per_100g: customCal === "" ? undefined : Number(customCal),
+        protein_per_100g: customProtein === "" ? undefined : Number(customProtein),
+      });
+      const item: CustomProduct = {
+        id: slugifyProductName(customName),
+        household_id: household.id,
+        name: customName.trim(),
+        category: customCategory,
+        package_weight: Math.max(1, Number(customPack) || 400),
+        unit: "g",
+        price: Math.max(1, Number(customPrice) || 1),
+        store_id: customStore,
+        ...macros,
+      };
+      const next = await upsertCustomProduct(item);
+      setCustomList(next);
+      setCustomName("");
+      setCustomCal("");
+      setCustomProtein("");
+      await refresh();
+      setMessage("Продукт добавлен — модель сможет брать его в меню.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Не удалось добавить продукт");
+    } finally {
+      setCustomPending(false);
+    }
+  }
+
+  async function removeCustomProduct(productId: string) {
+    if (!household) return;
+    const next = await deleteCustomProduct(household.id, productId);
+    setCustomList(next);
+    await refresh();
   }
 
   async function saveGoal() {
@@ -295,6 +378,96 @@ export function ProfilePage() {
         )}
         <Button className="w-full" disabled={excludePending || !profile} onClick={saveExcluded}>
           {excludePending ? "Сохраняем…" : "Сохранить исключения"}
+        </Button>
+      </Card>
+
+      <Card className="mt-4 space-y-3">
+        <h2 className="font-display text-xl">Свои продукты</h2>
+        <p className="text-sm text-muted">
+          Добавьте то, чего нет в каталоге: название, цену упаковки и вес. КБЖУ можно не заполнять — подставим
+          типичные значения по категории. Эти позиции попадут в меню и корзину.
+        </p>
+        {customList.length > 0 && (
+          <ul className="space-y-2">
+            {customList.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-start justify-between gap-3 rounded-2xl border border-line bg-white px-3 py-2 text-sm"
+              >
+                <div>
+                  <div className="font-semibold">{item.name}</div>
+                  <div className="text-muted">
+                    {item.price} ₽ / {item.package_weight} г · {item.category}
+                  </div>
+                </div>
+                <button type="button" className="text-sage font-semibold" onClick={() => removeCustomProduct(item.id)}>
+                  Удалить
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div>
+          <Label>Название</Label>
+          <Input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder="Например: сырники с/м" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Цена упаковки, ₽</Label>
+            <Input type="number" value={customPrice} onChange={(e) => setCustomPrice(Number(e.target.value))} />
+          </div>
+          <div>
+            <Label>Вес упаковки, г</Label>
+            <Input type="number" value={customPack} onChange={(e) => setCustomPack(Number(e.target.value))} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Категория</Label>
+            <Select value={customCategory} onChange={(e) => setCustomCategory(e.target.value as ProductCategory)}>
+              <option value="protein">Белок</option>
+              <option value="dairy">Молочка</option>
+              <option value="grain">Крупы/гарнир</option>
+              <option value="vegetable">Овощи</option>
+              <option value="fruit">Фрукты</option>
+              <option value="fat">Жиры</option>
+              <option value="pantry">Бакалея</option>
+              <option value="snack">Перекус</option>
+            </Select>
+          </div>
+          <div>
+            <Label>Магазин цены</Label>
+            <Select value={customStore} onChange={(e) => setCustomStore(e.target.value)}>
+              {STORES.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Ккал / 100 г (опц.)</Label>
+            <Input
+              type="number"
+              value={customCal}
+              onChange={(e) => setCustomCal(e.target.value === "" ? "" : Number(e.target.value))}
+              placeholder="авто"
+            />
+          </div>
+          <div>
+            <Label>Белок / 100 г (опц.)</Label>
+            <Input
+              type="number"
+              value={customProtein}
+              onChange={(e) => setCustomProtein(e.target.value === "" ? "" : Number(e.target.value))}
+              placeholder="авто"
+            />
+          </div>
+        </div>
+        <Button className="w-full" disabled={customPending || !household || !customName.trim()} onClick={addCustomProduct}>
+          {customPending ? "Добавляем…" : "Добавить продукт"}
         </Button>
       </Card>
 

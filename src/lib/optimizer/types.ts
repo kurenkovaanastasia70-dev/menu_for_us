@@ -115,6 +115,8 @@ export interface OptimizationConstraints {
   varietyPreference: "low" | "medium" | "high";
   eatingOutSlots?: EatingOutSlot[];
   quickLunches?: boolean;
+  /** Завтраки без готовки: до ~10 минут (йогурт, творог, быстрая овсянка). */
+  quickBreakfasts?: boolean;
 }
 
 export interface FridgeStock {

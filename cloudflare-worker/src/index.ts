@@ -121,6 +121,7 @@ async function generateMenuChunk(
     budget: input.budget,
     dietType: input.dietType,
     quickLunches: input.quickLunches,
+    quickBreakfasts: input.quickBreakfasts,
     calorieTarget: input.calorieTarget,
     proteinTarget: input.proteinTarget,
     people: input.people,
@@ -138,7 +139,7 @@ async function generateMenuChunk(
 - Придумывай НОВЫЕ названия блюд. Разные кухни и сочетания.
 - product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г. Не выдумывай id.
 - 2–5 ingredients, ровно 3 коротких steps на русском.
-- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
+${input.quickBreakfasts ? "- quickBreakfasts=true: ЗАВТРАКИ только супербыстрые (до 10 мин): йогурт/творог/овсянка без варки долго, тост — без омлетов, каш на плите, сырников и запеканок.\n" : ""}- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
 - Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products.
 - recipe_id уникальный вида d{день}_{b|l|d|s}. leftover=true только для lunch из вчерашнего ужина.
 - Язык русский.
@@ -235,7 +236,7 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
 Правила:
 - Ровно ${left} разных вариантов в массиве alternatives.
 - meal_type = ${mealType}.
-- Новые названия, не повторять: ${[...avoidNames].slice(0, 20).join(" | ") || "—"}.
+${mealType === "breakfast" && input.quickBreakfasts ? "- Только супербыстрые завтраки до 10 мин (йогурт/творог/овсянка), без жарки и долгой варки.\n" : ""}- Новые названия, не повторять: ${[...avoidNames].slice(0, 20).join(" | ") || "—"}.
 - product_id ТОЛЬКО из products[].id. 2–5 ingredients, ровно 3 steps, язык русский.
 - Разные белки/гарниры.
 
@@ -243,6 +244,7 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
       currentName: input.currentName,
       mealType,
       budget: input.budget,
+      quickBreakfasts: input.quickBreakfasts,
       cartProductIds: input.cartProductIds,
       refreshToken: `${input.refreshToken ?? 0}-${attempt}`,
       products,

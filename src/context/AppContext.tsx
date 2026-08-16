@@ -9,6 +9,7 @@ import {
   fetchTrainingPlans,
   fetchWeightLogs,
 } from "@/lib/supabase/api";
+import { fetchCustomProducts, type CustomProduct } from "@/lib/catalog/custom-products";
 import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile, WeightLog } from "@/lib/supabase/types";
 import type { PersonTrainingPlan } from "@/lib/training/plan";
 import type { Session, User } from "@supabase/supabase-js";
@@ -23,6 +24,7 @@ interface AppState {
   members: Profile[];
   cashback: CashbackRuleRow[];
   fridge: FridgeItem[];
+  customProducts: CustomProduct[];
   weightLogs: WeightLog[];
   trainingPlans: PersonTrainingPlan[];
   plans: MealPlanRow[];
@@ -43,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Profile[]>([]);
   const [cashback, setCashback] = useState<CashbackRuleRow[]>([]);
   const [fridge, setFridge] = useState<FridgeItem[]>([]);
+  const [customProducts, setCustomProducts] = useState<CustomProduct[]>([]);
   const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
   const [trainingPlans, setTrainingPlans] = useState<PersonTrainingPlan[]>([]);
   const [plans, setPlans] = useState<MealPlanRow[]>([]);
@@ -56,6 +59,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMembers([]);
       setCashback([]);
       setFridge([]);
+      setCustomProducts([]);
       setWeightLogs([]);
       setTrainingPlans([]);
       setPlans([]);
@@ -67,20 +71,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const logs = await fetchWeightLogs(current.user.id);
       setWeightLogs(logs);
       if (nextProfile?.household_id) {
-        const [nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge, nextTraining] = await Promise.all([
-          fetchHousehold(nextProfile.household_id),
-          fetchHouseholdProfiles(nextProfile.household_id),
-          fetchCashback(nextProfile.household_id),
-          fetchMealPlans(nextProfile.household_id),
-          fetchFridge(nextProfile.household_id),
-          fetchTrainingPlans(nextProfile.household_id),
-        ]);
+        const [nextHousehold, nextMembers, nextCashback, nextPlans, nextFridge, nextTraining, nextCustom] =
+          await Promise.all([
+            fetchHousehold(nextProfile.household_id),
+            fetchHouseholdProfiles(nextProfile.household_id),
+            fetchCashback(nextProfile.household_id),
+            fetchMealPlans(nextProfile.household_id),
+            fetchFridge(nextProfile.household_id),
+            fetchTrainingPlans(nextProfile.household_id),
+            fetchCustomProducts(nextProfile.household_id),
+          ]);
         setHousehold(nextHousehold);
         setMembers(nextMembers);
         setCashback(nextCashback);
         setPlans(nextPlans);
         setFridge(nextFridge);
         setTrainingPlans(nextTraining);
+        setCustomProducts(nextCustom);
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({
@@ -99,6 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setMembers(nextProfile ? [nextProfile] : []);
         setCashback([]);
         setFridge([]);
+        setCustomProducts([]);
         setTrainingPlans([]);
         setPlans([]);
       }
@@ -160,6 +168,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       members,
       cashback,
       fridge,
+      customProducts,
       weightLogs,
       trainingPlans,
       plans,
@@ -168,7 +177,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       offlineCache,
       refresh: () => loadAll(session),
     }),
-    [loading, session, profile, household, members, cashback, fridge, weightLogs, trainingPlans, plans, error, offlineCache],
+    [loading, session, profile, household, members, cashback, fridge, customProducts, weightLogs, trainingPlans, plans, error, offlineCache],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

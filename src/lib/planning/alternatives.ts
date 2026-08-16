@@ -107,6 +107,7 @@ export async function suggestLlmMealAlternatives(
       currentName: meal.recipeName,
       mealType: meal.mealType,
       budget: input.budget,
+      quickBreakfasts: Boolean(input.constraints.quickBreakfasts),
       cartProductIds: result.cart.map((line) => line.productId).slice(0, 40),
       refreshToken: `${options?.refreshToken ?? 0}-${attempt}`,
       avoidNames: [...avoidNames],
