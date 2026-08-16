@@ -88,43 +88,20 @@ export default {
 
 async function handleMenu(body: unknown, env: Env): Promise<Response> {
   const input = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
-  const totalDays = Math.min(14, Math.max(1, Number(input.days) || 7));
-  const chunkSize = 2;
-  const ranges: Array<[number, number]> = [];
-  for (let start = 1; start <= totalDays; start += chunkSize) {
-    ranges.push([start, Math.min(totalDays, start + chunkSize - 1)]);
-  }
+  const fromDay = Math.max(1, Number(input.fromDay) || 1);
+  const requestedDays = Math.min(7, Math.max(1, Number(input.days) || 2));
+  const toDay = Math.max(fromDay, Number(input.toDay) || fromDay + requestedDays - 1);
+  const dayCount = Math.min(4, toDay - fromDay + 1); // один ответ = максимум 4 дня, иначе таймаут/обрезка JSON
+  const endDay = fromDay + dayCount - 1;
 
-  // Последовательно: параллель часто ловит 429/таймаут и валит всю неделю.
-  const days: any[] = [];
-  let lastError = "";
-  for (const [fromDay, toDay] of ranges) {
-    let part = await generateMenuChunk(input, fromDay, toDay, env);
-    if (!part.data) {
-      part = await generateMenuChunk(input, fromDay, toDay, env);
-    }
-    if (part.data?.days && Array.isArray(part.data.days)) {
-      days.push(...part.data.days.filter((day: any) => day && Array.isArray(day.meals)));
-    } else {
-      lastError = part.error || lastError;
-    }
+  const result = await generateMenuChunk(input, fromDay, endDay, env);
+  if (!result.data) {
+    return json({ ok: false, source: "fallback", error: result.error || "LLM недоступна" }, 200);
   }
-
-  days.sort((a, b) => Number(a.day) - Number(b.day));
-  if (days.length === 0) {
-    return json({ ok: false, source: "fallback", error: lastError || "LLM недоступна" }, 200);
+  if (!isMenu(result.data)) {
+    return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
   }
-
-  const menu = { days };
-  if (!isMenu(menu)) return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
-  return json({
-    ok: true,
-    source: "llm",
-    menu,
-    guides: [],
-    partial: days.length < totalDays,
-    error: days.length < totalDays ? `Собрано ${days.length} из ${totalDays} дней` : undefined,
-  });
+  return json({ ok: true, source: "llm", menu: result.data, guides: [] });
 }
 
 async function generateMenuChunk(
@@ -134,29 +111,39 @@ async function generateMenuChunk(
   env: Env,
 ): Promise<{ data: any | null; error?: string }> {
   const dayCount = toDay - fromDay + 1;
+  const rawProducts = Array.isArray(input.products) ? input.products.slice(0, 48) : [];
+  // Компактный прайс: меньше токенов = быстрее и стабильнее.
+  const products = rawProducts.map((item: any) => ({
+    id: item.id,
+    n: item.name ?? item.n,
+    r: item.rub_per_100g ?? item.r,
+    p: item.price_rub ?? item.p,
+    g: item.pack_g ?? item.g,
+  }));
   const compactInput = {
-    ...input,
-    days: dayCount,
+    budget: input.budget,
+    dietType: input.dietType,
+    quickLunches: input.quickLunches,
+    calorieTarget: input.calorieTarget,
+    proteinTarget: input.proteinTarget,
+    people: input.people,
+    eatingOutSlots: input.eatingOutSlots,
     fromDay,
     toDay,
-    products: Array.isArray(input.products) ? input.products.slice(0, 90) : input.products,
+    products,
   };
-  const prompt = `Ты шеф-повар. Меню на дни ${fromDay}–${toDay} (всего ${dayCount} дня). Верни ТОЛЬКО JSON.
+  const prompt = `Ты шеф-повар. Меню на дни ${fromDay}–${toDay} (${dayCount} дн.). Только JSON.
 
-Форма:
-{"days":[{"day":${fromDay},"meals":[{"meal_type":"breakfast","recipe_id":"day${fromDay}_breakfast","name":"...","leftover":false,"calories":800,"protein":50,"fat":20,"carbs":90,"ingredients":[{"product_id":"oats","grams":80}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":5},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":3}]}]}]}
+{"days":[{"day":${fromDay},"meals":[{"meal_type":"breakfast","recipe_id":"d${fromDay}_b","name":"...","leftover":false,"calories":900,"protein":50,"fat":25,"carbs":100,"ingredients":[{"product_id":"oats","grams":80}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}]}
 
 Правила:
-- day номера строго ${fromDay}..${toDay}.
-- Каждый день: breakfast, lunch, dinner, snack.
-- product_id только из products. Не выдумывай id. Если нужен продукт «из головы» — замени ближайшим из списка.
-- Разнообразие: не повторяй одно и то же блюдо каждый день; чередуй белок и гарниры из разных позиций products.
-- 2–5 ingredients, ровно 3 коротких steps.
-- Бюджет недели budget ₽ критичен: бери дешёвые product_id (низкий rub_per_100g), повторяй одни продукты, 2–4 ingredient на блюдо, без дорогой рыбы/сыра/масел.
-- quickLunches: на нечётных day lunch leftover:true если day>${fromDay}.
+- day = ${fromDay}..${toDay}. Каждый день: breakfast,lunch,dinner,snack.
+- product_id только из products[].id. Поля products: id,n=имя,r=₽/100г,p=цена упаковки,g=вес.
+- 2–4 ingredients, ровно 3 коротких steps.
+- Бюджет недели budget критичен: бери низкий r, повторяй продукты.
 - Язык русский.
 
-Вход: ${JSON.stringify(compactInput)}`;
+Вход:${JSON.stringify(compactInput)}`;
   return completeJson(prompt, env);
 }
 
@@ -265,7 +252,7 @@ function providerOrder(env: Env): Array<"gemini" | "groq" | "openrouter"> {
 async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: string, env: Env): Promise<string> {
   if (provider === "gemini") {
     // Сначала быстрые рабочие модели, без полного ListModels на каждый запрос.
-    const models = cachedGeminiModels ?? ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"];
+    const models = cachedGeminiModels ?? ["gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-flash-latest"];
     let lastError = "";
     for (const model of models) {
       const response = await fetch(
@@ -278,7 +265,7 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
             generationConfig: {
               temperature: 0.5,
               responseMimeType: "application/json",
-              maxOutputTokens: 65536,
+              maxOutputTokens: 8192,
             },
           }),
         },
@@ -307,7 +294,7 @@ async function callProvider(provider: "gemini" | "groq" | "openrouter", prompt: 
             generationConfig: {
               temperature: 0.5,
               responseMimeType: "application/json",
-              maxOutputTokens: 65536,
+              maxOutputTokens: 8192,
             },
           }),
         },

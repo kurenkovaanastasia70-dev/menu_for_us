@@ -51,7 +51,7 @@ export async function requestWorker<T extends { ok?: boolean; error?: string; me
   }
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 150_000);
+    const timer = setTimeout(() => controller.abort(), 75_000);
     const response = await fetch(`${base.replace(/\/$/, "")}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -59,7 +59,18 @@ export async function requestWorker<T extends { ok?: boolean; error?: string; me
       signal: controller.signal,
     });
     clearTimeout(timer);
-    const json = (await response.json()) as T;
+    const text = await response.text();
+    let json: T;
+    try {
+      json = JSON.parse(text) as T;
+    } catch {
+      return {
+        ok: false,
+        error: text
+          ? "Ответ модели обрезан или не JSON — повторите расчёт"
+          : `Пустой ответ LLM (HTTP ${response.status})`,
+      };
+    }
     if (!response.ok) {
       return { ok: false, error: json.error || "Ошибка LLM" };
     }

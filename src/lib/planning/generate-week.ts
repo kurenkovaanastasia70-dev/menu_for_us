@@ -42,8 +42,8 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
 
   if (!params.useLlm) return validateMenuNutrition(fallback, input);
 
-  const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
-    days: params.days,
+  const products = pricedCatalogForLlm(input);
+  const basePayload = {
     peopleCount: params.people.length,
     people: params.people.map((person) => ({
       id: person.id,
@@ -59,20 +59,40 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     quickLunches: Boolean(params.constraints.quickLunches),
     dietType: params.constraints.dietType,
     eatingOutSlots: params.constraints.eatingOutSlots ?? [],
-    products: pricedCatalogForLlm(input),
-  });
+    products,
+  };
 
-  if (!worker.ok || !worker.data.menu) {
+  // Куски по 2 дня на клиенте: длинный один запрос обрезается прокси/таймаутом → «модель недоступна».
+  const chunkSize = 2;
+  const mergedDays: NonNullable<WorkerGenerateResponse["menu"]>["days"] = [];
+  let lastError = "";
+  for (let fromDay = 1; fromDay <= params.days; fromDay += chunkSize) {
+    const toDay = Math.min(params.days, fromDay + chunkSize - 1);
+    const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
+      ...basePayload,
+      days: toDay - fromDay + 1,
+      fromDay,
+      toDay,
+    });
+    if (!worker.ok || !worker.data.menu?.days?.length) {
+      lastError = worker.ok === false ? worker.error : "пустой кусок меню";
+      continue;
+    }
+    mergedDays.push(...worker.data.menu.days);
+  }
+
+  if (mergedDays.length === 0) {
     fallback.warnings.push(
-      worker.ok === false && worker.error
-        ? `Модель недоступна (${worker.error}). Показано меню из каталога.`
+      lastError
+        ? `Модель недоступна (${lastError}). Показано меню из каталога.`
         : "Модель недоступна — меню из каталога. Ключ Gemini в Cloudflare Worker, в GitHub только VITE_API_URL.",
     );
     return validateMenuNutrition(fallback, input);
   }
 
-  const guides = parseGuides(worker.data.guides ? { guides: worker.data.guides } : worker.data);
-  let menu = mealsFromLlmMenu(worker.data.menu, input, guides);
+  const llmMenu = { days: mergedDays.sort((a, b) => a.day - b.day) };
+  const guides = parseGuides({ guides: [] });
+  let menu = mealsFromLlmMenu(llmMenu, input, guides);
   menu = fillMissingSlots(menu, fallback.menu);
   menu = scaleMenuToMacroTargets(menu, input);
   menu = fitMenuToBudget(menu, input);
@@ -83,6 +103,9 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
       ...result.warnings,
       `Корзина ${Math.round(result.effectiveCost)} ₽ при бюджете ${Math.round(input.budget)} ₽ — порции уже ужаты по максимуму. Поднимите бюджет или отметьте больше «ем не дома».`,
     ];
+  }
+  if (mergedDays.length < params.days) {
+    result.warnings.push(`Модель вернула ${mergedDays.length} из ${params.days} дней — остальное дополнено из каталога.`);
   }
   result.warnings = [
     ...result.warnings,
@@ -124,7 +147,7 @@ export function pricedCatalogForLlm(input: OptimizationInput) {
     fat: 10,
     snack: 8,
   };
-  const MAX = input.constraints.varietyPreference === "high" ? 90 : input.constraints.varietyPreference === "low" ? 70 : 80;
+  const MAX = input.constraints.varietyPreference === "high" ? 48 : input.constraints.varietyPreference === "low" ? 36 : 42;
   const seed = hashSeed(
     `${input.constraints.varietyPreference}:${input.people.map((person) => person.id).join(",")}:${input.days}:${input.budget}`,
   );

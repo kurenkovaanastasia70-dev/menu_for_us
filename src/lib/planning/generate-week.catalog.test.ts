@@ -68,7 +68,7 @@ describe("pricedCatalogForLlm", () => {
     } as OptimizationInput;
 
     const catalog = pricedCatalogForLlm(input);
-    expect(catalog.length).toBeGreaterThan(20);
+    expect(catalog.length).toBeGreaterThan(15);
     expect(catalog.some((item) => item.id === "chicken_breast")).toBe(true);
     // не только топ дешёвых: в срез попадает и более дорогой белок
     expect(catalog.some((item) => (item.rub_per_100g ?? 0) > 20)).toBe(true);
