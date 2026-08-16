@@ -89,10 +89,9 @@ export default {
 async function handleMenu(body: unknown, env: Env): Promise<Response> {
   const input = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
   const fromDay = Math.max(1, Number(input.fromDay) || 1);
-  const requestedDays = Math.min(7, Math.max(1, Number(input.days) || 2));
-  const toDay = Math.max(fromDay, Number(input.toDay) || fromDay + requestedDays - 1);
-  const dayCount = Math.min(4, toDay - fromDay + 1); // один ответ = максимум 4 дня, иначе таймаут/обрезка JSON
-  const endDay = fromDay + dayCount - 1;
+  // Клиент шлёт по 1 дню — так JSON не обрезается на полном каталоге.
+  const toDay = Math.max(fromDay, Number(input.toDay) || fromDay);
+  const endDay = Math.min(fromDay + 1, toDay); // максимум 2 дня на ответ
 
   const result = await generateMenuChunk(input, fromDay, endDay, env);
   if (!result.data) {
@@ -111,15 +110,12 @@ async function generateMenuChunk(
   env: Env,
 ): Promise<{ data: any | null; error?: string }> {
   const dayCount = toDay - fromDay + 1;
-  // Полный каталог (~270) в компактных полях; меню всё равно кусками по 2 дня на клиенте.
   const rawProducts = Array.isArray(input.products) ? input.products.slice(0, 400) : [];
-  // Компактный прайс: меньше токенов = быстрее и стабильнее.
+  // Только id/имя/цена — меньше токенов, стабильнее ответ на 1 день.
   const products = rawProducts.map((item: any) => ({
     id: item.id,
     n: item.name ?? item.n,
-    r: item.rub_per_100g ?? item.r,
-    p: item.price_rub ?? item.p,
-    g: item.pack_g ?? item.g,
+    r: item.rub_per_100g ?? item.r ?? null,
   }));
   const compactInput = {
     budget: input.budget,
@@ -139,10 +135,10 @@ async function generateMenuChunk(
 
 Правила:
 - day = ${fromDay}..${toDay}. Каждый день: breakfast,lunch,dinner,snack.
-- Придумывай НОВЫЕ названия блюд (не копируй столовое меню вроде «овсянка с бананом», «гречка с курицей»). Разные кухни и сочетания.
-- product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г,p=цена упаковки,g=вес. Не выдумывай id.
+- Придумывай НОВЫЕ названия блюд. Разные кухни и сочетания.
+- product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г. Не выдумывай id.
 - 2–5 ingredients, ровно 3 коротких steps на русском.
-- Бюджет недели budget важен: чаще бери средний/низкий r, но не только курица+рис. Можно морепродукты и заморозку, если они в products.
+- Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products.
 - recipe_id уникальный вида d{день}_{b|l|d|s}. leftover=true только для lunch из вчерашнего ужина.
 - Язык русский.
 

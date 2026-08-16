@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/field";
 import { useApp } from "@/context/AppContext";
+import { catalog } from "@/lib/catalog/repository";
 import { STORES } from "@/lib/optimizer";
 import {
   ageFromBirthDate,
@@ -12,6 +13,7 @@ import {
   type Goal,
 } from "@/lib/nutrition/calculator";
 import { calculateWeightPlan, suggestedWeeks } from "@/lib/nutrition/weight-goal";
+import { DEFAULT_EXCLUDED_PRODUCT_IDS } from "@/lib/planning/from-profiles";
 import { saveCashback, updateHousehold, upsertProfile, upsertWeightLog } from "@/lib/supabase/api";
 import { supabase } from "@/lib/supabase/client";
 import { useMemo, useState } from "react";
@@ -31,9 +33,34 @@ export function ProfilePage() {
     profile?.goal_weeks ??
       suggestedWeeks(Number(profile?.weight_kg ?? 62), Number(profile?.target_weight_kg ?? 58)),
   );
+  const [excludedIds, setExcludedIds] = useState<string[]>(() =>
+    [...new Set([...(profile?.excluded_products ?? []), ...DEFAULT_EXCLUDED_PRODUCT_IDS])],
+  );
+  const [excludeQuery, setExcludeQuery] = useState("");
+  const [excludePending, setExcludePending] = useState(false);
   const [pending, setPending] = useState(false);
   const [weightPending, setWeightPending] = useState(false);
   const [message, setMessage] = useState("");
+
+  const products = useMemo(() => catalog.getProducts(), []);
+  const excludedProducts = useMemo(
+    () =>
+      excludedIds
+        .map((id) => products.find((product) => product.id === id))
+        .filter(Boolean) as typeof products,
+    [excludedIds, products],
+  );
+  const excludeSearchHits = useMemo(() => {
+    const q = excludeQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return products
+      .filter(
+        (product) =>
+          !excludedIds.includes(product.id) &&
+          (product.canonical_name.toLowerCase().includes(q) || product.id.toLowerCase().includes(q)),
+      )
+      .slice(0, 12);
+  }, [excludeQuery, excludedIds, products]);
 
   const nutrition = useMemo(() => {
     if (!profile) return null;
@@ -70,6 +97,24 @@ export function ProfilePage() {
       await saveCashback(household.id, store.id, Number(percents[store.id] ?? 0));
     }
     await refresh();
+  }
+
+  async function saveExcluded() {
+    if (!profile) return;
+    setExcludePending(true);
+    setMessage("");
+    try {
+      await upsertProfile({
+        ...profile,
+        excluded_products: [...new Set(excludedIds)],
+      });
+      await refresh();
+      setMessage("Исключённые продукты сохранены. Новое меню их не использует.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Не удалось сохранить исключения");
+    } finally {
+      setExcludePending(false);
+    }
   }
 
   async function saveGoal() {
@@ -201,6 +246,56 @@ export function ProfilePage() {
           {pending ? "Сохраняем…" : "Сохранить цель"}
         </Button>
         {message && <p className="text-sm text-muted">{message}</p>}
+      </Card>
+
+      <Card className="mt-4 space-y-3">
+        <h2 className="font-display text-xl">Не едим</h2>
+        <p className="text-sm text-muted">
+          Эти продукты не попадают в меню и корзину. Чечевица уже исключена по умолчанию. Для пары суммируются
+          исключения обоих профилей.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {excludedProducts.map((product) => (
+            <button
+              key={product.id}
+              type="button"
+              className="rounded-full border border-line bg-white px-3 py-1 text-sm"
+              onClick={() => setExcludedIds((prev) => prev.filter((id) => id !== product.id))}
+            >
+              {product.canonical_name} ×
+            </button>
+          ))}
+          {excludedProducts.length === 0 && <p className="text-sm text-muted">Пока ничего не исключено.</p>}
+        </div>
+        <div>
+          <Label>Найти продукт</Label>
+          <Input
+            value={excludeQuery}
+            onChange={(e) => setExcludeQuery(e.target.value)}
+            placeholder="Например: лосось, творог"
+          />
+        </div>
+        {excludeSearchHits.length > 0 && (
+          <ul className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-line bg-white p-2">
+            {excludeSearchHits.map((product) => (
+              <li key={product.id}>
+                <button
+                  type="button"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-paper"
+                  onClick={() => {
+                    setExcludedIds((prev) => [...new Set([...prev, product.id])]);
+                    setExcludeQuery("");
+                  }}
+                >
+                  {product.canonical_name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Button className="w-full" disabled={excludePending || !profile} onClick={saveExcluded}>
+          {excludePending ? "Сохраняем…" : "Сохранить исключения"}
+        </Button>
       </Card>
 
       {weightPlan && (

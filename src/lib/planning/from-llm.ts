@@ -57,6 +57,7 @@ export function mealsFromLlmMenu(
 
       const ingredients = (raw.ingredients ?? [])
         .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
+        .filter((ing) => !(input.constraints.excludedProductIds ?? []).includes(ing.product_id))
         .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
       if (ingredients.length === 0) continue;
 

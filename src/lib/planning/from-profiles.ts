@@ -60,9 +60,13 @@ export function couplePlannerSlots(
   ];
 }
 
+export const DEFAULT_EXCLUDED_PRODUCT_IDS = ["lentils", "red_lentils", "green_lentils"];
+
 export function constraintsFromProfiles(profiles: Profile[], household: Household): OptimizationInput["constraints"] {
   const primary = profiles[0];
-  const excluded = [...new Set(profiles.flatMap((profile) => profile.excluded_products))];
+  const excluded = [
+    ...new Set([...DEFAULT_EXCLUDED_PRODUCT_IDS, ...profiles.flatMap((profile) => profile.excluded_products)]),
+  ];
   const allergies = [...new Set(profiles.flatMap((profile) => profile.allergies))];
   return {
     maxCookingTime: Math.min(...profiles.map((profile) => profile.max_cooking_time)),

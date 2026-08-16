@@ -51,7 +51,7 @@ export async function requestWorker<T extends { ok?: boolean; error?: string; me
   }
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 90_000);
+    const timer = setTimeout(() => controller.abort(), 120_000);
     const response = await fetch(`${base.replace(/\/$/, "")}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

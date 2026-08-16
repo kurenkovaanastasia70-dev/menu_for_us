@@ -42,7 +42,11 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
 
   if (!params.useLlm) return validateMenuNutrition(fallback, input);
 
-  const products = pricedCatalogForLlm(input);
+  const products = pricedCatalogForLlm(input).map((item) => ({
+    id: item.id,
+    n: item.name,
+    r: item.rub_per_100g,
+  }));
   const basePayload = {
     peopleCount: params.people.length,
     people: params.people.map((person) => ({
@@ -62,44 +66,41 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     products,
   };
 
-  // Куски по 2 дня: длинный один запрос обрезается. Падающие куски ретраим и дробим до 1 дня.
+  // По 1 дню: полный каталог + 2 дня часто обрезает JSON → остаются 3–4 дня.
   const mergedByDay = new Map<number, NonNullable<WorkerGenerateResponse["menu"]>["days"][number]>();
   const errors: string[] = [];
 
-  async function fetchChunk(fromDay: number, toDay: number, attempt: number) {
+  async function fetchDay(day: number, attempt: number) {
     const worker = await requestWorker<WorkerGenerateResponse>("/api/generate-menu", {
       ...basePayload,
-      days: toDay - fromDay + 1,
-      fromDay,
-      toDay,
+      days: 1,
+      fromDay: day,
+      toDay: day,
       attempt,
     });
     if (!worker.ok || !worker.data.menu?.days?.length) {
-      errors.push(worker.ok === false ? worker.error : `пустой кусок ${fromDay}–${toDay}`);
+      errors.push(worker.ok === false ? `${day}: ${worker.error}` : `пустой день ${day}`);
       return false;
     }
-    for (const day of worker.data.menu.days) {
-      if (day.day >= fromDay && day.day <= toDay) mergedByDay.set(day.day, day);
+    const match = worker.data.menu.days.find((item) => item.day === day) ?? worker.data.menu.days[0];
+    if (!match) {
+      errors.push(`нет дня ${day} в ответе`);
+      return false;
     }
+    mergedByDay.set(day, { ...match, day });
     return true;
   }
 
-  const pending: Array<[number, number]> = [];
-  for (let fromDay = 1; fromDay <= params.days; fromDay += 2) {
-    pending.push([fromDay, Math.min(params.days, fromDay + 1)]);
+  for (let day = 1; day <= params.days; day += 1) {
+    if (await fetchDay(day, 1)) continue;
+    if (await fetchDay(day, 2)) continue;
+    await fetchDay(day, 3);
   }
 
-  for (const [fromDay, toDay] of pending) {
-    const ok = await fetchChunk(fromDay, toDay, 1);
-    if (ok) continue;
-    // повтор того же куска
-    if (await fetchChunk(fromDay, toDay, 2)) continue;
-    // дробим на одиночные дни
-    for (let day = fromDay; day <= toDay; day += 1) {
-      if (mergedByDay.has(day)) continue;
-      if (await fetchChunk(day, day, 3)) continue;
-      await fetchChunk(day, day, 4);
-    }
+  // Финальный проход по дырам ещё раз.
+  for (let day = 1; day <= params.days; day += 1) {
+    if (mergedByDay.has(day)) continue;
+    await fetchDay(day, 4);
   }
 
   const mergedDays = [...mergedByDay.values()].sort((a, b) => a.day - b.day);
