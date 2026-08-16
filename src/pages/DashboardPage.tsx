@@ -3,13 +3,13 @@ import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
-import { formatRub } from "@/lib/cn";
+import { formatDateRange, formatRub } from "@/lib/cn";
+import { dayLabelForPlan } from "@/lib/dates/week";
 import { ageFromBirthDate, calculateNutritionTargets } from "@/lib/nutrition/calculator";
 import { calculateWeightPlan } from "@/lib/nutrition/weight-goal";
 import type { OptimizationResult } from "@/lib/optimizer";
 import { useNavigate } from "react-router-dom";
 
-const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const mealLabels: Record<string, string> = {
   breakfast: "Завтрак",
   lunch: "Обед",
@@ -18,11 +18,12 @@ const mealLabels: Record<string, string> = {
 };
 
 export function DashboardPage() {
-  const { latestPlan, members, household, error, offlineCache } = useApp();
+  const { latestPlan, members, household, error, offlineCache, currentWeekPlanId } = useApp();
   const navigate = useNavigate();
   const result = latestPlan?.result_json as OptimizationResult | undefined;
   const calories = members.reduce((sum, p) => sum + p.calorie_target, 0);
   const names = members.map((member) => member.name).join(" и ");
+  const isPinned = Boolean(latestPlan && currentWeekPlanId === latestPlan.id);
 
   return (
     <Screen title="Моя неделя">
@@ -48,7 +49,11 @@ export function DashboardPage() {
             <div className="font-display text-3xl">
               {formatRub(latestPlan?.effective_price ?? household?.default_budget ?? 0)}
             </div>
-            <div className="text-sm text-muted">{latestPlan ? `${latestPlan.days} дней меню` : "бюджет"}</div>
+            <div className="text-sm text-muted">
+              {latestPlan
+                ? formatDateRange(latestPlan.start_date, latestPlan.end_date)
+                : "бюджет"}
+            </div>
           </div>
         </div>
         <div className="mt-4 space-y-2 text-sm">
@@ -61,6 +66,12 @@ export function DashboardPage() {
             </div>
           ))}
         </div>
+        {latestPlan && (
+          <p className="mt-4 text-sm text-muted">
+            Корзина из {isPinned ? "закреплённой текущей недели" : "последней генерации"}. Отметить другую — в
+            Истории.
+          </p>
+        )}
         <div className="mt-5 grid gap-2">
           <Button onClick={() => navigate("/plan")}>Составить меню на пару</Button>
           <Button variant="secondary" onClick={() => navigate(latestPlan ? `/menu/${latestPlan.id}` : "/plan")}>
@@ -117,7 +128,9 @@ export function DashboardPage() {
             const meals = result.menu.filter((meal) => meal.dayIndex === day);
             return (
               <Card key={day}>
-                <h2 className="text-sm font-semibold tracking-wide text-muted">{dayNames[day % 7]}</h2>
+                <h2 className="text-sm font-semibold tracking-wide text-muted">
+                  {dayLabelForPlan(latestPlan!.start_date, day, "short")}
+                </h2>
                 <ul className="mt-2 space-y-2">
                   {meals.map((meal) => (
                     <li key={`${meal.dayIndex}-${meal.mealType}`} className="flex justify-between gap-3">

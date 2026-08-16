@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatDateRange, formatRub } from "@/lib/cn";
+import { planDateRange } from "@/lib/dates/week";
 import type { OptimizationResult } from "@/lib/optimizer";
 import { deleteMealPlan, fetchMealPlan, saveMealPlan } from "@/lib/supabase/api";
 import { useEffect, useState } from "react";
@@ -10,7 +11,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export function HistoryDetailPage() {
   const { planId } = useParams();
-  const { plans, household, refresh } = useApp();
+  const { plans, household, refresh, latestPlan, currentWeekPlanId, setCurrentWeekPlan } = useApp();
   const navigate = useNavigate();
   const existing = plans.find((item) => item.id === planId);
   const [plan, setPlan] = useState(existing);
@@ -26,20 +27,21 @@ export function HistoryDetailPage() {
   if (!plan) return <Screen title="Неделя">Загрузка…</Screen>;
   const current = plan;
   const result = current.result_json as OptimizationResult;
+  const isPinned = currentWeekPlanId === current.id;
+  const isActive = latestPlan?.id === current.id;
 
   async function repeatFull() {
     if (!household) return;
-    const start = new Date();
-    const end = new Date();
-    end.setDate(start.getDate() + current.days - 1);
+    const range = planDateRange(current.days);
     const id = await saveMealPlan({
       householdId: household.id,
-      startDate: start.toISOString().slice(0, 10),
-      endDate: end.toISOString().slice(0, 10),
+      startDate: range.startDate,
+      endDate: range.endDate,
       days: current.days,
       budget: Number(current.budget),
       result,
     });
+    setCurrentWeekPlan(null);
     await refresh();
     navigate(`/menu/${id}`);
   }
@@ -49,6 +51,7 @@ export function HistoryDetailPage() {
     setDeleting(true);
     try {
       await deleteMealPlan(current.id);
+      if (currentWeekPlanId === current.id) setCurrentWeekPlan(null);
       await refresh();
       navigate("/history");
     } finally {
@@ -63,6 +66,22 @@ export function HistoryDetailPage() {
         <p className="mt-2 text-sm text-muted">
           {Math.round(plan.calories_per_day)} kcal · {Math.round(plan.protein_per_day)} g белка · {plan.days} дней
         </p>
+        <label className="mt-4 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => {
+              if (e.target.checked) setCurrentWeekPlan(current.id);
+              else if (isPinned) setCurrentWeekPlan(null);
+            }}
+          />
+          Текущая неделя (корзина)
+        </label>
+        {isActive && (
+          <p className="mt-2 text-xs text-sage">
+            {isPinned ? "Закреплена как текущая неделя" : "Активна как последняя генерация"}
+          </p>
+        )}
       </Card>
       <div className="mt-4 grid gap-2">
         <Button onClick={() => navigate(`/menu/${plan.id}`)}>Открыть меню</Button>

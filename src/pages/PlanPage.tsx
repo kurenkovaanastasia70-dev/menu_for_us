@@ -12,11 +12,11 @@ import {
   couplePeopleForPlan,
   couplePlannerSlots,
 } from "@/lib/planning/from-profiles";
+import { dayLabelForPlan, planDateRange } from "@/lib/dates/week";
 import { saveMealPlan } from "@/lib/supabase/api";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const mealLabels: Record<string, string> = {
   breakfast: "Завтрак",
   lunch: "Обед",
@@ -44,7 +44,7 @@ function loadPartnerDraft(householdId?: string | null) {
 }
 
 export function PlanPage() {
-  const { household, members, cashback, profile, fridge, customProducts, refresh } = useApp();
+  const { household, members, cashback, profile, fridge, customProducts, refresh, setCurrentWeekPlan } = useApp();
   const navigate = useNavigate();
   const [days, setDays] = useState(household?.default_days ?? 7);
   const [budget, setBudget] = useState(household?.default_budget ?? 6000);
@@ -93,6 +93,8 @@ export function PlanPage() {
     types.push("snack");
     return types;
   }, [meals]);
+
+  const weekStartDate = useMemo(() => planDateRange(Number(days)).startDate, [days]);
 
   function slotKey(personId: string, dayIndex: number, mealType: string) {
     return `${personId}:${dayIndex}:${mealType}`;
@@ -146,17 +148,16 @@ export function PlanPage() {
           quickBreakfasts,
         },
       });
-      const start = new Date();
-      const end = new Date();
-      end.setDate(start.getDate() + Number(days) - 1);
+      const start = planDateRange(Number(days));
       const id = await saveMealPlan({
         householdId: household.id,
-        startDate: start.toISOString().slice(0, 10),
-        endDate: end.toISOString().slice(0, 10),
+        startDate: start.startDate,
+        endDate: start.endDate,
         days: Number(days),
         budget: Number(budget),
         result,
       });
+      setCurrentWeekPlan(null);
       await refresh();
       navigate(`/menu/${id}`);
     } catch (err) {
@@ -178,7 +179,7 @@ export function PlanPage() {
           cashback. Это не парсинг сайта магазина. Модель сразу видит цены и упаковки; код потом дотачивает корзину.
         </p>
         <p className="mt-2 text-sm text-muted">
-          Срок меню ({days} дн.) — длина корзины. Цель по весу и калории задаются в Профиле, не здесь.
+          Срок меню ({days} дн.) — с понедельника текущей недели. Цель по весу и калории задаются в Профиле, не здесь.
         </p>
         <p className="mt-2 text-sm text-muted">
           Ужин всегда горячее мясо/рыба + салат. Вегетарианцам — горячее без мяса + салат. Меню и тексты рецептов пишет
@@ -321,7 +322,7 @@ export function PlanPage() {
                   <tbody>
                     {Array.from({ length: Number(days) }).map((_, dayIndex) => (
                       <tr key={dayIndex}>
-                        <td className="py-2 pr-2 font-semibold">{dayNames[dayIndex % 7]}</td>
+                        <td className="py-2 pr-2 font-semibold">{dayLabelForPlan(weekStartDate, dayIndex, "short")}</td>
                         {mealTypes.map((type) => {
                           const key = slotKey(member.id, dayIndex, type);
                           return (
@@ -330,7 +331,7 @@ export function PlanPage() {
                                 type="checkbox"
                                 checked={eatingOut.has(key)}
                                 onChange={() => toggleSlot(member.id, dayIndex, type)}
-                                aria-label={`${member.name}: ${dayNames[dayIndex % 7]} ${mealLabels[type]} не дома`}
+                                aria-label={`${member.name}: ${dayLabelForPlan(weekStartDate, dayIndex, "short")} ${mealLabels[type]} не дома`}
                               />
                             </td>
                           );

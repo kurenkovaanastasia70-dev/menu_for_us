@@ -10,10 +10,15 @@ import {
   fetchWeightLogs,
 } from "@/lib/supabase/api";
 import { fetchCustomProducts, type CustomProduct } from "@/lib/catalog/custom-products";
+import {
+  readCurrentWeekPlanId,
+  resolveActivePlan,
+  writeCurrentWeekPlanId,
+} from "@/lib/dates/week";
 import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile, WeightLog } from "@/lib/supabase/types";
 import type { PersonTrainingPlan } from "@/lib/training/plan";
 import type { Session, User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 interface AppState {
   loading: boolean;
@@ -28,7 +33,11 @@ interface AppState {
   weightLogs: WeightLog[];
   trainingPlans: PersonTrainingPlan[];
   plans: MealPlanRow[];
+  /** План для «Моей недели» и корзины: отмеченная текущая неделя или последняя генерация. */
   latestPlan: MealPlanRow | null;
+  /** Явно отмеченный план «текущая неделя»; null = берём последнюю генерацию. */
+  currentWeekPlanId: string | null;
+  setCurrentWeekPlan: (planId: string | null) => void;
   error: string | null;
   offlineCache: boolean;
   refresh: () => Promise<void>;
@@ -49,6 +58,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
   const [trainingPlans, setTrainingPlans] = useState<PersonTrainingPlan[]>([]);
   const [plans, setPlans] = useState<MealPlanRow[]>([]);
+  const [currentWeekPlanId, setCurrentWeekPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [offlineCache, setOfflineCache] = useState(false);
 
@@ -63,6 +73,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setWeightLogs([]);
       setTrainingPlans([]);
       setPlans([]);
+      setCurrentWeekPlanId(null);
       return;
     }
     try {
@@ -88,6 +99,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFridge(nextFridge);
         setTrainingPlans(nextTraining);
         setCustomProducts(nextCustom);
+        const pinned = readCurrentWeekPlanId(nextProfile.household_id);
+        setCurrentWeekPlanId(pinned && nextPlans.some((plan) => plan.id === pinned) ? pinned : null);
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({
@@ -109,6 +122,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCustomProducts([]);
         setTrainingPlans([]);
         setPlans([]);
+        setCurrentWeekPlanId(null);
       }
       setOfflineCache(false);
       setError(null);
@@ -133,6 +147,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFridge(parsed.nextFridge ?? []);
         setTrainingPlans(parsed.nextTraining ?? []);
         setWeightLogs(parsed.nextWeightLogs ?? []);
+        if (parsed.nextHousehold?.id) {
+          const pinned = readCurrentWeekPlanId(parsed.nextHousehold.id);
+          setCurrentWeekPlanId(pinned && parsed.nextPlans.some((plan) => plan.id === pinned) ? pinned : null);
+        }
         setOfflineCache(true);
         setError("Нет связи с базой. Показаны сохранённые данные.");
       } else {
@@ -158,6 +176,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  const setCurrentWeekPlan = useCallback(
+    (planId: string | null) => {
+      if (!household?.id) return;
+      writeCurrentWeekPlanId(household.id, planId);
+      setCurrentWeekPlanId(planId);
+    },
+    [household?.id],
+  );
+
+  const latestPlan = useMemo(
+    () => resolveActivePlan(plans, currentWeekPlanId),
+    [plans, currentWeekPlanId],
+  );
+
   const value = useMemo<AppState>(
     () => ({
       loading,
@@ -172,12 +204,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       weightLogs,
       trainingPlans,
       plans,
-      latestPlan: plans[0] ?? null,
+      latestPlan,
+      currentWeekPlanId,
+      setCurrentWeekPlan,
       error,
       offlineCache,
       refresh: () => loadAll(session),
     }),
-    [loading, session, profile, household, members, cashback, fridge, customProducts, weightLogs, trainingPlans, plans, error, offlineCache],
+    [
+      loading,
+      session,
+      profile,
+      household,
+      members,
+      cashback,
+      fridge,
+      customProducts,
+      weightLogs,
+      trainingPlans,
+      plans,
+      latestPlan,
+      currentWeekPlanId,
+      setCurrentWeekPlan,
+      error,
+      offlineCache,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { formatRub } from "@/lib/cn";
+import { dayLabelForPlan } from "@/lib/dates/week";
 import type { OptimizationResult, PlannedMeal } from "@/lib/optimizer";
 import { materializeFromMenu } from "@/lib/optimizer";
 import {
@@ -14,10 +15,10 @@ import {
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
 import { withHomePresence } from "@/lib/planning/portions";
 import { fetchMealPlan, replaceCartItems, updateMealPlanResult } from "@/lib/supabase/api";
+import type { MealPlanRow } from "@/lib/supabase/types";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-const dayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
 const mealLabels: Record<string, string> = {
   breakfast: "Завтрак",
   lunch: "Обед",
@@ -29,6 +30,7 @@ export function MenuPage() {
   const { planId } = useParams();
   const { latestPlan, household, members, cashback, fridge, customProducts, refresh } = useApp();
   const navigate = useNavigate();
+  const [plan, setPlan] = useState<MealPlanRow | null>(null);
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [activeMeal, setActiveMeal] = useState<PlannedMeal | null>(null);
   const [alternatives, setAlternatives] = useState<MealAlternative[]>([]);
@@ -38,28 +40,36 @@ export function MenuPage() {
 
   useEffect(() => {
     const id = planId ?? latestPlan?.id;
-    if (!id) return;
+    if (!id) {
+      setPlan(null);
+      setResult(null);
+      return;
+    }
     if (latestPlan && latestPlan.id === id) {
+      setPlan(latestPlan);
       setResult(latestPlan.result_json as OptimizationResult);
       return;
     }
     fetchMealPlan(id).then((row) => {
-      if (row) setResult(row.result_json as OptimizationResult);
+      if (row) {
+        setPlan(row);
+        setResult(row.result_json as OptimizationResult);
+      }
     });
   }, [planId, latestPlan]);
 
   const input = useMemo(() => {
-    if (!household || members.length === 0 || !latestPlan) return null;
+    if (!household || members.length === 0 || !plan) return null;
     return makeOptimizationInput({
       profiles: members,
       household,
       cashback,
-      days: latestPlan.days,
-      budget: Number(latestPlan.budget),
+      days: plan.days,
+      budget: Number(plan.budget),
       fridge,
       customProducts,
     });
-  }, [household, members, cashback, latestPlan, fridge, customProducts]);
+  }, [household, members, cashback, plan, fridge, customProducts]);
 
   useEffect(() => {
     if (!activeMeal || !result || !input) {
@@ -81,7 +91,7 @@ export function MenuPage() {
 
   async function persist(next: OptimizationResult) {
     setResult(next);
-    const id = planId ?? latestPlan?.id;
+    const id = planId ?? plan?.id ?? latestPlan?.id;
     if (!id || !household) return;
     setSaving(true);
     await updateMealPlanResult(id, next);
@@ -207,7 +217,9 @@ export function MenuPage() {
       <div className="space-y-4">
         {Array.from({ length: days }, (_, dayIndex) => (
           <Card key={dayIndex}>
-            <h2 className="font-display text-2xl">{dayNames[dayIndex] ?? `День ${dayIndex + 1}`}</h2>
+            <h2 className="font-display text-2xl">
+              {plan ? dayLabelForPlan(plan.start_date, dayIndex, "long") : `День ${dayIndex + 1}`}
+            </h2>
             <div className="mt-3 space-y-3">
               {result.menu
                 .filter((meal) => meal.dayIndex === dayIndex)
