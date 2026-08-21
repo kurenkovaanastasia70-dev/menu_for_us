@@ -179,6 +179,8 @@ function result(menu: PlannedMeal[]): OptimizationResult {
     totalCost: 0,
     cashback: 0,
     effectiveCost: 0,
+    grossCost: 0,
+    fridgeDiscount: 0,
     nutritionSummary: {
       caloriesPerDay: 0,
       proteinPerDay: 0,

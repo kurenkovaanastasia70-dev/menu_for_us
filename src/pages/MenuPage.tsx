@@ -200,6 +200,11 @@ export function MenuPage() {
           <span>{Math.round(result.nutritionSummary.proteinPerDay)} g белка</span>
           <span>{formatRub(result.effectiveCost)}</span>
         </div>
+        {(result.fridgeDiscount ?? 0) > 0 && (
+          <p className="mt-1 text-xs text-sage">
+            Скидка холодильника {formatRub(result.fridgeDiscount ?? 0)} — эти продукты уже дома
+          </p>
+        )}
         <p className="mt-2 text-xs text-muted">
           Клетчатка {Math.round(result.nutritionSummary.fiberPerDay ?? 0)} / {Math.round(result.nutritionSummary.fiberTarget ?? 0)} г ·
           железо {Math.round((result.nutritionSummary.ironPerDay ?? 0) * 10) / 10} / {Math.round(result.nutritionSummary.ironTarget ?? 0)} мг

@@ -187,6 +187,23 @@ export function PlanPage() {
         </p>
       </Card>
 
+      <Card className="mb-4">
+        <h2 className="font-display text-xl">Холодильник</h2>
+        <p className="mt-2 text-sm text-muted">
+          Продукты дома обязательно входят в план меню. В бюджете это скидка: их не покупаем.
+        </p>
+        {fridge.length > 0 ? (
+          <p className="mt-2 text-sm">
+            Сейчас {fridge.filter((item) => item.grams > 0).length} позиций. Меню будет опираться на них.
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-clay">Пока пусто — заполните, чтобы снизить расходы на неделю.</p>
+        )}
+        <Button className="mt-3 w-full" variant="secondary" onClick={() => navigate("/fridge")}>
+          {fridge.length > 0 ? "Изменить холодильник" : "Добавить, что уже есть"}
+        </Button>
+      </Card>
+
       <Card className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>

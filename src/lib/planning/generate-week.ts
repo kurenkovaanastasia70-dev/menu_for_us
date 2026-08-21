@@ -50,6 +50,13 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     n: item.name,
     r: item.rub_per_100g,
   }));
+  const fridgeStock = (params.fridge ?? []).filter((item) => item.grams > 0);
+  const productName = new Map(input.products.map((item) => [item.id, item.canonical_name]));
+  const fridgeForLlm = fridgeStock.map((item) => ({
+    id: item.productId,
+    n: productName.get(item.productId) ?? item.productId,
+    g: Math.round(item.grams),
+  }));
   const basePayload = {
     peopleCount: params.people.length,
     people: params.people.map((person) => ({
@@ -68,6 +75,7 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     dietType: params.constraints.dietType,
     eatingOutSlots: params.constraints.eatingOutSlots ?? [],
     products: llmProducts,
+    fridge: fridgeForLlm,
   };
 
   // По 1 дню: полный каталог + 2 дня часто обрезает JSON → остаются 3–4 дня.

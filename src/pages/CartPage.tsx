@@ -159,6 +159,8 @@ export function CartPage() {
         next.totalCost = next.cart.reduce((sum, item) => sum + item.price, 0);
         next.cashback = next.cart.reduce((sum, item) => sum + item.cashback, 0);
         next.effectiveCost = next.cart.reduce((sum, item) => sum + item.effectivePrice, 0);
+        next.grossCost = Math.max(next.grossCost ?? next.effectiveCost, next.effectiveCost);
+        next.fridgeDiscount = Math.max(0, (next.grossCost ?? next.effectiveCost) - next.effectiveCost);
       }
       next = {
         ...next,
@@ -200,9 +202,20 @@ export function CartPage() {
       <Card>
         <p className="text-sm text-muted">
           Отметьте «уже есть» — продукт не покупаем, сумма корзины пересчитается. «Купили» — галочка для магазина.
+          Запас дома можно заранее занести в{" "}
+          <button type="button" className="font-semibold text-sage" onClick={() => navigate("/fridge")}>
+            холодильник
+          </button>
+          .
         </p>
         <div className="mt-3 space-y-1 text-sm">
-          <Row label="Стоимость" value={formatRub(result.totalCost)} />
+          {(result.grossCost ?? result.effectiveCost) > result.effectiveCost && (
+            <Row label="Без холодильника" value={formatRub(result.grossCost ?? result.effectiveCost)} />
+          )}
+          {(result.fridgeDiscount ?? 0) > 0 && (
+            <Row label="Скидка холодильника" value={`−${formatRub(result.fridgeDiscount ?? 0)}`} />
+          )}
+          <Row label="Стоимость покупок" value={formatRub(result.totalCost)} />
           <Row label="Cashback" value={formatRub(result.cashback)} />
           <Row label="Итого к покупке" value={formatRub(result.effectiveCost)} strong />
         </div>

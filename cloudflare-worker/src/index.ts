@@ -117,6 +117,16 @@ async function generateMenuChunk(
     n: item.name ?? item.n,
     r: item.rub_per_100g ?? item.r ?? null,
   }));
+  const fridge = Array.isArray(input.fridge)
+    ? input.fridge
+        .slice(0, 40)
+        .map((item: any) => ({
+          id: item.id ?? item.productId,
+          n: item.n ?? item.name,
+          g: Math.round(Number(item.g ?? item.grams) || 0),
+        }))
+        .filter((item: { id: string; g: number }) => item.id && item.g > 0)
+    : [];
   const compactInput = {
     budget: input.budget,
     dietType: input.dietType,
@@ -128,8 +138,13 @@ async function generateMenuChunk(
     eatingOutSlots: input.eatingOutSlots,
     fromDay,
     toDay,
+    fridge,
     products,
   };
+  const fridgeRule =
+    fridge.length > 0
+      ? `- fridge[] — уже ЕСТЬ ДОМА (g=граммы). ОБЯЗАТЕЛЬНО включи эти product_id в блюда дней ${fromDay}–${toDay}: используй запас, не игнорируй. Это экономия бюджета (их не покупаем). Не превышай сильно g без нужды.\n`
+      : "";
   const prompt = `Ты шеф-повар. Придумай ОРИГИНАЛЬНОЕ меню на дни ${fromDay}–${toDay} (${dayCount} дн.). Только JSON.
 
 {"days":[{"day":${fromDay},"meals":[{"meal_type":"breakfast","recipe_id":"d${fromDay}_b","name":"...","leftover":false,"calories":900,"protein":50,"fat":25,"carbs":100,"ingredients":[{"product_id":"oats","grams":80}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}]}
@@ -139,8 +154,8 @@ async function generateMenuChunk(
 - Придумывай НОВЫЕ названия блюд. Разные кухни и сочетания.
 - product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г. Не выдумывай id.
 - 2–5 ingredients, ровно 3 коротких steps на русском.
-${input.quickBreakfasts ? "- quickBreakfasts=true: ЗАВТРАКИ только супербыстрые (до 10 мин): йогурт/творог/овсянка без варки долго, тост — без омлетов, каш на плите, сырников и запеканок.\n" : ""}- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
-- Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products.
+${input.quickBreakfasts ? "- quickBreakfasts=true: ЗАВТРАКИ только супербыстрые (до 10 мин): йогурт/творог/овсянка без варки долго, тост — без омлетов, каш на плите, сырников и запеканок.\n" : ""}${fridgeRule}- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
+- Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products. Продукты из fridge не тратят бюджет.
 - recipe_id уникальный вида d{день}_{b|l|d|s}. leftover=true только для lunch из вчерашнего ужина.
 - Язык русский.
 
@@ -239,13 +254,14 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
 ${mealType === "breakfast" && input.quickBreakfasts ? "- Только супербыстрые завтраки до 10 мин (йогурт/творог/овсянка), без жарки и долгой варки.\n" : ""}- Новые названия, не повторять: ${[...avoidNames].slice(0, 20).join(" | ") || "—"}.
 - product_id ТОЛЬКО из products[].id. 2–5 ingredients, ровно 3 steps, язык русский.
 - Разные белки/гарниры.
-
+${Array.isArray(input.fridge) && (input.fridge as any[]).length > 0 ? "- Предпочитай product_id из fridge[] (уже дома). Это скидка к бюджету.\n" : ""}
 Вход:${JSON.stringify({
       currentName: input.currentName,
       mealType,
       budget: input.budget,
       quickBreakfasts: input.quickBreakfasts,
       cartProductIds: input.cartProductIds,
+      fridge: input.fridge,
       refreshToken: `${input.refreshToken ?? 0}-${attempt}`,
       products,
     })}`;

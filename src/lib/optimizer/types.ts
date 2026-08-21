@@ -244,6 +244,10 @@ export interface OptimizationResult {
   totalCost: number;
   cashback: number;
   effectiveCost: number;
+  /** Стоимость той же корзины, если бы ничего не было в холодильнике. */
+  grossCost: number;
+  /** Экономия за счёт уже имеющихся продуктов (grossCost − effectiveCost). */
+  fridgeDiscount: number;
   nutritionSummary: NutritionSummary;
   varietyScore: number;
   wasteScore: number;

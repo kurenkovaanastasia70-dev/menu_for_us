@@ -80,6 +80,9 @@ export function DashboardPage() {
           <Button variant="secondary" onClick={() => navigate("/training")}>
             Тренировки
           </Button>
+          <Button variant="ghost" onClick={() => navigate("/fridge")}>
+            Холодильник
+          </Button>
           <Button variant="ghost" onClick={() => navigate("/products")}>
             Каталог продуктов
           </Button>

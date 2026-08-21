@@ -181,12 +181,21 @@ export class GreedyOptimizationEngine implements OptimizationEngine {
       warnings.push("Завтраки: только быстрые (до 10 мин), без долгой готовки.");
     }
 
+    const fridgeEconomics = fridgeCartEconomics(selected, cart, input);
+    if (fridgeEconomics.fridgeDiscount > 0) {
+      warnings.push(
+        `Холодильник: скидка ${Math.round(fridgeEconomics.fridgeDiscount)} ₽ — эти продукты уже дома и не входят в покупки.`,
+      );
+    }
+
     return {
       menu: selected,
       cart,
       totalCost,
       cashback,
       effectiveCost,
+      grossCost: fridgeEconomics.grossCost,
+      fridgeDiscount: fridgeEconomics.fridgeDiscount,
       nutritionSummary: nutrition,
       varietyScore,
       wasteScore,
@@ -280,6 +289,9 @@ function pickRecipe(args: {
     const fiberBonus = (recipe.fiber ?? 0) > 6 && fiberGap > 4 ? -40 : 0;
     const ironGap = Math.max(0, input.macroTargets.iron - currentIronPerDay(selected, input.days));
     const ironBonus = (recipe.iron ?? 0) > 2 && ironGap > 2 ? -45 : 0;
+    const fridgeIds = new Set((input.fridge ?? []).filter((item) => item.grams > 0).map((item) => item.productId));
+    const fridgeHits = recipe.ingredients.filter((ing) => fridgeIds.has(ing.product_id)).length;
+    const fridgeBonus = fridgeHits * -70;
 
     const score =
       cost * OPTIMIZER_WEIGHTS.cost +
@@ -290,7 +302,8 @@ function pickRecipe(args: {
       reuseBonus +
       proteinBonus +
       fiberBonus +
-      ironBonus;
+      ironBonus +
+      fridgeBonus;
 
     if (score < bestScore) {
       bestScore = score;
@@ -435,6 +448,7 @@ function buildCart(menu: PlannedMeal[], input: OptimizationInput): CartLine[] {
       leftoverGrams: leftoverGrams(toBuyGrams, bought),
       fromFridgeGrams,
       toBuyGrams,
+      haveAtHome: toBuyGrams <= 0 && fromFridgeGrams > 0,
     });
   }
 
@@ -610,6 +624,20 @@ export function nutritionFromCart(
   );
 }
 
+function fridgeCartEconomics(menu: PlannedMeal[], cart: CartLine[], input: OptimizationInput) {
+  const effectiveCost = roundMoney(cart.reduce((sum, line) => sum + line.effectivePrice, 0));
+  const stock = (input.fridge ?? []).filter((item) => item.grams > 0);
+  if (stock.length === 0) {
+    return { grossCost: effectiveCost, fridgeDiscount: 0 };
+  }
+  const grossCart = limitStores(buildCart(menu, { ...input, fridge: [] }), input);
+  const grossCost = roundMoney(grossCart.reduce((sum, line) => sum + line.effectivePrice, 0));
+  return {
+    grossCost,
+    fridgeDiscount: Math.max(0, roundMoney(grossCost - effectiveCost)),
+  };
+}
+
 export function materializeFromMenu(
   menu: PlannedMeal[],
   input: OptimizationInput,
@@ -620,6 +648,7 @@ export function materializeFromMenu(
   const totalCost = roundMoney(cart.reduce((sum, line) => sum + line.price, 0));
   const cashback = roundMoney(cart.reduce((sum, line) => sum + line.cashback, 0));
   const effectiveCost = roundMoney(cart.reduce((sum, line) => sum + line.effectivePrice, 0));
+  const fridgeEconomics = fridgeCartEconomics(menu, cart, input);
   const leftoverValue = cart.reduce((sum, line) => {
     if (!line.packageCount || !line.packageWeight) return sum;
     return sum + (line.leftoverGrams / line.packageWeight) * line.effectivePrice;
@@ -632,6 +661,11 @@ export function materializeFromMenu(
     ...(eatingOutCount > 0 || partialOut > 0
       ? [`${eatingOutCount + partialOut} приём(а) с «ем не дома»: корзина только на тех, кто дома.`]
       : []),
+    ...(fridgeEconomics.fridgeDiscount > 0
+      ? [
+          `Холодильник: скидка ${Math.round(fridgeEconomics.fridgeDiscount)} ₽ — эти продукты уже дома и не входят в покупки.`,
+        ]
+      : []),
   ];
   return {
     menu,
@@ -639,6 +673,8 @@ export function materializeFromMenu(
     totalCost,
     cashback,
     effectiveCost,
+    grossCost: fridgeEconomics.grossCost,
+    fridgeDiscount: fridgeEconomics.fridgeDiscount,
     nutritionSummary: nutrition,
     varietyScore: calculateVarietyScore(menu, input.recipes),
     wasteScore: totalCost <= 0 ? 100 : Math.max(0, Math.round(100 - (leftoverValue / totalCost) * 100)),
@@ -666,6 +702,8 @@ export function syncCartWithMenu(
     totalCost: next.totalCost,
     cashback: next.cashback,
     effectiveCost: next.effectiveCost,
+    grossCost: next.grossCost,
+    fridgeDiscount: next.fridgeDiscount,
     nutritionSummary: next.nutritionSummary,
     wasteScore: next.wasteScore,
     feasible: next.feasible,

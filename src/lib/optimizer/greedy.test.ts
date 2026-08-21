@@ -303,6 +303,15 @@ describe("optimizer", () => {
     expect(chicken?.fromFridgeGrams).toBeGreaterThan(0);
   });
 
+  it("counts fridge stock as a budget discount", () => {
+    const empty = engine.optimize(input({ fridge: [] }));
+    const stocked = engine.optimize(input({ fridge: [{ productId: "chicken_breast", grams: 8000 }] }));
+    expect(stocked.fridgeDiscount).toBeGreaterThan(0);
+    expect(stocked.grossCost).toBeGreaterThan(stocked.effectiveCost);
+    expect(stocked.effectiveCost).toBeLessThan(empty.effectiveCost);
+    expect(stocked.fridgeDiscount).toBe(stocked.grossCost - stocked.effectiveCost);
+  });
+
   it("pairs dinner with a side salad and marks eating-out meals", () => {
     const people = input().people;
     const result = engine.optimize(

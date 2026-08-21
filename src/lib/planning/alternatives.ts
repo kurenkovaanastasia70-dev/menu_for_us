@@ -35,6 +35,7 @@ export function suggestMealAlternatives(
   limit = 3,
 ): Array<{ recipe: Recipe; extraCost: number; reason: string }> {
   const cartIds = new Set(result.cart.map((line) => line.productId));
+  const fridgeIds = new Set((input.fridge ?? []).filter((item) => item.grams > 0).map((item) => item.productId));
   const candidates = input.recipes.filter(
     (recipe) =>
       recipe.meal_type === meal.mealType &&
@@ -47,16 +48,20 @@ export function suggestMealAlternatives(
     const next = replaceMeal(result, meal, recipe, input);
     const extraCost = next.effectiveCost - result.effectiveCost;
     const overlap = recipeUsesCart(recipe, cartIds);
+    const fridgeHits = recipe.ingredients.filter((ing) => fridgeIds.has(ing.product_id)).length;
     const calorieDelta = Math.abs(recipe.calories * input.people.length - meal.calories);
-    const reason = overlap
-      ? "Продукты уже есть в корзине"
-      : extraCost <= 0
-        ? "Без доплаты или дешевле"
-        : "Близко по калориям и БЖУ";
+    const reason = fridgeHits > 0
+      ? "Использует продукты из холодильника"
+      : overlap
+        ? "Продукты уже есть в корзине"
+        : extraCost <= 0
+          ? "Без доплаты или дешевле"
+          : "Близко по калориям и БЖУ";
     return {
       recipe,
       extraCost,
       calorieDelta,
+      fridgeHits,
       overlap: overlap ? 1 : 0,
       proteinDelta: Math.abs(recipe.protein * input.people.length - meal.protein),
       reason,
@@ -65,6 +70,7 @@ export function suggestMealAlternatives(
   });
 
   scored.sort((a, b) => {
+    if (b.fridgeHits !== a.fridgeHits) return b.fridgeHits - a.fridgeHits;
     if (b.overlap !== a.overlap) return b.overlap - a.overlap;
     if (a.extraCost !== b.extraCost) return a.extraCost - b.extraCost;
     if (a.calorieDelta !== b.calorieDelta) return a.calorieDelta - b.calorieDelta;
@@ -107,6 +113,10 @@ export async function suggestLlmMealAlternatives(
       budget: input.budget,
       quickBreakfasts: Boolean(input.constraints.quickBreakfasts),
       cartProductIds: result.cart.map((line) => line.productId).slice(0, 40),
+      fridge: (input.fridge ?? [])
+        .filter((item) => item.grams > 0)
+        .slice(0, 40)
+        .map((item) => ({ id: item.productId, g: Math.round(item.grams) })),
       refreshToken: `${options?.refreshToken ?? 0}-${attempt}`,
       avoidNames: [...avoidNames],
       products,
