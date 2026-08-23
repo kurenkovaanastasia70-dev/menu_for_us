@@ -1,4 +1,6 @@
 import type { Product, ProductCategory, StoreProduct } from "@/lib/optimizer/types";
+import { mergeCustomProducts } from "@/lib/household/couple-sync";
+import { fetchHouseholdSettings, patchHouseholdSettings } from "@/lib/supabase/api";
 import { catalog } from "./repository";
 
 export interface CustomProduct {
@@ -127,18 +129,40 @@ export function catalogWithCustom(custom: CustomProduct[]): {
 }
 
 export async function fetchCustomProducts(householdId: string): Promise<CustomProduct[]> {
-  return readCustomProducts(householdId);
+  const local = readCustomProducts(householdId);
+  try {
+    const settings = await fetchHouseholdSettings(householdId);
+    const remote = Array.isArray(settings.custom_products) ? settings.custom_products : [];
+    const next = mergeCustomProducts(remote, local);
+    writeCustomProducts(householdId, next);
+    if (next.length !== remote.length) {
+      await patchHouseholdSettings(householdId, { custom_products: next }).catch(() => undefined);
+    }
+    return next;
+  } catch {
+    return local;
+  }
 }
 
 export async function upsertCustomProduct(item: CustomProduct): Promise<CustomProduct[]> {
   const current = readCustomProducts(item.household_id);
   const next = [...current.filter((row) => row.id !== item.id), item];
   writeCustomProducts(item.household_id, next);
+  try {
+    await patchHouseholdSettings(item.household_id, { custom_products: next });
+  } catch {
+    // local copy is enough until household settings exist
+  }
   return next;
 }
 
 export async function deleteCustomProduct(householdId: string, productId: string): Promise<CustomProduct[]> {
   const next = readCustomProducts(householdId).filter((row) => row.id !== productId);
   writeCustomProducts(householdId, next);
+  try {
+    await patchHouseholdSettings(householdId, { custom_products: next });
+  } catch {
+    // local copy is enough until household settings exist
+  }
   return next;
 }

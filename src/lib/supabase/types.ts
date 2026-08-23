@@ -32,6 +32,11 @@ export interface Profile {
   batch_meals: boolean;
 }
 
+export interface HouseholdSettings {
+  current_week_plan_id?: string | null;
+  custom_products?: import("@/lib/catalog/custom-products").CustomProduct[];
+}
+
 export interface Household {
   id: string;
   name: string;
@@ -40,6 +45,7 @@ export interface Household {
   default_days: number;
   preferred_stores: string[];
   max_stores: number;
+  settings?: HouseholdSettings;
 }
 
 export interface CashbackRuleRow {

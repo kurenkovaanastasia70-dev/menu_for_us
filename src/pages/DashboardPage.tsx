@@ -68,8 +68,8 @@ export function DashboardPage() {
         </div>
         {latestPlan && (
           <p className="mt-4 text-sm text-muted">
-            Корзина из {isPinned ? "закреплённой текущей недели" : "последней генерации"}. Отметить другую — в
-            Истории.
+            Общие меню и корзина пары из {isPinned ? "закреплённой текущей недели" : "последней генерации"}.
+            Отметить другую — в Истории.
           </p>
         )}
         <div className="mt-5 grid gap-2">

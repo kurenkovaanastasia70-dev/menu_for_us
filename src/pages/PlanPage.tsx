@@ -196,7 +196,7 @@ export function PlanPage() {
       <Card className="mb-4">
         <h2 className="font-display text-xl">Холодильник</h2>
         <p className="mt-2 text-sm text-muted">
-          Продукты дома обязательно входят в план меню. В бюджете это скидка: их не покупаем.
+          Общий холодильник пары обязательно входит в план меню. В бюджете это скидка: их не покупаем.
         </p>
         {fridge.length > 0 ? (
           <p className="mt-2 text-sm">

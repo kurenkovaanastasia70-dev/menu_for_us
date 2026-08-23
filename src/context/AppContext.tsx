@@ -8,6 +8,7 @@ import {
   fetchProfile,
   fetchTrainingPlans,
   fetchWeightLogs,
+  patchHouseholdSettings,
 } from "@/lib/supabase/api";
 import { fetchCustomProducts, type CustomProduct } from "@/lib/catalog/custom-products";
 import {
@@ -99,7 +100,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFridge(nextFridge);
         setTrainingPlans(nextTraining);
         setCustomProducts(nextCustom);
-        const pinned = readCurrentWeekPlanId(nextProfile.household_id);
+        const pinned =
+          nextHousehold?.settings?.current_week_plan_id ?? readCurrentWeekPlanId(nextProfile.household_id);
         setCurrentWeekPlanId(pinned && nextPlans.some((plan) => plan.id === pinned) ? pinned : null);
         localStorage.setItem(
           CACHE_KEY,
@@ -148,7 +150,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setTrainingPlans(parsed.nextTraining ?? []);
         setWeightLogs(parsed.nextWeightLogs ?? []);
         if (parsed.nextHousehold?.id) {
-          const pinned = readCurrentWeekPlanId(parsed.nextHousehold.id);
+          const pinned =
+            parsed.nextHousehold.settings?.current_week_plan_id ?? readCurrentWeekPlanId(parsed.nextHousehold.id);
           setCurrentWeekPlanId(pinned && parsed.nextPlans.some((plan) => plan.id === pinned) ? pinned : null);
         }
         setOfflineCache(true);
@@ -181,9 +184,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!household?.id) return;
       writeCurrentWeekPlanId(household.id, planId);
       setCurrentWeekPlanId(planId);
+      void patchHouseholdSettings(household.id, { current_week_plan_id: planId }).catch(() => undefined);
     },
     [household?.id],
   );
+
+  useEffect(() => {
+    const client = supabase;
+    if (!client || !household?.id || !session) return;
+    const householdId = household.id;
+    const channel = client
+      .channel(`couple-sync:${householdId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fridge_items", filter: `household_id=eq.${householdId}` },
+        () => {
+          void fetchFridge(householdId).then(setFridge);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meal_plans", filter: `household_id=eq.${householdId}` },
+        () => {
+          void fetchMealPlans(householdId).then(setPlans);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "households", filter: `id=eq.${householdId}` },
+        () => {
+          void Promise.all([fetchHousehold(householdId), fetchCustomProducts(householdId)]).then(
+            ([nextHousehold, nextCustom]) => {
+              if (nextHousehold) {
+                setHousehold(nextHousehold);
+                const pinned = nextHousehold.settings?.current_week_plan_id ?? readCurrentWeekPlanId(householdId);
+                setCurrentWeekPlanId(pinned);
+              }
+              setCustomProducts(nextCustom);
+            },
+          );
+        },
+      )
+      .subscribe();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void loadAll(session);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      void client.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [household?.id, session]);
 
   const latestPlan = useMemo(
     () => resolveActivePlan(plans, currentWeekPlanId),

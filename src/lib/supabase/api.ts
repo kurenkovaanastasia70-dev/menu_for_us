@@ -1,7 +1,8 @@
 import type { OptimizationResult } from "@/lib/optimizer";
 import type { PersonTrainingPlan } from "@/lib/training/plan";
+import { mergeFridgeItems } from "@/lib/household/couple-sync";
 import { supabase } from "./client";
-import type { CashbackRuleRow, FridgeItem, Household, MealPlanRow, Profile, WeightLog } from "./types";
+import type { CashbackRuleRow, FridgeItem, Household, HouseholdSettings, MealPlanRow, Profile, WeightLog } from "./types";
 
 function requireClient() {
   if (!supabase) throw new Error("Supabase не настроен");
@@ -29,6 +30,32 @@ export async function fetchHousehold(id: string): Promise<Household | null> {
   const { data, error } = await requireClient().from("households").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data as Household | null;
+}
+
+export async function fetchHouseholdSettings(householdId: string): Promise<HouseholdSettings> {
+  try {
+    const { data, error } = await requireClient()
+      .from("households")
+      .select("settings")
+      .eq("id", householdId)
+      .maybeSingle();
+    if (error || !data) return {};
+    const settings = (data as { settings?: HouseholdSettings }).settings;
+    return settings && typeof settings === "object" ? settings : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function patchHouseholdSettings(
+  householdId: string,
+  patch: Partial<HouseholdSettings>,
+): Promise<HouseholdSettings> {
+  const current = await fetchHouseholdSettings(householdId);
+  const next = { ...current, ...patch };
+  const { error } = await requireClient().from("households").update({ settings: next }).eq("id", householdId);
+  if (error) throw error;
+  return next;
 }
 
 export async function createHousehold(name: string): Promise<string> {
@@ -265,6 +292,7 @@ export async function replaceCartItems(planId: string, householdId: string, resu
 
 const FRIDGE_KEY = (id: string) => `menu-for-us-fridge-${id}`;
 const FRIDGE_INIT_KEY = (id: string) => `menu-for-us-fridge-init-${id}`;
+const FRIDGE_MERGED_KEY = (id: string) => `menu-for-us-fridge-merged-${id}`;
 
 function readLocalFridge(householdId: string): FridgeItem[] {
   try {
@@ -280,20 +308,33 @@ function writeLocalFridge(householdId: string, items: FridgeItem[]) {
   localStorage.setItem(FRIDGE_INIT_KEY(householdId), "1");
 }
 
-function fridgeInitialized(householdId: string): boolean {
-  return localStorage.getItem(FRIDGE_INIT_KEY(householdId)) === "1";
-}
-
 export async function fetchFridge(householdId: string): Promise<FridgeItem[]> {
   const local = readLocalFridge(householdId);
-  if (fridgeInitialized(householdId)) return local;
   try {
     const { data, error } = await requireClient().from("fridge_items").select("*").eq("household_id", householdId);
-    if (error) return local;
-    const rows = (data ?? []) as FridgeItem[];
-    if (rows.length === 0) return local;
-    writeLocalFridge(householdId, rows);
-    return rows;
+    if (error) throw error;
+    const remote = (data ?? []) as FridgeItem[];
+    const mergedOnce = localStorage.getItem(FRIDGE_MERGED_KEY(householdId)) === "1";
+    let next = remote.filter((item) => Number(item.grams) > 0);
+    if (!mergedOnce) {
+      next = mergeFridgeItems(remote, local);
+      const extra = next.filter((item) => !remote.some((row) => row.product_id === item.product_id));
+      if (extra.length > 0) {
+        await requireClient()
+          .from("fridge_items")
+          .upsert(
+            extra.map((item) => ({
+              household_id: householdId,
+              product_id: item.product_id,
+              grams: item.grams,
+            })),
+            { onConflict: "household_id,product_id" },
+          );
+      }
+      localStorage.setItem(FRIDGE_MERGED_KEY(householdId), "1");
+    }
+    writeLocalFridge(householdId, next);
+    return next;
   } catch {
     return local;
   }
@@ -301,8 +342,8 @@ export async function fetchFridge(householdId: string): Promise<FridgeItem[]> {
 
 export async function upsertFridgeItem(item: FridgeItem): Promise<FridgeItem[]> {
   const current = readLocalFridge(item.household_id);
-  const next = [...current.filter((row) => row.product_id !== item.product_id), item];
-  writeLocalFridge(item.household_id, next);
+  const optimistic = [...current.filter((row) => row.product_id !== item.product_id), item];
+  writeLocalFridge(item.household_id, optimistic);
   try {
     await requireClient()
       .from("fridge_items")
@@ -310,21 +351,21 @@ export async function upsertFridgeItem(item: FridgeItem): Promise<FridgeItem[]> 
         { household_id: item.household_id, product_id: item.product_id, grams: item.grams },
         { onConflict: "household_id,product_id" },
       );
+    return fetchFridge(item.household_id);
   } catch {
-    // local copy is enough until SQL is applied
+    return optimistic;
   }
-  return next;
 }
 
 export async function deleteFridgeItem(householdId: string, productId: string): Promise<FridgeItem[]> {
-  const next = readLocalFridge(householdId).filter((row) => row.product_id !== productId);
-  writeLocalFridge(householdId, next);
+  const optimistic = readLocalFridge(householdId).filter((row) => row.product_id !== productId);
+  writeLocalFridge(householdId, optimistic);
   try {
     await requireClient().from("fridge_items").delete().eq("household_id", householdId).eq("product_id", productId);
+    return fetchFridge(householdId);
   } catch {
-    // local copy is enough until SQL is applied
+    return optimistic;
   }
-  return next;
 }
 
 const WEIGHT_KEY = (id: string) => `menu-for-us-weight-${id}`;

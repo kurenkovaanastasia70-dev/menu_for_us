@@ -27,7 +27,8 @@ describe("supabase RLS", () => {
   const sql =
     readFileSync(resolve(process.cwd(), "supabase/migrations/20260813120000_init.sql"), "utf8") +
     readFileSync(resolve(process.cwd(), "supabase/migrations/20260813220000_fridge_and_micronutrients.sql"), "utf8") +
-    readFileSync(resolve(process.cwd(), "supabase/migrations/20260813230000_weight_logs_and_training.sql"), "utf8");
+    readFileSync(resolve(process.cwd(), "supabase/migrations/20260813230000_weight_logs_and_training.sql"), "utf8") +
+    readFileSync(resolve(process.cwd(), "supabase/migrations/20260823140000_couple_sync.sql"), "utf8");
 
   it("enables RLS on every table", () => {
     for (const table of TABLES) {
@@ -39,6 +40,12 @@ describe("supabase RLS", () => {
     expect(sql).toContain("user_household_id()");
     expect(sql).toContain("auth.uid()");
     expect(sql).toContain("household_id = public.user_household_id()");
+  });
+
+  it("stores shared couple settings on the household", () => {
+    expect(sql).toContain("add column if not exists settings jsonb");
+    expect(sql).toContain("alter publication supabase_realtime add table public.fridge_items");
+    expect(sql).toContain("alter publication supabase_realtime add table public.meal_plans");
   });
 
   it("lets a user manage only their own profile", () => {

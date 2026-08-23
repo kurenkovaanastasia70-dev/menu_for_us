@@ -139,7 +139,8 @@ export function FridgePage() {
     <Screen title="Холодильник">
       <Card className="space-y-3">
         <p className="text-sm text-muted">
-          То, что уже дома, попадёт в меню на неделю. В бюджете это скидка: эти граммы не покупаем.
+          Общий холодильник на пару: кто бы ни добавил продукт, второй увидит тот же запас. Он попадёт в меню, в
+          бюджете это скидка.
         </p>
         {rows.length > 0 && (
           <p className="text-sm">
