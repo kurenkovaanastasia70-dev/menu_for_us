@@ -2,8 +2,14 @@ import { Screen } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
-import { fridgeStockAfterToggle, lineAlreadyHave } from "@/lib/cart/already-have";
-import { formatGrams, formatRub } from "@/lib/cn";
+import {
+  fridgeStockAfterToggle,
+  groupCartLines,
+  lineAlreadyHave,
+  lineFridgeStatus,
+  lineToBuyGrams,
+} from "@/lib/cart/already-have";
+import { cn, formatGrams, formatRub } from "@/lib/cn";
 import { catalog } from "@/lib/catalog/repository";
 import { materializeFromMenu, syncCartWithMenu, type CartLine, type OptimizationResult } from "@/lib/optimizer";
 import { makeOptimizationInput } from "@/lib/planning/from-profiles";
@@ -65,10 +71,13 @@ export function CartPage() {
         customProducts,
       });
       const synced = syncCartWithMenu(raw, planInput);
-      const before = raw.cart.map((line) => line.productId).sort().join(",");
-      const after = synced.cart.map((line) => line.productId).sort().join(",");
+      const cartSignature = (cart: OptimizationResult["cart"]) =>
+        cart
+          .map((line) => `${line.productId}:${line.toBuyGrams ?? line.quantityGrams}:${line.fromFridgeGrams ?? 0}`)
+          .sort()
+          .join(",");
       setResult(synced);
-      if (before !== after) {
+      if (cartSignature(raw.cart) !== cartSignature(synced.cart)) {
         await updateMealPlanResult(plan.id, synced);
         await replaceCartItems(plan.id, household.id, synced);
         await refresh();
@@ -90,14 +99,16 @@ export function CartPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync when plan/fridge/catalog context changes
   }, [id, latestPlan?.id, household?.id, members, cashback, fridge, customProducts]);
 
+  const grouped = useMemo(() => groupCartLines(result?.cart ?? []), [result]);
+
   const byStore = useMemo(() => {
     const groups = new Map<string, number>();
-    for (const line of result?.cart ?? []) {
-      if ((line.toBuyGrams ?? line.quantityGrams) <= 0) continue;
+    for (const line of [...grouped.partial, ...grouped.buy]) {
+      if (lineToBuyGrams(line) <= 0) continue;
       groups.set(line.storeName, (groups.get(line.storeName) ?? 0) + line.effectivePrice);
     }
     return [...groups.entries()];
-  }, [result]);
+  }, [grouped]);
 
   async function persistCart(next: OptimizationResult) {
     setResult(next);
@@ -201,10 +212,10 @@ export function CartPage() {
     <Screen title="Корзина">
       <Card>
         <p className="text-sm text-muted">
-          Отметьте «уже есть» — продукт не покупаем, сумма корзины пересчитается. «Купили» — галочка для магазина.
-          Запас дома можно заранее занести в{" "}
+          Что полностью есть дома, сразу уходит вниз — на это можно не смотреть. Если запаса не хватает, позиция
+          помечена «докупить». Запас правится в{" "}
           <button type="button" className="font-semibold text-sage" onClick={() => navigate("/fridge")}>
-            холодильник
+            холодильнике
           </button>
           .
         </p>
@@ -227,42 +238,61 @@ export function CartPage() {
       </Card>
       {error && <p className="mt-4 text-sm text-clay">{error}</p>}
 
-      <div className="mt-4 space-y-3">
-        {result.cart.map((line) => {
-          const have = lineAlreadyHave(line);
-          return (
-            <Card key={line.productId} className={have ? "opacity-70" : ""}>
-              <div className="font-semibold">{line.productName}</div>
-              <div className="mt-1 text-sm text-muted">
-                нужно {formatGrams(line.quantityGrams)}
-                {have
-                  ? " · покупать не нужно"
-                  : ` · купить ${line.packageCount} × ${formatGrams(line.packageWeight)} · ${line.storeName}`}
-              </div>
-              {!have && (
-                <div className="mt-1 text-sm">
-                  {formatRub(line.price)} · cashback {line.cashbackPercent}% · итого {formatRub(line.effectivePrice)}
+      {grouped.partial.length + grouped.buy.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {grouped.partial.map((line) => (
+            <CartItemCard
+              key={line.productId}
+              line={line}
+              purchased={Boolean(purchased[line.productId])}
+              saving={saving}
+              onHave={() => toggleHave(line)}
+              onBought={() => toggleBought(line.productId)}
+              onSwap={() => setSwapFrom(line.productId)}
+            />
+          ))}
+          {grouped.buy.map((line) => (
+            <CartItemCard
+              key={line.productId}
+              line={line}
+              purchased={Boolean(purchased[line.productId])}
+              saving={saving}
+              onHave={() => toggleHave(line)}
+              onBought={() => toggleBought(line.productId)}
+              onSwap={() => setSwapFrom(line.productId)}
+            />
+          ))}
+        </div>
+      )}
+
+      {grouped.have.length > 0 && (
+        <details className="mt-6 rounded-3xl border border-dashed border-line bg-white/60 p-4">
+          <summary className="cursor-pointer list-none font-semibold text-muted">
+            Уже есть — не покупаем · {grouped.have.length}
+            <span className="mt-1 block text-sm font-normal">Можно не смотреть, запас покрывает меню.</span>
+          </summary>
+          <div className="mt-3 space-y-2">
+            {grouped.have.map((line) => (
+              <div key={line.productId} className="flex items-start justify-between gap-3 rounded-2xl bg-cream/80 px-3 py-2">
+                <div>
+                  <div className="font-semibold text-muted">{line.productName}</div>
+                  <div className="text-sm text-muted">
+                    нужно {formatGrams(line.quantityGrams)} · есть {formatGrams(line.fromFridgeGrams || line.quantityGrams)}
+                  </div>
                 </div>
-              )}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button variant={have ? "primary" : "secondary"} disabled={saving} onClick={() => toggleHave(line)}>
-                  {have ? "Уже есть ✓" : "Уже есть"}
-                </Button>
-                <Button
-                  variant={purchased[line.productId] ? "primary" : "secondary"}
-                  disabled={have || saving}
-                  onClick={() => toggleBought(line.productId)}
+                <button
+                  type="button"
+                  className="shrink-0 text-sm font-semibold text-sage"
+                  disabled={saving}
+                  onClick={() => toggleHave(line)}
                 >
-                  {purchased[line.productId] ? "Купили ✓" : "Купили"}
-                </Button>
+                  Вернуть
+                </button>
               </div>
-              <button className="mt-2 text-sm font-semibold text-sage" onClick={() => setSwapFrom(line.productId)}>
-                Заменить продукт
-              </button>
-            </Card>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {swapFrom && (
         <div className="fixed inset-0 z-30 bg-ink/40 p-4" onClick={() => setSwapFrom(null)}>
@@ -292,5 +322,63 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
       <span>{label}</span>
       <span>{value}</span>
     </div>
+  );
+}
+
+function CartItemCard({
+  line,
+  purchased,
+  saving,
+  onHave,
+  onBought,
+  onSwap,
+}: {
+  line: CartLine;
+  purchased: boolean;
+  saving: boolean;
+  onHave: () => void;
+  onBought: () => void;
+  onSwap: () => void;
+}) {
+  const status = lineFridgeStatus(line);
+  const have = status === "have";
+  const partial = status === "partial";
+  const fromFridge = Number(line.fromFridgeGrams ?? 0);
+  const toBuy = lineToBuyGrams(line);
+
+  return (
+    <Card className={cn(partial && "border-clay/50 bg-clay/5")}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="font-semibold">{line.productName}</div>
+        {partial && (
+          <span className="rounded-full bg-clay px-2.5 py-1 text-xs font-semibold text-white">
+            Докупить {formatGrams(toBuy)}
+          </span>
+        )}
+      </div>
+      <div className="mt-1 text-sm text-muted">
+        нужно {formatGrams(line.quantityGrams)}
+        {partial && fromFridge > 0 ? ` · дома уже ${formatGrams(fromFridge)}` : ""}
+        {have
+          ? " · покупать не нужно"
+          : ` · купить ${line.packageCount} × ${formatGrams(line.packageWeight)} · ${line.storeName}`}
+      </div>
+      {!have && (
+        <div className="mt-1 text-sm">
+          {formatRub(line.price)} · cashback {line.cashbackPercent}% · итого {formatRub(line.effectivePrice)}
+        </div>
+      )}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Button variant={have ? "primary" : "secondary"} disabled={saving} onClick={onHave}>
+          {have ? "Уже есть ✓" : partial ? "Есть целиком" : "Уже есть"}
+        </Button>
+        <Button variant={purchased ? "primary" : "secondary"} disabled={have || saving} onClick={onBought}>
+          {purchased ? "Купили ✓" : "Купили"}
+        </Button>
+      </div>
+      <button className="mt-2 text-sm font-semibold text-sage" onClick={onSwap}>
+        Заменить продукт
+      </button>
+    </Card>
   );
 }
