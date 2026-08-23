@@ -127,9 +127,17 @@ async function generateMenuChunk(
         }))
         .filter((item: { id: string; g: number }) => item.id && item.g > 0)
     : [];
+  const lastWeek = Array.isArray(input.lastWeek) ? input.lastWeek.slice(0, 28) : [];
+  const thisWeek = Array.isArray(input.thisWeek) ? input.thisWeek.slice(0, 28) : [];
+  const meatIds = Array.isArray(input.meatIds)
+    ? (input.meatIds as unknown[]).map((id) => String(id)).filter(Boolean).slice(0, 40)
+    : [];
+  const variety = String(input.variety ?? "medium");
+  const vegetarian = String(input.dietType ?? "") === "vegetarian";
   const compactInput = {
     budget: input.budget,
     dietType: input.dietType,
+    variety,
     quickLunches: input.quickLunches,
     quickBreakfasts: input.quickBreakfasts,
     calorieTarget: input.calorieTarget,
@@ -139,12 +147,28 @@ async function generateMenuChunk(
     fromDay,
     toDay,
     fridge,
+    lastWeek,
+    thisWeek,
+    meatIds,
     products,
   };
   const fridgeRule =
     fridge.length > 0
       ? `- fridge[] — уже ЕСТЬ ДОМА (g=граммы). ОБЯЗАТЕЛЬНО включи эти product_id в блюда дней ${fromDay}–${toDay}: используй запас, не игнорируй. Это экономия бюджета (их не покупаем). Не превышай сильно g без нужды.\n`
       : "";
+  const varietyRule =
+    variety === "high"
+      ? "- variety=high: максимум разных белков и гарниров. Не повторяй основной белок ужина два дня подряд. lastWeek/thisWeek — бери другие product_id, особенно не те же бёдра/грудку каждый день.\n"
+      : variety === "low"
+        ? "- variety=low: повторы допустимы, но не один и тот же product_id на все ужины.\n"
+        : "- variety=medium: основной белок ужина меняй хотя бы через день. lastWeek/thisWeek можно частично повторять, без фанатизма — не копируй те же 2–3 продукта на всю неделю.\n";
+  const historyRule =
+    lastWeek.length + thisWeek.length > 0
+      ? "- lastWeek/thisWeek: {d=день,m=b|l|d|s,n=название,p=product_id}. Не копируй те же блюда. Продукты можно повторять точечно, но основной белок и гарнир частично другие.\n"
+      : "";
+  const dinnerMeatRule = vegetarian
+    ? "- dinner: горячее без мяса + салат (dietType=vegetarian).\n"
+    : `- dinner ОБЯЗАТЕЛЬНО с мясом/птицей: хотя бы один product_id из meatIds${meatIds.length ? ` (${meatIds.slice(0, 12).join(", ")})` : ""}. Не ужин из круп/овощей/яиц/рыбы без мяса. Рыба — не замена мясу на каждый ужин.\n`;
   const prompt = `Ты шеф-повар. Придумай ОРИГИНАЛЬНОЕ меню на дни ${fromDay}–${toDay} (${dayCount} дн.). Только JSON.
 
 {"days":[{"day":${fromDay},"meals":[{"meal_type":"breakfast","recipe_id":"d${fromDay}_b","name":"...","leftover":false,"calories":900,"protein":50,"fat":25,"carbs":100,"ingredients":[{"product_id":"oats","grams":80}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}]}
@@ -154,7 +178,7 @@ async function generateMenuChunk(
 - Придумывай НОВЫЕ названия блюд. Разные кухни и сочетания.
 - product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г. Не выдумывай id.
 - 2–5 ingredients, ровно 3 коротких steps на русском.
-${input.quickBreakfasts ? "- quickBreakfasts=true: ЗАВТРАКИ только супербыстрые (до 10 мин): йогурт/творог/овсянка без варки долго, тост — без омлетов, каш на плите, сырников и запеканок.\n" : ""}${fridgeRule}- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
+${input.quickBreakfasts ? "- quickBreakfasts=true: ЗАВТРАКИ только супербыстрые (до 10 мин): йогурт/творог/овсянка без варки долго, тост — без омлетов, каш на плите, сырников и запеканок.\n" : ""}${fridgeRule}${varietyRule}${historyRule}${dinnerMeatRule}- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
 - Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products. Продукты из fridge не тратят бюджет.
 - recipe_id уникальный вида d{день}_{b|l|d|s}. leftover=true только для lunch из вчерашнего ужина.
 - Язык русский.
@@ -253,15 +277,19 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
 - meal_type = ${mealType}.
 ${mealType === "breakfast" && input.quickBreakfasts ? "- Только супербыстрые завтраки до 10 мин (йогурт/творог/овсянка), без жарки и долгой варки.\n" : ""}- Новые названия, не повторять: ${[...avoidNames].slice(0, 20).join(" | ") || "—"}.
 - product_id ТОЛЬКО из products[].id. 2–5 ingredients, ровно 3 steps, язык русский.
-- Разные белки/гарниры.
-${Array.isArray(input.fridge) && (input.fridge as any[]).length > 0 ? "- Предпочитай product_id из fridge[] (уже дома). Это скидка к бюджету.\n" : ""}
+- Разные белки/гарниры, не копируй lastWeek.
+${mealType === "dinner" && String(input.dietType ?? "") !== "vegetarian" ? "- dinner: обязательно мясо/птица из meatIds, не только рыба/овощи.\n" : ""}${Array.isArray(input.fridge) && (input.fridge as any[]).length > 0 ? "- Предпочитай product_id из fridge[] (уже дома). Это скидка к бюджету.\n" : ""}
 Вход:${JSON.stringify({
       currentName: input.currentName,
       mealType,
       budget: input.budget,
+      dietType: input.dietType,
+      variety: input.variety,
       quickBreakfasts: input.quickBreakfasts,
       cartProductIds: input.cartProductIds,
       fridge: input.fridge,
+      lastWeek: input.lastWeek,
+      meatIds: input.meatIds,
       refreshToken: `${input.refreshToken ?? 0}-${attempt}`,
       products,
     })}`;

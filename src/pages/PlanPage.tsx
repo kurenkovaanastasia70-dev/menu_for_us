@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { STORES } from "@/lib/optimizer";
 import type { EatingOutSlot } from "@/lib/optimizer/types";
 import { generateWeek } from "@/lib/planning/generate-week";
+import { compactPlanResult, pickPreviousWeekPlan } from "@/lib/planning/previous-menu";
 import {
   cashbackInput,
   constraintsFromProfiles,
@@ -44,7 +45,7 @@ function loadPartnerDraft(householdId?: string | null) {
 }
 
 export function PlanPage() {
-  const { household, members, cashback, profile, fridge, customProducts, refresh, setCurrentWeekPlan } = useApp();
+  const { household, members, cashback, profile, fridge, customProducts, plans, refresh, setCurrentWeekPlan } = useApp();
   const navigate = useNavigate();
   const [days, setDays] = useState(household?.default_days ?? 7);
   const [budget, setBudget] = useState(household?.default_budget ?? 6000);
@@ -95,6 +96,10 @@ export function PlanPage() {
   }, [meals]);
 
   const weekStartDate = useMemo(() => planDateRange(Number(days)).startDate, [days]);
+  const previousMeals = useMemo(
+    () => compactPlanResult(pickPreviousWeekPlan(plans, weekStartDate)),
+    [plans, weekStartDate],
+  );
 
   function slotKey(personId: string, dayIndex: number, mealType: string) {
     return `${personId}:${dayIndex}:${mealType}`;
@@ -135,6 +140,7 @@ export function PlanPage() {
         cashback: cashbackInput(cashback),
         fridge: fridge.map((item) => ({ productId: item.product_id, grams: item.grams })),
         customProducts,
+        previousMeals,
         useLlm: true,
         constraints: {
           ...constraints,
@@ -182,8 +188,8 @@ export function PlanPage() {
           Срок меню ({days} дн.) — с понедельника текущей недели. Цель по весу и калории задаются в Профиле, не здесь.
         </p>
         <p className="mt-2 text-sm text-muted">
-          Ужин всегда горячее мясо/рыба + салат. Вегетарианцам — горячее без мяса + салат. Меню и тексты рецептов пишет
-          модель, корзину и калории считает приложение.
+          Ужин всегда горячее мясо/птица + салат. Модель видит блюда прошлой недели и параметр разнообразия — чтобы не
+          есть одни куриные бёдра. Вегетарианцам — горячее без мяса + салат.
         </p>
       </Card>
 
@@ -232,10 +238,15 @@ export function PlanPage() {
         <div>
           <Label>Разнообразие</Label>
           <Select value={variety} onChange={(e) => setVariety(e.target.value as typeof variety)}>
-            <option value="low">Попроще, больше повторов</option>
-            <option value="medium">Обычное</option>
-            <option value="high">Максимум разнообразия</option>
+            <option value="low">Попроще, повторы нормальны</option>
+            <option value="medium">Менять белок, без фанатизма</option>
+            <option value="high">Максимум разных продуктов</option>
           </Select>
+          <p className="mt-1 text-xs text-muted">
+            {previousMeals.length > 0
+              ? `В промпт уйдёт ${previousMeals.length} блюд с прошлой недели — частично другие продукты.`
+              : "Прошлой недели ещё нет: разнообразие внутри этой генерации."}
+          </p>
         </div>
         <label className="flex items-start gap-3 rounded-2xl bg-cream px-3 py-3 text-sm">
           <input

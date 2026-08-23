@@ -13,6 +13,7 @@ import {
   plannedMealFromRecipe,
 } from "@/lib/optimizer/meals";
 import { pricedCatalogForLlm } from "./generate-week";
+import { compactPlannedMeals, meatProductIds } from "./previous-menu";
 import { withHomePresence } from "./portions";
 import { recipeUsesCart } from "./recipe-score";
 
@@ -117,6 +118,12 @@ export async function suggestLlmMealAlternatives(
         .filter((item) => item.grams > 0)
         .slice(0, 40)
         .map((item) => ({ id: item.productId, g: Math.round(item.grams) })),
+      dietType: input.constraints.dietType,
+      variety: input.constraints.varietyPreference,
+      meatIds: meatProductIds(input.products).slice(0, 40),
+      lastWeek: compactPlannedMeals(
+        result.menu.filter((item) => !(item.dayIndex === meal.dayIndex && item.mealType === meal.mealType)),
+      ).slice(0, 20),
       refreshToken: `${options?.refreshToken ?? 0}-${attempt}`,
       avoidNames: [...avoidNames],
       products,

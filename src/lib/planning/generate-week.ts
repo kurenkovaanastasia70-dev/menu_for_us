@@ -5,6 +5,7 @@ import { parseGuides } from "@/lib/llm/recipe-guide";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
 import { GreedyOptimizationEngine, materializeFromMenu, type OptimizationInput, type OptimizationResult } from "@/lib/optimizer";
 import { fillMissingSlots, fitMenuToBudget, mealsFromLlmMenu, scaleMenuToMacroTargets } from "./from-llm";
+import { compactLlmDays, meatProductIds, type CompactMeal } from "./previous-menu";
 import { validateMenuNutrition } from "./validate-menu";
 
 export interface GenerateWeekParams {
@@ -15,6 +16,7 @@ export interface GenerateWeekParams {
   cashback: OptimizationInput["cashback"];
   fridge?: OptimizationInput["fridge"];
   customProducts?: import("@/lib/catalog/custom-products").CustomProduct[];
+  previousMeals?: CompactMeal[];
   useLlm: boolean;
 }
 
@@ -76,6 +78,9 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
     eatingOutSlots: params.constraints.eatingOutSlots ?? [],
     products: llmProducts,
     fridge: fridgeForLlm,
+    variety: params.constraints.varietyPreference ?? "medium",
+    lastWeek: (params.previousMeals ?? []).slice(0, 28),
+    meatIds: meatProductIds(input.products).slice(0, 40),
   };
 
   // По 1 дню: полный каталог + 2 дня часто обрезает JSON → остаются 3–4 дня.
@@ -89,6 +94,7 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
       fromDay: day,
       toDay: day,
       attempt,
+      thisWeek: compactLlmDays([...mergedByDay.values()]),
     });
     if (!worker.ok || !worker.data.menu?.days?.length) {
       errors.push(worker.ok === false ? `${day}: ${worker.error}` : `пустой день ${day}`);
