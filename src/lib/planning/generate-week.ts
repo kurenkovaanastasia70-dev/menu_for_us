@@ -5,6 +5,7 @@ import { parseGuides } from "@/lib/llm/recipe-guide";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
 import { GreedyOptimizationEngine, materializeFromMenu, type OptimizationInput, type OptimizationResult } from "@/lib/optimizer";
 import { fillMissingSlots, fitMenuToBudget, mealsFromLlmMenu, scaleMenuToMacroTargets } from "./from-llm";
+import { diversifyRepeatedMeats } from "./diversify-meats";
 import { compactLlmDays, meatProductIds, type CompactMeal } from "./previous-menu";
 import { validateMenuNutrition } from "./validate-menu";
 
@@ -140,7 +141,9 @@ export async function generateWeek(params: GenerateWeekParams): Promise<Optimiza
   menu = fillMissingSlots(menu, fallback.menu);
   const filledFromCatalog = menu.length - llmSlots;
   menu = scaleMenuToMacroTargets(menu, input);
+  menu = diversifyRepeatedMeats(menu, input, params.previousMeals ?? []);
   menu = fitMenuToBudget(menu, input);
+  menu = diversifyRepeatedMeats(menu, input, params.previousMeals ?? []);
 
   const result = materializeFromMenu(menu, input);
   if (result.effectiveCost > input.budget) {

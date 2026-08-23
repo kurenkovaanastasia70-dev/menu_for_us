@@ -154,21 +154,21 @@ async function generateMenuChunk(
   };
   const fridgeRule =
     fridge.length > 0
-      ? `- fridge[] — уже ЕСТЬ ДОМА (g=граммы). ОБЯЗАТЕЛЬНО включи эти product_id в блюда дней ${fromDay}–${toDay}: используй запас, не игнорируй. Это экономия бюджета (их не покупаем). Не превышай сильно g без нужды.\n`
+      ? `- fridge[] — уже дома (g=граммы). Встрой эти product_id в 1–2 блюда, пока запас не кончится. Не ставь один fridge-мясо на каждый ужин.\n`
       : "";
   const varietyRule =
     variety === "high"
-      ? "- variety=high: максимум разных белков и гарниров. Не повторяй основной белок ужина два дня подряд. lastWeek/thisWeek — бери другие product_id, особенно не те же бёдра/грудку каждый день.\n"
+      ? "- variety=high: ЗАПРЕЩЕНО повторять один мясной product_id на двух ужинах подряд. Нельзя строить неделю на chicken_thigh. Чередуй turkey_fillet/pork/beef/chicken_breast/ground_turkey.\n"
       : variety === "low"
-        ? "- variety=low: повторы допустимы, но не один и тот же product_id на все ужины.\n"
-        : "- variety=medium: основной белок ужина меняй хотя бы через день. lastWeek/thisWeek можно частично повторять, без фанатизма — не копируй те же 2–3 продукта на всю неделю.\n";
+        ? "- variety=low: повторы допустимы, но не один product_id на все ужины.\n"
+        : "- variety=medium: один и тот же мясной product_id максимум 2 ужина за неделю. chicken_thigh не чаще 2 раз. Чередуй белок, бюджет режь гарниром и граммами, НЕ сводя всё к бёдрам.\n";
   const historyRule =
     lastWeek.length + thisWeek.length > 0
-      ? "- lastWeek/thisWeek: {d=день,m=b|l|d|s,n=название,p=product_id}. Не копируй те же блюда. Продукты можно повторять точечно, но основной белок и гарнир частично другие.\n"
+      ? "- lastWeek/thisWeek: {d=день,m=b|l|d|s,n=название,p=product_id}. Не копируй те же блюда и тот же основной белок. Повторы гарнира ок.\n"
       : "";
   const dinnerMeatRule = vegetarian
     ? "- dinner: горячее без мяса + салат (dietType=vegetarian).\n"
-    : `- dinner ОБЯЗАТЕЛЬНО с мясом/птицей: хотя бы один product_id из meatIds${meatIds.length ? ` (${meatIds.slice(0, 12).join(", ")})` : ""}. Не ужин из круп/овощей/яиц/рыбы без мяса. Рыба — не замена мясу на каждый ужин.\n`;
+    : `- dinner ОБЯЗАТЕЛЬНО с мясом/птицей из meatIds${meatIds.length ? ` (${meatIds.slice(0, 12).join(", ")})` : ""}. Не ужин из круп/овощей/яиц. Не ставь chicken_thigh, если thisWeek/lastWeek уже им забиты.\n`;
   const prompt = `Ты шеф-повар. Придумай ОРИГИНАЛЬНОЕ меню на дни ${fromDay}–${toDay} (${dayCount} дн.). Только JSON.
 
 {"days":[{"day":${fromDay},"meals":[{"meal_type":"breakfast","recipe_id":"d${fromDay}_b","name":"...","leftover":false,"calories":900,"protein":50,"fat":25,"carbs":100,"ingredients":[{"product_id":"oats","grams":80}],"steps":[{"order":1,"title":"A","text":"Коротко.","minutes":3},{"order":2,"title":"B","text":"Коротко.","minutes":5},{"order":3,"title":"C","text":"Коротко.","minutes":2}]}]}]}

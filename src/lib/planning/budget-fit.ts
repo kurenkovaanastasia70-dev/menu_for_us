@@ -122,26 +122,46 @@ function fullSource(meal: PlannedMeal): PlannedMeal["ingredients"] {
   return (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing }));
 }
 
+function isMeatForBudget(productId: string, input: OptimizationInput): boolean {
+  const product = input.products.find((item) => item.id === productId);
+  return Boolean(product?.tags?.includes("meat"));
+}
+
 function swapExpensiveProducts(menu: PlannedMeal[], input: OptimizationInput): PlannedMeal[] {
   const ids = new Set(input.products.map((item) => item.id));
+  const keepMeat = input.constraints.varietyPreference !== "low";
+  const meatUsed = new Map<string, number>();
+  for (const meal of menu) {
+    if (meal.eatingOut) continue;
+    for (const ing of fullSource(meal)) {
+      if (isMeatForBudget(ing.product_id, input)) {
+        meatUsed.set(ing.product_id, (meatUsed.get(ing.product_id) ?? 0) + 1);
+      }
+    }
+  }
   return menu.map((meal) => {
     if (meal.eatingOut) return meal;
     const swaps: Array<{ from: string; to: string }> = [];
     const ingredients = fullSource(meal).map((ing) => {
       const options = CHEAP_SWAPS[ing.product_id];
       if (!options) return ing;
+      if (keepMeat && isMeatForBudget(ing.product_id, input)) return ing;
       const current = cheapestUnitPrice(ing.product_id, input);
       let bestId = ing.product_id;
       let bestPrice = current;
       for (const alt of options) {
         if (!ids.has(alt)) continue;
+        if (keepMeat && isMeatForBudget(alt, input) && (meatUsed.get(alt) ?? 0) >= 2) continue;
         const price = cheapestUnitPrice(alt, input);
         if (price < bestPrice * 0.9) {
           bestPrice = price;
           bestId = alt;
         }
       }
-      if (bestId !== ing.product_id) swaps.push({ from: ing.product_id, to: bestId });
+      if (bestId !== ing.product_id) {
+        swaps.push({ from: ing.product_id, to: bestId });
+        if (isMeatForBudget(bestId, input)) meatUsed.set(bestId, (meatUsed.get(bestId) ?? 0) + 1);
+      }
       return bestId === ing.product_id ? ing : { ...ing, product_id: bestId };
     });
     return renameAfterSwaps(rebuildMeal(meal, ingredients, input), swaps, input.products);

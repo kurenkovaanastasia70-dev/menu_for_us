@@ -52,7 +52,7 @@ export function PlanPage() {
   const [meals, setMeals] = useState(profile?.meals_per_day ?? 3);
   const [cookTime, setCookTime] = useState(profile?.max_cooking_time ?? 40);
   const [sessions, setSessions] = useState(profile?.cooking_sessions ?? 3);
-  const [variety, setVariety] = useState<"low" | "medium" | "high">("medium");
+  const [variety, setVariety] = useState<"low" | "medium" | "high">("high");
   const [stores, setStores] = useState<string[]>(household?.preferred_stores ?? ["pyaterochka", "magnit"]);
   const [eatingOut, setEatingOut] = useState<Set<string>>(new Set());
   const [quickLunches, setQuickLunches] = useState(false);

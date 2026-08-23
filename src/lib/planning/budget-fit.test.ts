@@ -267,4 +267,55 @@ describe("fitMenuToBudget", () => {
     expect(fitted[0].portions?.some((p) => p.ingredients.some((ing) => ing.product_id === "salmon"))).toBeFalsy();
     expect(cart.some((line) => line.productId === "salmon")).toBe(false);
   });
+
+  it("does not collapse beef dinners into chicken thighs when variety is on", () => {
+    const beef: Product = { ...chicken, id: "beef", canonical_name: "Говядина", tags: ["meat", "beef"] };
+    const thigh: Product = { ...chicken, id: "chicken_thigh", canonical_name: "Куриное бедро", tags: ["meat", "chicken"] };
+    const input = {
+      products: [chicken, beef, thigh, rice],
+      prices: [
+        offer("chicken_breast", 289, 900),
+        offer("beef", 399, 500),
+        offer("chicken_thigh", 249, 900),
+        offer("rice", 79, 900),
+      ],
+      people: [{ id: "a", name: "A", calorieTarget: 2000, proteinTarget: 100, fatTarget: 70, carbsTarget: 200, fiberTarget: 25, ironTarget: 12 }],
+      days: 3,
+      budget: 500,
+      cashback: [],
+      fridge: [],
+      recipes: [],
+      calorieTargets: 2000,
+      macroTargets: { protein: 100, fat: 70, carbs: 200, fiber: 25, iron: 12 },
+      constraints: {
+        preferredStoreIds: ["magnit"],
+        varietyPreference: "medium",
+        maxCookingTime: 40,
+        maxCookingSessions: 3,
+        mealsPerDay: 3,
+        snacks: true,
+        excludedProductIds: [],
+        allergies: [],
+        dietType: "omnivore",
+        maxStores: 2,
+      },
+    } as OptimizationInput;
+
+    const menu = [0, 1, 2].map((dayIndex) => ({
+      ...meal([
+        { product_id: "beef", grams: 300 },
+        { product_id: "rice", grams: 200 },
+      ]),
+      dayIndex,
+      recipeName: "Говядина с рисом",
+      fullIngredients: [
+        { product_id: "beef", grams: 300 },
+        { product_id: "rice", grams: 200 },
+      ],
+    }));
+
+    const fitted = fitMenuToBudget(menu, input);
+    expect(fitted.every((item) => item.ingredients.some((ing) => ing.product_id === "beef"))).toBe(true);
+    expect(fitted.some((item) => item.ingredients.some((ing) => ing.product_id === "chicken_thigh"))).toBe(false);
+  });
 });
