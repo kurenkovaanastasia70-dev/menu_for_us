@@ -2,12 +2,13 @@ import { Screen } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
+import { catalogWithCustom } from "@/lib/catalog/custom-products";
 import { catalog } from "@/lib/catalog/repository";
 import { requestWorker } from "@/lib/llm/client";
 import { parseGuides } from "@/lib/llm/recipe-guide";
 import { buildSingleRecipePrompt } from "@/lib/llm/recipe-prompt";
 import type { WorkerGenerateResponse } from "@/lib/llm/schema";
-import { fallbackGuide } from "@/lib/optimizer/meals";
+import { fallbackGuide, splitMealIngredients } from "@/lib/optimizer/meals";
 import type { OptimizationResult, PlannedMeal, RecipeGuide } from "@/lib/optimizer/types";
 import { fetchMealPlan, updateMealPlanResult } from "@/lib/supabase/api";
 import { useEffect, useMemo, useState } from "react";
@@ -15,11 +16,12 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export function RecipePage() {
   const { planId, dayIndex, mealType } = useParams();
-  const { latestPlan, members } = useApp();
+  const { latestPlan, members, customProducts } = useApp();
   const navigate = useNavigate();
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const products = useMemo(() => catalogWithCustom(customProducts).products, [customProducts]);
 
   useEffect(() => {
     const id = planId ?? latestPlan?.id;
@@ -65,10 +67,12 @@ export function RecipePage() {
     setPending(true);
     setError("");
     const peopleCount = members.length || meal.servings || 1;
-    const ingredients = (meal.fullIngredients ?? meal.ingredients).map((ing) => ({
-      name: catalog.getProducts().find((product) => product.id === ing.product_id)?.canonical_name ?? ing.product_id,
-      grams: ing.grams,
-    }));
+    const { dish, salad } = splitMealIngredients(meal);
+    const productName = (id: string) => products.find((product) => product.id === id)?.canonical_name ?? id;
+    const ingredients = [
+      ...dish.map((ing) => ({ name: productName(ing.product_id), grams: ing.grams })),
+      ...salad.map((ing) => ({ name: productName(ing.product_id), grams: ing.grams })),
+    ];
     const payload = {
       peopleCount,
       recipe: {
@@ -147,21 +151,31 @@ export function RecipePage() {
           </ul>
         )}
         <div className="mt-3 text-sm">
-          <p className="font-semibold">В корзину из этого блюда</p>
+          <p className="font-semibold">Ингредиенты блюда</p>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
-            {(meal.fullIngredients ?? meal.ingredients).map((ing) => {
-              const name =
-                catalog.getProducts().find((product) => product.id === ing.product_id)?.canonical_name ??
-                ing.product_id;
-              return (
-                <li key={`${ing.product_id}-${ing.grams}`}>
-                  {name} · {ing.grams} г
-                </li>
-              );
-            })}
+            {splitMealIngredients(meal).dish.map((ing) => (
+              <li key={`${ing.product_id}-${ing.grams}`}>
+                {products.find((product) => product.id === ing.product_id)?.canonical_name ?? ing.product_id}
+                {" · "}
+                {ing.grams} г
+              </li>
+            ))}
           </ul>
         </div>
-        {meal.sideSalad && <p className="mt-2 text-sm">Салат: {meal.sideSalad.name}</p>}
+        {meal.sideSalad && (
+          <div className="mt-3 text-sm">
+            <p className="font-semibold">Салат: {meal.sideSalad.name}</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
+              {meal.sideSalad.ingredients.map((ing) => (
+                <li key={`${ing.product_id}-${ing.grams}`}>
+                  {products.find((product) => product.id === ing.product_id)?.canonical_name ?? ing.product_id}
+                  {" · "}
+                  {ing.grams} г
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Card>
 
       <div className="space-y-3">

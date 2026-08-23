@@ -35,12 +35,51 @@ function rebuild(meal: PlannedMeal, ingredients: PlannedMeal["ingredients"], inp
 function renameMeat(meal: PlannedMeal, fromId: string, toId: string, products: Product[]): PlannedMeal {
   const fromName = products.find((item) => item.id === fromId)?.canonical_name;
   const toName = products.find((item) => item.id === toId)?.canonical_name;
-  if (!fromName || !toName) return meal;
+  if (!fromName || !toName || fromName === toName) return meal;
+  const swap = (text: string) => text.split(fromName).join(toName);
   return {
     ...meal,
-    recipeName: meal.recipeName.split(fromName).join(toName),
-    guide: meal.guide ? { ...meal.guide, title: meal.guide.title.split(fromName).join(toName) } : meal.guide,
+    recipeName: swap(meal.recipeName),
+    instructions: meal.instructions.map(swap),
+    guide: meal.guide
+      ? {
+          ...meal.guide,
+          title: swap(meal.guide.title),
+          subtitle: swap(meal.guide.subtitle),
+          plating: swap(meal.guide.plating),
+          tips: meal.guide.tips.map(swap),
+          steps: meal.guide.steps.map((step) => ({
+            ...step,
+            title: swap(step.title),
+            text: swap(step.text),
+          })),
+        }
+      : meal.guide,
   };
+}
+
+function meatFamily(productId: string, products: Product[]): string {
+  const tags = products.find((item) => item.id === productId)?.tags ?? [];
+  if (tags.includes("turkey") || productId.includes("turkey")) return "turkey";
+  if (tags.includes("chicken") || productId.includes("chicken")) return "chicken";
+  if (tags.includes("beef") || productId.includes("beef")) return "beef";
+  if (tags.includes("pork") || productId.includes("pork")) return "pork";
+  if (tags.includes("lamb") || productId.includes("lamb")) return "lamb";
+  return productId;
+}
+
+function replacementRank(
+  currentId: string,
+  candidateId: string,
+  products: Product[],
+): number {
+  const currentFamily = meatFamily(currentId, products);
+  const family = meatFamily(candidateId, products);
+  let rank = 0;
+  if (family === currentFamily) rank += 40;
+  if (family === "chicken" && currentFamily !== "chicken") rank += 30;
+  if (candidateId === "chicken_thigh") rank += 10;
+  return rank;
 }
 
 function pickReplacement(
@@ -48,10 +87,16 @@ function pickReplacement(
   pool: string[],
   used: Map<string, number>,
   limit: number,
+  products: Product[],
 ): string | null {
   const ranked = pool
     .filter((id) => id !== currentId && (used.get(id) ?? 0) < limit)
-    .sort((a, b) => (used.get(a) ?? 0) - (used.get(b) ?? 0) || (a === "chicken_thigh" ? 1 : 0) - (b === "chicken_thigh" ? 1 : 0));
+    .sort(
+      (a, b) =>
+        (used.get(a) ?? 0) - (used.get(b) ?? 0) ||
+        replacementRank(currentId, a, products) - replacementRank(currentId, b, products) ||
+        a.localeCompare(b),
+    );
   return ranked[0] ?? null;
 }
 
@@ -94,7 +139,7 @@ export function diversifyRepeatedMeats(
         used.set(ing.product_id, count + 1);
         return ing;
       }
-      const replacement = pickReplacement(ing.product_id, pool, used, limit);
+      const replacement = pickReplacement(ing.product_id, pool, used, limit, input.products);
       if (!replacement) {
         used.set(ing.product_id, count + 1);
         return ing;

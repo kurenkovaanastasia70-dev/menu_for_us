@@ -15,7 +15,6 @@ const CHEAP_SWAPS: Record<string, string[]> = {
   lamb: ["chicken_thigh", "pork_chop", "pork_mince"],
   pork_tenderloin: ["chicken_breast", "pork_mince", "chicken_thigh"],
   pork_chop: ["chicken_thigh", "pork_mince"],
-  turkey_fillet: ["chicken_breast", "ground_chicken"],
   olive_oil: ["sunflower_oil", "rapeseed_oil"],
   olive_oil_extra: ["sunflower_oil", "olive_oil", "rapeseed_oil"],
   butter: ["sunflower_oil", "spread_butter"],

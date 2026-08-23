@@ -100,7 +100,9 @@ async function handleMenu(body: unknown, env: Env): Promise<Response> {
   if (!isMenu(result.data)) {
     return json({ ok: false, source: "fallback", error: "Невалидный JSON модели" }, 200);
   }
-  return json({ ok: true, source: "llm", menu: result.data, guides: [] });
+  const rawProducts = Array.isArray(input.products) ? input.products : [];
+  const menu = normalizeMenuPayload(result.data, rawProducts);
+  return json({ ok: true, source: "llm", menu, guides: [] });
 }
 
 async function generateMenuChunk(
@@ -176,7 +178,8 @@ async function generateMenuChunk(
 Правила:
 - day = ${fromDay}..${toDay}. Каждый день: breakfast,lunch,dinner,snack.
 - Придумывай НОВЫЕ названия блюд. Разные кухни и сочетания.
-- product_id ТОЛЬКО из products[].id. Поля: id,n=имя,r=₽/100г. Не выдумывай id.
+- product_id ТОЛЬКО латиница из products[].id (oats, chicken_breast). Не копируй русское имя n в product_id.
+- Форма ингредиента: {"product_id":"oats","grams":80}. grams — число.
 - 2–5 ingredients, ровно 3 коротких steps на русском.
 ${input.quickBreakfasts ? "- quickBreakfasts=true: ЗАВТРАКИ только супербыстрые (до 10 мин): йогурт/творог/овсянка без варки долго, тост — без омлетов, каш на плите, сырников и запеканок.\n" : ""}${fridgeRule}${varietyRule}${historyRule}${dinnerMeatRule}- Для dinner обязательно добавь side_salad: {"name":"...","ingredients":[{"product_id":"cucumber","grams":80}],"steps":["Нарезать","Заправить"]}. Салаты разные по дням (не только огурец+помидор): капуста, свёкла, греческий, зелёный лист и т.п. из products.
 - Бюджет недели budget важен: чаще средний/низкий r. Можно морепродукты и заморозку из products. Продукты из fridge не тратят бюджет.
@@ -257,7 +260,6 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
         r: item.rub_per_100g ?? item.r,
       }))
     : [];
-  const productIds = new Set(products.map((item) => item.id).filter(Boolean));
   const mealType = String(input.mealType ?? "lunch");
   const avoidNames = new Set(
     [String(input.currentName ?? ""), ...((input.avoidNames as string[]) ?? [])]
@@ -276,7 +278,7 @@ async function handleAlternatives(body: unknown, env: Env): Promise<Response> {
 - Ровно ${left} разных вариантов в массиве alternatives.
 - meal_type = ${mealType}.
 ${mealType === "breakfast" && input.quickBreakfasts ? "- Только супербыстрые завтраки до 10 мин (йогурт/творог/овсянка), без жарки и долгой варки.\n" : ""}- Новые названия, не повторять: ${[...avoidNames].slice(0, 20).join(" | ") || "—"}.
-- product_id ТОЛЬКО из products[].id. 2–5 ingredients, ровно 3 steps, язык русский.
+- product_id ТОЛЬКО латиница из products[].id (oats, chicken_breast), НЕ русское имя n. Форма: {"product_id":"rice","grams":70}. 2–5 ingredients, ровно 3 steps, язык русский.
 - Разные белки/гарниры, не копируй lastWeek.
 ${mealType === "dinner" && String(input.dietType ?? "") !== "vegetarian" ? "- dinner: обязательно мясо/птица из meatIds, не только рыба/овощи.\n" : ""}${Array.isArray(input.fridge) && (input.fridge as any[]).length > 0 ? "- Предпочитай product_id из fridge[] (уже дома). Это скидка к бюджету.\n" : ""}
 Вход:${JSON.stringify({
@@ -302,13 +304,7 @@ ${mealType === "dinner" && String(input.dietType ?? "") !== "vegetarian" ? "- di
       const key = name.toLowerCase();
       if (avoidNames.has(key)) continue;
       if (collected.some((item) => String(item.name).toLowerCase() === key)) continue;
-      const ingredients = (Array.isArray(alt.ingredients) ? alt.ingredients : [])
-        .map((ing: any) => ({
-          product_id: String(ing?.product_id ?? ""),
-          grams: Math.round(Number(ing?.grams) || 0),
-        }))
-        .filter((ing: { product_id: string; grams: number }) => productIds.has(ing.product_id) && ing.grams > 0)
-        .slice(0, 5);
+      const ingredients = resolveWorkerIngredients(alt.ingredients, products).slice(0, 5);
       if (ingredients.length === 0) continue;
       const stepsRaw = Array.isArray(alt.steps) ? alt.steps : [];
       const steps = [0, 1, 2].map((index) => {
@@ -508,6 +504,131 @@ function extractJson(text: string): any | null {
     }
     return null;
   }
+}
+
+const WORKER_ALIASES: Record<string, string> = {
+  chicken: "chicken_breast",
+  курица: "chicken_breast",
+  грудка: "chicken_breast",
+  куриная_грудка: "chicken_breast",
+  куриное_филе: "chicken_breast",
+  бедро: "chicken_thigh",
+  куриное_бедро: "chicken_thigh",
+  индейка: "turkey_fillet",
+  turkey: "turkey_fillet",
+  говядина: "beef",
+  свинина: "pork_tenderloin",
+  фарш: "ground_chicken",
+  овсянка: "oats",
+  творог: "cottage_cheese",
+  молоко: "milk",
+  йогурт: "yogurt",
+  рис: "rice",
+  гречка: "buckwheat",
+  яйца: "eggs",
+  яйцо: "eggs",
+  картофель: "potato",
+  картошка: "potato",
+  помидоры: "tomato",
+  помидор: "tomato",
+  огурцы: "cucumber",
+  огурец: "cucumber",
+  лук: "onion",
+  морковь: "carrot",
+  капуста: "cabbage",
+  масло: "sunflower_oil",
+  оливковое_масло: "olive_oil",
+  сливочное_масло: "butter",
+  сыр: "cheese",
+  хлеб: "bread",
+  мед: "honey",
+  ягоды: "berries",
+};
+
+function normProductKey(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-я0-9]+/gi, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function parseWorkerGrams(raw: unknown): number {
+  if (typeof raw === "number" && Number.isFinite(raw)) return Math.round(raw);
+  if (typeof raw === "string") {
+    const match = raw.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+    return match ? Math.round(Number(match[1])) : 0;
+  }
+  return 0;
+}
+
+function resolveWorkerProductId(
+  raw: unknown,
+  products: Array<{ id: string; n?: string }>,
+): string | null {
+  if (raw == null) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+  if (products.some((item) => item.id === trimmed)) return trimmed;
+  const key = normProductKey(trimmed);
+  if (!key) return null;
+  const byId = products.find((item) => item.id === key || normProductKey(item.id) === key);
+  if (byId) return byId.id;
+  const byName = products.find((item) => normProductKey(String(item.n ?? "")) === key);
+  if (byName) return byName.id;
+  const alias = WORKER_ALIASES[key];
+  if (alias && products.some((item) => item.id === alias)) return alias;
+  const named = products.filter((item) => {
+    const name = normProductKey(String(item.n ?? ""));
+    return name.includes(key) || (key.length >= 5 && key.includes(name));
+  });
+  if (named.length === 1) return named[0].id;
+  return null;
+}
+
+function resolveWorkerIngredients(
+  raw: unknown,
+  products: Array<{ id: string; n?: string }>,
+): Array<{ product_id: string; grams: number }> {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Map<string, number>();
+  for (const item of raw) {
+    const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    const grams = parseWorkerGrams(row.grams ?? row.g ?? row.amount ?? row.weight);
+    if (grams <= 0) continue;
+    const resolved =
+      resolveWorkerProductId(row.product_id, products) ??
+      resolveWorkerProductId(row.id, products) ??
+      resolveWorkerProductId(row.n, products) ??
+      resolveWorkerProductId(row.name, products);
+    if (!resolved) continue;
+    seen.set(resolved, (seen.get(resolved) ?? 0) + grams);
+  }
+  return [...seen.entries()].map(([product_id, grams]) => ({ product_id, grams }));
+}
+
+function normalizeMenuPayload(data: any, rawProducts: unknown[]): any {
+  const products = rawProducts.map((item: any) => ({
+    id: String(item?.id ?? ""),
+    n: String(item?.n ?? item?.name ?? ""),
+  })).filter((item) => item.id);
+  return {
+    ...data,
+    days: (data.days ?? []).map((day: any) => ({
+      ...day,
+      meals: (day.meals ?? []).map((meal: any) => ({
+        ...meal,
+        ingredients: resolveWorkerIngredients(meal.ingredients, products),
+        side_salad: meal.side_salad
+          ? {
+              ...meal.side_salad,
+              ingredients: resolveWorkerIngredients(meal.side_salad.ingredients, products),
+            }
+          : meal.side_salad,
+      })),
+    })),
+  };
 }
 
 function isMenu(value: any): boolean {

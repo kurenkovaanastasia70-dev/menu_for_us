@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { OptimizationInput, PlannedMeal, Product } from "@/lib/optimizer";
 import { diversifyRepeatedMeats } from "./diversify-meats";
 
-function meat(id: string, name: string): Product {
+function meat(id: string, name: string, extraTags: string[] = []): Product {
   return {
     id,
     canonical_name: name,
@@ -15,7 +15,7 @@ function meat(id: string, name: string): Product {
     iron_per_100g: 1,
     package_weight: 500,
     unit: "g",
-    tags: ["meat"],
+    tags: ["meat", ...extraTags],
   };
 }
 
@@ -35,7 +35,17 @@ function dinner(dayIndex: number, productId: string, name: string): PlannedMeal 
     carbs: 10,
     fiber: 0,
     iron: 1,
-    instructions: [],
+    instructions: ["Обжарьте Куриное бедро."],
+    guide: {
+      recipe_id: `d${dayIndex}`,
+      title: name,
+      subtitle: "",
+      time_minutes: 25,
+      servings: 2,
+      steps: [{ order: 1, title: "Жарка", text: "Куриное бедро на сковороде.", minutes: 10 }],
+      tips: [],
+      plating: "",
+    },
   };
 }
 
@@ -87,6 +97,8 @@ describe("diversifyRepeatedMeats", () => {
     const meats = next.map((meal) => meal.ingredients[0]?.product_id);
     expect(new Set(meats).size).toBeGreaterThan(1);
     expect(meats.filter((id) => id === "chicken_thigh").length).toBe(1);
+    const swapped = next.find((item) => item.ingredients[0]?.product_id !== "chicken_thigh");
+    expect(swapped?.guide?.steps[0]?.text).not.toContain("Куриное бедро");
   });
 
   it("keeps leftover lunch on the same meat as the previous dinner", () => {
@@ -101,5 +113,24 @@ describe("diversifyRepeatedMeats", () => {
     const lunchAfter = next.find((item) => item.dayIndex === 2 && item.mealType === "lunch");
     expect(day1Dinner?.ingredients[0]?.product_id).not.toBe("chicken_thigh");
     expect(lunchAfter?.ingredients[0]?.product_id).toBe(day1Dinner?.ingredients[0]?.product_id);
+  });
+
+  it("does not replace turkey dinners with chicken", () => {
+    const turkeyInput: OptimizationInput = {
+      ...input(),
+      products: [
+        meat("chicken_breast", "Куриная грудка", ["chicken"]),
+        meat("chicken_thigh", "Куриное бедро", ["chicken"]),
+        meat("turkey_fillet", "Филе индейки", ["turkey"]),
+        meat("pork_tenderloin", "Свиная вырезка", ["pork"]),
+        meat("beef", "Говядина", ["beef"]),
+      ],
+    };
+    const menu = [0, 1, 2].map((day) => dinner(day, "turkey_fillet", "Филе индейки с рисом"));
+    const next = diversifyRepeatedMeats(menu, turkeyInput);
+    const meats = next.map((meal) => meal.ingredients[0]?.product_id);
+    expect(meats[0]).toBe("turkey_fillet");
+    expect(meats.some((id) => id === "chicken_breast" || id === "chicken_thigh")).toBe(false);
+    expect(new Set(meats).size).toBeGreaterThan(1);
   });
 });

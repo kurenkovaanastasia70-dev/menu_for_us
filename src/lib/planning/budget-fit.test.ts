@@ -200,6 +200,60 @@ describe("fitMenuToBudget", () => {
     expect(fitted[0].ingredients.some((ing) => ing.product_id === "turkey_steak")).toBe(true);
   });
 
+  it("does not swap turkey fillet for chicken to fit the budget", () => {
+    const turkey: Product = {
+      ...chicken,
+      id: "turkey_fillet",
+      canonical_name: "Филе индейки",
+      tags: ["turkey", "meat"],
+    };
+    const breast: Product = { ...chicken, tags: ["chicken", "meat"] };
+    const input = {
+      products: [breast, turkey, rice],
+      prices: [offer("chicken_breast", 180, 900), offer("turkey_fillet", 420, 500), offer("rice", 79, 900)],
+      people: [
+        { id: "a", name: "A", calorieTarget: 2000, proteinTarget: 100, fatTarget: 70, carbsTarget: 200, fiberTarget: 25, ironTarget: 12 },
+      ],
+      days: 1,
+      budget: 400,
+      cashback: [],
+      fridge: [],
+      recipes: [],
+      calorieTargets: 2000,
+      macroTargets: { protein: 100, fat: 70, carbs: 200, fiber: 25, iron: 12 },
+      constraints: {
+        preferredStoreIds: ["magnit"],
+        varietyPreference: "low",
+        maxCookingTime: 40,
+        maxCookingSessions: 3,
+        mealsPerDay: 3,
+        snacks: true,
+        excludedProductIds: [],
+        allergies: [],
+        dietType: "omnivore",
+        maxStores: 2,
+      },
+    } as OptimizationInput;
+
+    const menu = [
+      {
+        ...meal([
+          { product_id: "turkey_fillet", grams: 400 },
+          { product_id: "rice", grams: 200 },
+        ]),
+        recipeName: "Филе индейки",
+        fullIngredients: [
+          { product_id: "turkey_fillet", grams: 400 },
+          { product_id: "rice", grams: 200 },
+        ],
+      },
+    ];
+
+    const fitted = fitMenuToBudget(menu, input);
+    expect(fitted[0].ingredients.some((ing) => ing.product_id === "turkey_fillet")).toBe(true);
+    expect(fitted[0].ingredients.some((ing) => ing.product_id === "chicken_breast")).toBe(false);
+  });
+
   it("renames the meal and syncs portions when salmon is swapped for budget", () => {
     const input = {
       products: [chicken, salmon, rice, pollock],

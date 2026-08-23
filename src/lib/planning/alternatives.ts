@@ -1,4 +1,5 @@
 import { catalog } from "@/lib/catalog/repository";
+import { resolveLlmIngredients } from "@/lib/catalog/resolve-product";
 import { requestWorker } from "@/lib/llm/client";
 import { materializeFromMenu, type OptimizationInput, type OptimizationResult, type PlannedMeal, type Recipe } from "@/lib/optimizer";
 import {
@@ -91,7 +92,6 @@ export async function suggestLlmMealAlternatives(
   const products = pricedCatalogForLlm(input).filter(
     (item) => !(input.constraints.excludedProductIds ?? []).includes(item.id),
   );
-  const productIds = new Set(products.map((item) => item.id));
   const avoidNames = new Set([meal.recipeName.trim().toLowerCase()].filter(Boolean));
   const out: MealAlternative[] = [];
 
@@ -104,7 +104,7 @@ export async function suggestLlmMealAlternatives(
         recipe_id?: string;
         reason?: string;
         meal_type?: string;
-        ingredients?: Array<{ product_id: string; grams: number }>;
+        ingredients?: Array<{ product_id?: string; id?: string; n?: string; name?: string; grams?: number; g?: number }>;
         steps?: Array<{ order?: number; title: string; text: string; minutes?: number }>;
       }>;
       error?: string;
@@ -135,9 +135,11 @@ export async function suggestLlmMealAlternatives(
       if (out.length >= NEED) break;
       const name = String(alt.name ?? "").trim();
       if (!name || avoidNames.has(name.toLowerCase())) continue;
-      const ingredients = (alt.ingredients ?? [])
-        .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
-        .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
+      const ingredients = resolveLlmIngredients(
+        alt.ingredients,
+        input.products,
+        input.constraints.excludedProductIds ?? [],
+      );
       if (ingredients.length === 0) continue;
       const steps = (alt.steps ?? []).map((step, stepIndex) => ({
         order: step.order || stepIndex + 1,

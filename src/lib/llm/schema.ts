@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+const llmIngredientSchema = z
+  .object({
+    product_id: z.string().optional(),
+    id: z.string().optional(),
+    n: z.string().optional(),
+    name: z.string().optional(),
+    grams: z.union([z.number(), z.string()]).optional(),
+    g: z.union([z.number(), z.string()]).optional(),
+  })
+  .passthrough();
+
 export const llmMealSchema = z.object({
   name: z.string().min(2),
   recipe_id: z.string().optional(),
@@ -9,25 +20,11 @@ export const llmMealSchema = z.object({
   protein: z.number().nonnegative().optional(),
   fat: z.number().nonnegative().optional(),
   carbs: z.number().nonnegative().optional(),
-  ingredients: z
-    .array(
-      z.object({
-        product_id: z.string(),
-        grams: z.number().positive(),
-      }),
-    )
-    .optional(),
+  ingredients: z.array(llmIngredientSchema).optional(),
   side_salad: z
     .object({
       name: z.string().min(2),
-      ingredients: z
-        .array(
-          z.object({
-            product_id: z.string(),
-            grams: z.number().positive(),
-          }),
-        )
-        .min(1),
+      ingredients: z.array(llmIngredientSchema).min(1),
       steps: z.array(z.string()).optional(),
     })
     .optional(),

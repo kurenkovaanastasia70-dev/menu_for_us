@@ -186,6 +186,27 @@ export function pickSideSalad(recipes: Recipe[], selected: PlannedMeal[]): Recip
   return pool[dinners % pool.length] ?? pool[0] ?? null;
 }
 
+/** Убирает из горячего продукты салата, если модель продублировала их в обоих списках. */
+export function withoutOverlappingSalad(
+  dish: Array<{ product_id: string; grams: number }>,
+  salad: Array<{ product_id: string; grams: number }>,
+): Array<{ product_id: string; grams: number }> {
+  if (salad.length === 0) return dish.map((ing) => ({ ...ing }));
+  const saladIds = new Set(salad.map((ing) => ing.product_id));
+  const leftover = dish.filter((ing) => !saladIds.has(ing.product_id));
+  return leftover.length > 0 ? leftover : dish.map((ing) => ({ ...ing }));
+}
+
+/** Горячее и салат раздельно — для экрана рецепта. */
+export function splitMealIngredients(meal: PlannedMeal): {
+  dish: Array<{ product_id: string; grams: number }>;
+  salad: Array<{ product_id: string; grams: number }>;
+} {
+  const all = (meal.fullIngredients ?? meal.ingredients).map((ing) => ({ ...ing }));
+  const salad = (meal.sideSalad?.ingredients ?? []).map((ing) => ({ ...ing }));
+  return { dish: withoutOverlappingSalad(all, salad), salad };
+}
+
 /** Салат от модели: name + ingredients с валидными product_id. */
 export function attachLlmSideSalad(
   meal: PlannedMeal,
@@ -208,17 +229,19 @@ export function attachLlmSideSalad(
     ingredients,
     instructions,
   };
+  const dish = withoutOverlappingSalad(meal.ingredients, ingredients);
+  const dishNutrition = nutritionFromIngredients(dish, products);
   return {
     ...meal,
     recipeName: `${meal.recipeName.replace(/\s+\+.+$/, "")} + ${name}`,
     sideSalad,
-    ingredients: [...meal.ingredients, ...ingredients],
-    calories: round1(meal.calories + nutrition.calories),
-    protein: round1(meal.protein + nutrition.protein),
-    fat: round1(meal.fat + nutrition.fat),
-    carbs: round1(meal.carbs + nutrition.carbs),
-    fiber: round1(meal.fiber + nutrition.fiber),
-    iron: round1(meal.iron + nutrition.iron),
+    ingredients: [...dish, ...ingredients],
+    calories: round1(dishNutrition.calories + nutrition.calories),
+    protein: round1(dishNutrition.protein + nutrition.protein),
+    fat: round1(dishNutrition.fat + nutrition.fat),
+    carbs: round1(dishNutrition.carbs + nutrition.carbs),
+    fiber: round1(dishNutrition.fiber + nutrition.fiber),
+    iron: round1(dishNutrition.iron + nutrition.iron),
     instructions: [...meal.instructions, `Салат «${name}»:`, ...instructions],
   };
 }

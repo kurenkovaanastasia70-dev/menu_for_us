@@ -14,6 +14,7 @@ import {
 } from "@/lib/optimizer/meals";
 import { withHomePresence } from "./portions";
 import { fitMenuToBudget as fitMenuToBudgetSmart } from "./budget-fit";
+import { resolveLlmIngredients } from "@/lib/catalog/resolve-product";
 
 const MEAL_TYPES: Array<PlannedMeal["mealType"]> = ["breakfast", "lunch", "dinner", "snack"];
 
@@ -23,7 +24,6 @@ export function mealsFromLlmMenu(
   guides: RecipeGuide[],
 ): PlannedMeal[] {
   const peopleCount = Math.max(1, input.people.length);
-  const productIds = new Set(input.products.map((item) => item.id));
   const guideById = new Map(guides.map((guide) => [guide.recipe_id, guide]));
   const menu: PlannedMeal[] = [];
 
@@ -56,10 +56,11 @@ export function mealsFromLlmMenu(
         }
       }
 
-      const ingredients = (raw.ingredients ?? [])
-        .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
-        .filter((ing) => !(input.constraints.excludedProductIds ?? []).includes(ing.product_id))
-        .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
+      const ingredients = resolveLlmIngredients(
+        raw.ingredients,
+        input.products,
+        input.constraints.excludedProductIds ?? [],
+      );
       if (ingredients.length === 0) continue;
 
       const nutrition = nutritionFromIngredients(ingredients, input.products);
@@ -128,10 +129,11 @@ export function mealsFromLlmMenu(
       if (mealType === "dinner") {
         const rawSalad = (raw as { side_salad?: { name?: string; ingredients?: Array<{ product_id: string; grams: number }>; steps?: string[] } })
           .side_salad;
-        const saladIngredients = (rawSalad?.ingredients ?? [])
-          .filter((ing) => productIds.has(ing.product_id) && ing.grams > 0)
-          .filter((ing) => !(input.constraints.excludedProductIds ?? []).includes(ing.product_id))
-          .map((ing) => ({ product_id: ing.product_id, grams: Math.round(ing.grams) }));
+        const saladIngredients = resolveLlmIngredients(
+          rawSalad?.ingredients,
+          input.products,
+          input.constraints.excludedProductIds ?? [],
+        );
         if (rawSalad?.name && saladIngredients.length > 0) {
           meal = attachLlmSideSalad(
             meal,
