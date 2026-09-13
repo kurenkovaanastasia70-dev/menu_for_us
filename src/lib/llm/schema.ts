@@ -1,15 +1,13 @@
 import { z } from "zod";
 
-const llmIngredientSchema = z
-  .object({
-    product_id: z.string().optional(),
-    id: z.string().optional(),
-    n: z.string().optional(),
-    name: z.string().optional(),
-    grams: z.union([z.number(), z.string()]).optional(),
-    g: z.union([z.number(), z.string()]).optional(),
-  })
-  .passthrough();
+const llmIngredientSchema = z.object({
+  product_id: z.string().optional(),
+  id: z.string().optional(),
+  n: z.string().optional(),
+  name: z.string().optional(),
+  grams: z.union([z.number(), z.string()]).optional(),
+  g: z.union([z.number(), z.string()]).optional(),
+});
 
 export const llmMealSchema = z.object({
   name: z.string().min(2),
